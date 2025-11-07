@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabase";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
@@ -42,16 +41,17 @@ export default function SettingsPage() {
   async function fetchUsers() {
     setLoading(true);
     try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .order("first_name");
-
-      if (error) throw error;
-      setUsers(data || []);
+      const response = await fetch("/api/users/list");
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      
+      const data = await response.json();
+      setUsers(data.users || []);
     } catch (error) {
       console.error("Error fetching users:", error);
+      alert("Failed to load users. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -101,13 +101,16 @@ export default function SettingsPage() {
 
     setProcessing(true);
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("users")
-        .update({ two_factor_enabled: true })
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Update all
+      // Enable 2FA for each user via API
+      const enablePromises = users.map(user => 
+        fetch("/api/users/toggle-2fa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, twoFactorEnabled: true }),
+        })
+      );
 
-      if (error) throw error;
+      await Promise.all(enablePromises);
       alert("2FA enabled for all users!");
       fetchUsers();
     } catch (error) {
@@ -295,7 +298,11 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)} bg-opacity-10`}>
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                            user.role === 'employee' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
                             {user.role.toUpperCase()}
                           </span>
                           {user.two_factor_enabled && (
@@ -322,34 +329,34 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
                   Role Descriptions
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 w-20">
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 whitespace-nowrap">
                         ADMIN
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 flex-1">
                       Full access to all systems, user management, settings, contact submissions, and all tools (Matrix, Pathfinder)
                     </p>
                   </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 w-20">
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 whitespace-nowrap">
                         EMPLOYEE
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 flex-1">
                       Access to Matrix and Pathfinder tools, company resources, collaboration features, and view contact submissions
                     </p>
                   </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 w-20">
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
                         CLIENT
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 flex-1">
                       Limited access to specific projects and reports assigned to them. View-only permissions
                     </p>
                   </div>
