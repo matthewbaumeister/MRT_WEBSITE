@@ -91,17 +91,21 @@ export default function UsersManagementPage() {
 
     setUpdating(userId);
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("users")
-        .update({ is_active: !currentStatus })
-        .eq("id", userId);
+      const response = await fetch("/api/users/toggle-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, isActive: !currentStatus }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update status");
+      }
+
       fetchUsers();
       alert(`User ${currentStatus ? "deactivated" : "activated"} successfully!`);
-    } catch (error) {
-      alert("Failed to update user status");
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
     } finally {
       setUpdating(null);
     }
@@ -114,17 +118,21 @@ export default function UsersManagementPage() {
 
     setUpdating(userId);
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("users")
-        .update({ two_factor_enabled: !currentStatus })
-        .eq("id", userId);
+      const response = await fetch("/api/users/toggle-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, twoFactorEnabled: !currentStatus }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update 2FA");
+      }
+
       fetchUsers();
       alert(`2FA ${currentStatus ? "disabled" : "enabled"} successfully!`);
-    } catch (error) {
-      alert("Failed to update 2FA status");
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
     } finally {
       setUpdating(null);
     }
