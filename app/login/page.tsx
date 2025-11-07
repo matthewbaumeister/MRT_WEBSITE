@@ -29,6 +29,10 @@ export default function LoginPage() {
       });
 
       console.log("Login result:", result);
+      console.log("Result error:", result?.error);
+      console.log("Result ok:", result?.ok);
+      console.log("Result status:", result?.status);
+      console.log("Full result:", JSON.stringify(result));
 
       if (result?.error) {
         // Handle specific error messages
@@ -47,11 +51,15 @@ export default function LoginPage() {
         } else {
           setError(`Login failed: ${result.error}`);
         }
+        setLoading(false);
+        return; // Don't redirect on error
       } else if (result?.ok) {
         // Successful login - redirect to platforms
+        console.log("Login successful, redirecting to /platforms");
         window.location.href = "/platforms";
       } else {
         setError("An unexpected error occurred. Please try again.");
+        setLoading(false);
       }
     } catch (err: any) {
       console.error("Login error:", err);
