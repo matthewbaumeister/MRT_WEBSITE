@@ -2,20 +2,50 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { User } from "@/types/auth";
+import { getSupabaseClient } from "./supabase";
 
-// This is a temporary in-memory user store
-// In production, replace with database (Supabase, PostgreSQL, etc.)
-const users: User[] = [
-  // Default admin user - CHANGE THIS PASSWORD AFTER FIRST LOGIN
-  {
-    id: "1",
-    email: "admin@make-ready-consulting.com",
-    name: "Admin",
-    password: "$2b$10$qmOIwPpRKnhboh.mrlCnLu5PCDQW6nU5M2V3YY19eFO8LPdh8CdQ6",
-    role: "admin",
-    twoFactorEnabled: false,
-  },
-];
+// Get user from Supabase database
+async function getUserByEmail(email: string) {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .eq("is_active", true)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      name: `${data.first_name} ${data.last_name}`,
+      password: data.password_hash,
+      role: data.role,
+      twoFactorEnabled: data.two_factor_enabled,
+      twoFactorSecret: data.two_factor_secret,
+    };
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+}
+
+// Update last login time
+async function updateLastLogin(userId: string) {
+  try {
+    const supabase = getSupabaseClient();
+    await supabase
+      .from("users")
+      .update({ last_login: new Date().toISOString() })
+      .eq("id", userId);
+  } catch (error) {
+    console.error("Error updating last login:", error);
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -31,8 +61,8 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password required");
         }
 
-        // Find user (replace with database query)
-        const user = users.find((u) => u.email === credentials.email);
+        // Get user from Supabase
+        const user = await getUserByEmail(credentials.email);
         
         if (!user) {
           throw new Error("Invalid credentials");
@@ -66,6 +96,9 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid 2FA token");
           }
         }
+
+        // Update last login time
+        await updateLastLogin(user.id);
 
         // Return user object (exclude sensitive data)
         return {

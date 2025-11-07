@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { UserMenu } from "./UserMenu";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -32,7 +33,6 @@ const Header = () => {
     },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
-    { name: "Login", href: "/admin/login" },
   ];
 
   return (
