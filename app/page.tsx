@@ -3,6 +3,7 @@ import Button from "@/components/ui/Button";
 import ServiceCard from "@/components/ServiceCard";
 import ContactForm from "@/components/ContactForm";
 import { services } from "@/lib/services";
+import { VeteranBadge } from "@/components/icons/VeteranIcon";
 
 export default function Home() {
 
@@ -36,11 +37,8 @@ export default function Home() {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative h-96 lg:h-[500px]">
-              {/* Veteran memorial image placeholder */}
-              <div className="absolute inset-0 bg-gray-300 rounded-lg">
-                <div className="absolute inset-0 bg-[url('/images/veteran-memorial.jpg')] bg-cover bg-center rounded-lg" />
-              </div>
+            <div className="relative h-96 lg:h-[500px] flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 rounded-lg shadow-lg p-12">
+              <VeteranBadge className="w-full h-full max-w-md max-h-md" />
             </div>
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
