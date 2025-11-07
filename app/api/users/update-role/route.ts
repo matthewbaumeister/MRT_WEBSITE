@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseServiceClient } from "@/lib/supabase";
 import { sendRoleChangeNotificationEmail } from "@/lib/sendgrid";
 
 export async function POST(request: NextRequest) {
@@ -34,7 +34,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabaseClient();
+    // Prevent users from changing their own role (security measure)
+    if (userId === session.user.id) {
+      return NextResponse.json(
+        { error: "You cannot change your own role. Ask another admin to change it for you." },
+        { status: 403 }
+      );
+    }
+
+    const supabase = getSupabaseServiceClient();
 
     // Get user details
     const { data: user, error: fetchError } = await supabase
