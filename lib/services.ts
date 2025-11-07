@@ -6,6 +6,7 @@ export const services = [
       "Our program management services ensure your projects are delivered on time, within scope, and on budget. We offer comprehensive planning, execution, and monitoring to achieve your strategic goals.",
     imageSrc: "/images/program-management.jpg",
     imageAlt: "Program Management",
+    useIcon: true, // Use icon until image is available
   },
   {
     title: "Artificial Intelligence",
@@ -14,6 +15,7 @@ export const services = [
       "Our artificial intelligence services leverage advanced algorithms and machine learning to automate processes, enhance decision-making, and drive innovation. Experience the future of technology with our AI expertise.",
     imageSrc: "/images/ai-solutions.jpg",
     imageAlt: "Artificial Intelligence",
+    useIcon: true,
   },
   {
     title: "Geospatial Science",
@@ -22,6 +24,7 @@ export const services = [
       "Our geospatial science services provide precise mapping, spatial analysis, and data visualization to support informed decision-making. Harness the power of GEOINT with our scientists and analysts.",
     imageSrc: "/images/geospatial.jpg",
     imageAlt: "Geospatial Science",
+    useIcon: true,
   },
   {
     title: "IT Support",
@@ -30,6 +33,7 @@ export const services = [
       "Our IT support services offer comprehensive solutions for all your technology needs. From troubleshooting to system maintenance, we ensure your IT infrastructure is secure and efficient.",
     imageSrc: "/images/it-support.jpg",
     imageAlt: "IT Support",
+    useIcon: true,
   },
   {
     title: "Data Analytics",
@@ -38,6 +42,7 @@ export const services = [
       "Our data analytics services help you make sense of complex data sets. We provide in-depth analysis, reporting, and visualization to drive strategic decisions and business growth.",
     imageSrc: "/images/data-analytics.jpg",
     imageAlt: "Data Analytics",
+    useIcon: true,
   },
   {
     title: "Corporate Support",
@@ -46,6 +51,7 @@ export const services = [
       "Our corporate support services offer administrative, financial, and operational assistance to streamline your business processes. Focus on your core activities while we handle the rest.",
     imageSrc: "/images/corporate-support.jpg",
     imageAlt: "Corporate Support",
+    useIcon: true,
   },
 ];
 
