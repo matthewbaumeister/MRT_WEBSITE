@@ -10,6 +10,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsOpen, setIsProductsOpen] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const pathname = usePathname();
 
   useEffect(() => {
@@ -106,16 +107,37 @@ const Header = () => {
             {session && (
               <Link
                 href="/platforms"
-                className={`px-4 py-2 border-2 bg-gradient-to-r from-primary-500 via-primary-600 to-accent-600 hover:from-primary-600 hover:via-accent-600 hover:to-accent-700 text-white transition-all duration-300 font-bold rounded-lg shadow-lg hover:shadow-xl animate-pulse-slow ${
-                  pathname === "/platforms" ? "from-primary-600 via-accent-600 to-accent-700" : ""
-                }`}
+                className="relative px-6 py-3 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setMousePosition({
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                  });
+                }}
                 style={{
-                  border: '2px solid transparent',
-                  backgroundClip: 'padding-box',
-                  animation: pathname === "/platforms" ? 'none' : 'pulse 3s ease-in-out infinite'
+                  background: '#2F2F72', // Brand purple base
                 }}
               >
-                MRT Platforms
+                {/* Gold spotlight that follows mouse */}
+                <span
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: `radial-gradient(circle 100px at ${mousePosition.x}px ${mousePosition.y}px, rgba(212, 175, 55, 0.6), transparent 80%)`,
+                    pointerEvents: 'none',
+                  }}
+                />
+                
+                {/* Subtle pulse overlay */}
+                <span
+                  className={`absolute inset-0 bg-accent-500/20 ${
+                    pathname === "/platforms" ? "" : "animate-pulse-slow"
+                  }`}
+                  style={{ pointerEvents: 'none' }}
+                />
+                
+                {/* Text */}
+                <span className="relative z-10">MRT Platforms</span>
               </Link>
             )}
             
