@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
 import ContactForm from "@/components/ContactForm";
+import Link from "next/link";
 
 export const metadata = {
   title: "Matrix - AI Market Research Platform | Make Ready Consulting",
@@ -49,14 +50,12 @@ export default function MatrixPage() {
               feeds to deliver Army-specific intelligence you can't find anywhere else.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
+              <Link
                 href="/admin/login"
-                variant="primary"
-                size="lg"
-                className="bg-white text-primary-600 hover:bg-primary-600 hover:text-white font-bold transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg bg-white text-primary-600 hover:bg-primary-600 hover:text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Try It Now →
-              </Button>
+              </Link>
               <Button href="#demo" variant="secondary" size="lg">
                 Request Demo
               </Button>
