@@ -27,12 +27,14 @@ async function getUserByEmail(email: string) {
     return {
       id: data.id,
       email: data.email,
-      name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+      name: data.first_name && data.last_name 
+        ? `${data.first_name} ${data.last_name}`.trim()
+        : data.email.split('@')[0], // Use email prefix as fallback
       password: data.password_hash,
       role: data.role,
       twoFactorEnabled: data.two_factor_enabled,
       twoFactorSecret: data.two_factor_secret,
-      isActive: data.is_active,
+      isActive: data.is_active !== undefined ? data.is_active : true, // Default to true if column doesn't exist
     };
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -85,7 +87,9 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check if account is active (email verified)
+        // Only check if is_active exists and is explicitly false
         if (user.isActive === false) {
+          console.log("Login blocked: Account not verified for", credentials.email);
           throw new Error("Please verify your email before logging in. Check your inbox for the verification code.");
         }
 
