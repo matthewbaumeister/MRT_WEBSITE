@@ -35,45 +35,8 @@ export default function LoginPage() {
 
       if (result?.error) {
         // Handle specific error messages
-        if (result.error === "2FA_CODE_SENT") {
-          setShow2FA(true);
-          setError("Verification code sent! Check your email for the 6-digit code.");
-        } else if (result.error === "2FA token required") {
-          setShow2FA(true);
-          setError("Please enter your verification code from email.");
-        } else if (result.error === "Invalid credentials") {
+        if (result.error === "Invalid credentials" || result.error === "CredentialsSignin") {
           setError("Invalid email or password. Please check your credentials and try again.");
-        } else if (result.error === "Invalid or expired verification code") {
-          setError("The verification code is invalid or expired. Please request a new code.");
-        } else if (result.error === "CredentialsSignin") {
-          // Check if this might be a 2FA case (credentials correct but need code)
-          // If not already in 2FA mode, check if user has 2FA enabled
-          if (!show2FA && email && password) {
-            // Try to detect if 2FA is needed by making a check request
-            fetch("/api/auth/check-2fa", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email }),
-            })
-              .then(res => res.json())
-              .then(data => {
-                if (data.requires2FA) {
-                  setShow2FA(true);
-                  setError("Verification code sent to your email. Please enter the 6-digit code below.");
-                  setLoading(false);
-                } else {
-                  setError("Invalid email or password. Please check your credentials.");
-                  setLoading(false);
-                }
-              })
-              .catch(() => {
-                setError("Invalid email or password. Please check your credentials.");
-                setLoading(false);
-              });
-            return; // Wait for the check to complete
-          } else {
-            setError("Invalid email or password. Please check your credentials.");
-          }
         } else if (result.error.includes("verify your email")) {
           // Account exists but not verified
           setError(`${result.error} Click here to resend verification code.`);
@@ -82,11 +45,11 @@ export default function LoginPage() {
         }
         setLoading(false);
         return; // Don't redirect on error
-        } else if (result?.ok) {
-          // Successful login - redirect to callback URL or platforms
-          console.log(`Login successful, redirecting to ${callbackUrl}`);
-          window.location.href = callbackUrl;
-        } else {
+      } else if (result?.ok) {
+        // Successful login - redirect to callback URL or platforms
+        console.log(`Login successful, redirecting to ${callbackUrl}`);
+        window.location.href = callbackUrl;
+      } else {
         setError("An unexpected error occurred. Please try again.");
         setLoading(false);
       }
