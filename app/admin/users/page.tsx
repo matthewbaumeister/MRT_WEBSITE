@@ -357,7 +357,6 @@ export default function UsersManagementPage() {
                               >
                                 <option value="free">Free</option>
                                 <option value="pro">Pro</option>
-                                <option value="enterprise">Enterprise</option>
                               </select>
                             )}
                           </div>

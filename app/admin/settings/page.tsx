@@ -304,7 +304,6 @@ export default function SettingsPage() {
                       >
                         <option value="free">Free - Basic Access</option>
                         <option value="pro">Pro - Premium Features</option>
-                        <option value="enterprise">Enterprise - Full Suite</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
                         Select the subscription tier for this client account
