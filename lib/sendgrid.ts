@@ -152,8 +152,8 @@ This is an automated confirmation email. Please do not reply directly to this me
         <p>Thank you for contacting Make Ready Consulting! We have received your inquiry and assigned it the following ticket number:</p>
         
         <div style="background: linear-gradient(135deg, #6B46C1 0%, #8B5CF6 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-          <h2 style="margin: 0; font-size: 32px; color: white;">Ticket #${ticketNumber}</h2>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">Please reference this number for future correspondence</p>
+          <h2 style="margin: 0; font-size: 32px; color: #FFFFFF !important;">Ticket #${ticketNumber}</h2>
+          <p style="margin: 10px 0 0 0; color: #FFFFFF !important; opacity: 0.9;">Please reference this number for future correspondence</p>
         </div>
         
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
