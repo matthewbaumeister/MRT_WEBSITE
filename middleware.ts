@@ -6,8 +6,8 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    // Allow login and admin/login pages without restriction
-    if (path === "/login" || path === "/admin/login") {
+    // Allow login, signup, and admin/login pages without restriction
+    if (path === "/login" || path === "/signup" || path === "/admin/login") {
       return NextResponse.next();
     }
 
@@ -34,8 +34,8 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
         
-        // Always allow login pages
-        if (path === "/login" || path === "/admin/login") {
+        // Always allow login and signup pages
+        if (path === "/login" || path === "/signup" || path === "/admin/login") {
           return true;
         }
         
@@ -55,6 +55,6 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/employee/:path*", "/platforms/:path*", "/login"],
+  matcher: ["/admin/:path*", "/employee/:path*", "/platforms/:path*", "/login", "/signup"],
 };
 
