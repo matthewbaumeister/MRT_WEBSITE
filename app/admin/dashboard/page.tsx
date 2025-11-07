@@ -89,11 +89,11 @@ export default function AdminDashboard() {
             <Button variant="primary" className="w-full" onClick={() => router.push('/admin/submissions')}>
               View Contact Submissions
             </Button>
-            <Button variant="outline" className="w-full">
-              Manage Content
+            <Button variant="primary" className="w-full" onClick={() => router.push('/admin/users')}>
+              Manage Users
             </Button>
             <Button variant="outline" className="w-full">
-              Configure 2FA
+              Manage Content
             </Button>
             <Button variant="outline" className="w-full">
               View Analytics
