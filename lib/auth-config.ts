@@ -84,6 +84,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Check if account is active (email verified)
+        if (user.isActive === false) {
+          throw new Error("Please verify your email before logging in. Check your inbox for the verification code.");
+        }
+
         // Check 2FA if enabled (Email-based 2FA via SendGrid)
         if (user.twoFactorEnabled) {
           if (!credentials.token) {
