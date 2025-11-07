@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     
     const { data: users, error } = await supabase
       .from("users")
-      .select("id, email, first_name, last_name, role, two_factor_enabled, is_active, last_login, created_at")
+      .select("id, email, first_name, last_name, role, subscription_tier, two_factor_enabled, is_active, last_login, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
