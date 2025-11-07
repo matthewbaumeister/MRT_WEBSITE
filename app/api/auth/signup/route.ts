@@ -49,6 +49,18 @@ export async function POST(request: NextRequest) {
           to: email,
           from: process.env.EMAIL_FROM || "info@make-ready-consulting.com",
           subject: "Verify Your Make Ready Account",
+          text: `
+Hello,
+
+You're trying to access your Make Ready account. Please verify your email using the code below:
+
+Your verification code is: ${verificationCode}
+
+This code expires in 10 minutes.
+
+Best regards,
+Make Ready Team
+          `,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #2F2F72;">Verify Your Email Address</h2>
