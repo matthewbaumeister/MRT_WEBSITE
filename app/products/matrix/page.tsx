@@ -38,7 +38,10 @@ export default function MatrixPage() {
       <section className="pt-32 pb-20 bg-gradient-to-br from-accent-900 via-accent-700 to-accent-600 text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">Matrix</h1>
+            <h1 className="text-5xl md:text-7xl font-bold mb-4">MATRIX</h1>
+            <p className="text-lg md:text-xl text-accent-200 mb-6 font-medium tracking-wide">
+              MAKE‑READY MATRIX — MAKE‑READY Acquisition & Technology Readiness Intelligence eXchange
+            </p>
             <p className="text-xl md:text-2xl text-accent-100 mb-8">
               AI-Powered Market Research & Intelligence
             </p>
