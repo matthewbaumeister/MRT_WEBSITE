@@ -60,9 +60,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-dark-900">
-          <div className="absolute inset-0 bg-gradient-to-r from-dark-900/90 to-dark-900/70" />
-          {/* Background image placeholder - add actual image */}
-          <div className="absolute inset-0 bg-[url('/images/hero-soldier.jpg')] bg-cover bg-center opacity-30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-dark-900/95 to-dark-900/60" />
+          <Image
+            src="/images/hero-soldier.jpg"
+            alt="Military Service"
+            fill
+            className="object-cover"
+            priority
+          />
         </div>
         <div className="relative z-10 text-center px-4">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-8">

@@ -12,7 +12,7 @@ export default function AboutPage() {
     {
       name: "Bryan Snow",
       title: "CEO",
-      image: "/images/team/bryan-snow.jpg",
+      image: "/images/team/bryan-snow.avif",
       bio: "With over 15 years of experience in the DoD and IC intelligence community, Bryan excels in aligning best-in-class capabilities with the USG's toughest mission needs. Specializing in technical program management, capture management, and proposal development, he brings expertise in data science, geospatial technologies, and AI to help companies win contracts in the DoD and IC. As the founder of Make Ready, Bryan has led successful capture efforts for multiple clients, delivering results in a highly competitive market.",
       branch: "Proud USMC Veteran.",
       education: [
@@ -23,7 +23,7 @@ export default function AboutPage() {
     {
       name: "Matt Baumeister",
       title: "Director of Growth",
-      image: "/images/team/matt-baumeister.jpg",
+      image: "/images/team/matt-baumeister.avif",
       bio: "Matt is a AI/ML and geospatial veteran with advanced doctoral studies in business and AI. He brings a wealth of AI/ML product experience and leverages AI and data-driven strategies to drive growth, operational efficiency, and strategic partnerships.",
       branch: "Proud US Army Veteran.",
       education: [
@@ -35,7 +35,7 @@ export default function AboutPage() {
     {
       name: "Adam Ashurst",
       title: "Director of Strategy",
-      image: "/images/team/adam-ashurst.jpg",
+      image: "/images/team/adam-ashurst.avif",
       bio: "Adam is a Defense and Intelligence Community industry expert with over 25 years of experience. Specializing in strategic planning, program management and customer relations, he brings expertise in requirements generations, DoD acquisition and geospatial-intelligence. Over his career, he has led several Departmental efforts leading to a major system acquisition decision satisfying critical mission needs.",
       branch: "Proud US Army Veteran.",
       education: [
@@ -46,7 +46,7 @@ export default function AboutPage() {
     {
       name: "Bryan Minor",
       title: "Lead AI/ML Strategist",
-      image: "/images/team/bryan-minor.jpg",
+      image: "/images/team/bryan-minor.avif",
       bio: "Bryan is an industry leading AI startup entrepreneur with extensive experience in developing cutting-edge AI solutions and leading technical teams. Over his career, he has founded several startups and collaborated with both commercial and government clients, driving AI innovation across industries.",
       branch: "Proud USAF Veteran.",
       education: [
@@ -106,19 +106,12 @@ export default function AboutPage() {
               <Card key={index} className="overflow-hidden">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
                   <div className="relative h-80 lg:h-auto">
-                    {/* Placeholder for team member photo */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center">
-                      <div className="text-white text-center">
-                        <div className="w-32 h-32 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                          <span className="text-4xl font-bold">
-                            {member.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div className="lg:col-span-2 p-8">
                     <h3 className="text-3xl font-bold text-gray-900 mb-2">
