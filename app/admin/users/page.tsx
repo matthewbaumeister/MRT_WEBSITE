@@ -11,6 +11,7 @@ interface User {
   first_name: string;
   last_name: string;
   role: "admin" | "employee" | "client";
+  subscription_tier?: "free" | "pro" | "enterprise" | "none";
   two_factor_enabled: boolean;
   is_active: boolean;
   last_login: string | null;
