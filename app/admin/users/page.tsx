@@ -75,8 +75,8 @@ export default function UsersManagementPage() {
         throw new Error(error.error || "Failed to update role");
       }
 
+      await fetchUsers(); // Wait for refresh
       alert("User role updated successfully! A notification email has been sent.");
-      fetchUsers();
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -102,8 +102,8 @@ export default function UsersManagementPage() {
         throw new Error(error.error || "Failed to update status");
       }
 
-      fetchUsers();
-      alert(`User ${currentStatus ? "deactivated" : "activated"} successfully!`);
+      await fetchUsers(); // Wait for refresh
+      alert(`User ${currentStatus ? "deactivated" : "activated"} successfully! A notification email has been sent.`);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -129,8 +129,8 @@ export default function UsersManagementPage() {
         throw new Error(error.error || "Failed to update 2FA");
       }
 
-      fetchUsers();
-      alert(`2FA ${currentStatus ? "disabled" : "enabled"} successfully!`);
+      await fetchUsers(); // Wait for refresh
+      alert(`2FA ${currentStatus ? "disabled" : "enabled"} successfully! A notification email has been sent.`);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
