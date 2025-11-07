@@ -27,23 +27,34 @@ export default function LoginPage() {
         redirect: false,
       });
 
+      console.log("Login result:", result);
+
       if (result?.error) {
+        // Handle specific error messages
         if (result.error === "2FA_CODE_SENT") {
           setShow2FA(true);
-          setError("A verification code has been sent to your email. Please check your inbox.");
+          setError("✓ Verification code sent! Check your email for the 6-digit code.");
         } else if (result.error === "2FA token required") {
           setShow2FA(true);
-          setError("Please enter your verification code");
+          setError("Please enter your verification code from email.");
+        } else if (result.error === "Invalid credentials") {
+          setError("Invalid email or password. Please check your credentials and try again.");
+        } else if (result.error === "Invalid or expired verification code") {
+          setError("The verification code is invalid or expired. Please request a new code.");
+        } else if (result.error === "CredentialsSignin") {
+          setError("Invalid email or password. Please check your credentials.");
         } else {
-          setError(result.error);
+          setError(`Login failed: ${result.error}`);
         }
       } else if (result?.ok) {
-        // Successful login - NextAuth will handle redirect based on role
-        router.push("/platforms");
-        router.refresh();
+        // Successful login - redirect to platforms
+        window.location.href = "/platforms";
+      } else {
+        setError("An unexpected error occurred. Please try again.");
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -130,8 +141,19 @@ export default function LoginPage() {
           )}
 
           {error && (
-            <div className={`${error.includes("verification code") ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-red-50 border-red-200 text-red-600"} border px-4 py-3 rounded-lg`}>
-              {error}
+            <div className={`${error.includes("✓") || error.includes("Check your email") ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-red-50 border-red-200 text-red-700"} border px-4 py-3 rounded-lg text-sm`}>
+              <div className="flex items-start">
+                {error.includes("✓") ? (
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
