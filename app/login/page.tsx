@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 
 export default function LoginPage() {
@@ -168,8 +169,13 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Don't have an account? Contact your administrator.</p>
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-primary-600 hover:text-primary-700 font-semibold">
+              Sign Up
+            </Link>
+          </p>
         </div>
       </div>
     </div>
