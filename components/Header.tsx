@@ -20,6 +20,9 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Get session for conditional navigation
+  const { data: session } = require("next-auth/react").useSession();
+
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "Services", href: "/services" },
@@ -34,6 +37,14 @@ const Header = () => {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
+
+  // Add MRT Platforms link if logged in
+  if (session) {
+    navLinks.splice(navLinks.length - 1, 0, {
+      name: "MRT Platforms",
+      href: "/platforms",
+    });
+  }
 
   return (
     <header
