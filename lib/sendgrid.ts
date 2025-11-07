@@ -189,3 +189,95 @@ This is an automated confirmation email. Please do not reply directly to this me
   return await sendEmail(emailContent);
 }
 
+export async function sendRoleChangeNotificationEmail({
+  email,
+  name,
+  newRole,
+  changedBy,
+}: {
+  email: string;
+  name: string;
+  newRole: string;
+  changedBy: string;
+}) {
+  const roleDescriptions: Record<string, string> = {
+    admin: "Full administrative access to all systems, user management, and settings",
+    employee: "Access to Matrix and Pathfinder tools, company resources, and collaboration features",
+    client: "Limited access to specific projects and reports assigned to you",
+  };
+
+  const emailContent = {
+    to: email,
+    from: process.env.EMAIL_FROM || "info@make-ready-consulting.com",
+    subject: `Your Make Ready Account Role Has Been Updated`,
+    text: `
+Hello ${name},
+
+Your account role has been updated by ${changedBy}.
+
+New Role: ${newRole.toUpperCase()}
+
+${roleDescriptions[newRole] || "Your access level has been changed."}
+
+To access your portal, please login at:
+https://makereadytech.com
+
+If you believe this change was made in error, please contact us immediately at info@make-ready-consulting.com
+
+Best regards,
+Make Ready Consulting Team
+    `,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2F2F72; margin: 0; font-weight: 600;">MAKE READY</h1>
+          <p style="color: #666; margin: 5px 0;">Account Update Notification</p>
+        </div>
+        
+        <h2 style="color: #2F2F72;">Your Account Role Has Been Updated</h2>
+        
+        <p>Hello ${name},</p>
+        
+        <p>Your Make Ready account role has been updated by <strong>${changedBy}</strong>.</p>
+        
+        <div style="background: linear-gradient(-138deg, #D4AF37 0%, #F4D479 50%, #D4AF37 100%); padding: 20px; border-radius: 12px; text-align: center; margin: 30px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <p style="margin: 0 0 10px 0; color: #2F2F72; font-size: 14px; font-weight: bold;">NEW ROLE</p>
+          <h1 style="margin: 0; font-size: 36px; color: #2F2F72 !important; font-weight: bold; text-transform: uppercase;">
+            ${newRole}
+          </h1>
+        </div>
+        
+        <div style="background-color: #F5F5FF; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #2F2F72; margin-top: 0;">Your New Access Level:</h3>
+          <p style="color: #666; margin: 0;">
+            ${roleDescriptions[newRole] || "Your access level has been changed."}
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://makereadytech.com/admin/login" style="display: inline-block; background-color: #2F2F72; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Login to Your Portal
+          </a>
+        </div>
+        
+        <div style="background-color: #FFF9E0; border-left: 4px solid #D4AF37; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            <strong>⚠️ Security Notice:</strong> If you believe this change was made in error, please contact us immediately at info@make-ready-consulting.com
+          </p>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+        
+        <p style="font-size: 12px; color: #666; text-align: center;">
+          This is an automated notification from Make Ready Consulting.<br>
+          For security reasons, do not reply to this email.<br>
+          <br>
+          Contact us: info@make-ready-consulting.com
+        </p>
+      </div>
+    `,
+  };
+
+  return await sendEmail(emailContent);
+}
+
