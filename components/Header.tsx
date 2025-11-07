@@ -49,23 +49,21 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-dark-900 shadow-lg py-4" : "bg-dark-900/95 py-6"
+        isScrolled ? "bg-dark-900 shadow-lg py-3" : "bg-dark-900/95 py-4"
       }`}
     >
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="relative h-14 w-auto">
-              <Image
-                src="/images/logo.png"
-                alt="Make Ready Logo"
-                width={210}
-                height={60}
-                className="object-contain"
-                priority
-              />
-            </div>
+          <Link href="/" className="flex items-center h-full">
+            <Image
+              src="/images/logo.png"
+              alt="Make Ready Logo"
+              width={210}
+              height={60}
+              className="object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}
