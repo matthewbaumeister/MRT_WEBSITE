@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { supabase, type ContactSubmission } from "@/lib/supabase";
+import { getSupabaseClient, type ContactSubmission } from "@/lib/supabase";
 import Button from "@/components/ui/Button";
 
 export default function SubmissionsPage() {
@@ -26,6 +26,7 @@ export default function SubmissionsPage() {
   async function fetchSubmissions() {
     setLoading(true);
     try {
+      const supabase = getSupabaseClient();
       let query = supabase
         .from("contact_submissions")
         .select("*")
@@ -48,6 +49,7 @@ export default function SubmissionsPage() {
 
   async function updateStatus(id: string, newStatus: "open" | "in_progress" | "closed") {
     try {
+      const supabase = getSupabaseClient();
       const { error } = await supabase
         .from("contact_submissions")
         .update({ status: newStatus })

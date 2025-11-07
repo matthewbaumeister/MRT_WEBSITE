@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail, sendCustomerConfirmationEmail } from "@/lib/sendgrid";
-import { supabase, generateTicketNumber } from "@/lib/supabase";
+import { getSupabaseClient, generateTicketNumber } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     console.log("Generated ticket number:", ticketNumber);
 
     // Save to Supabase
+    const supabase = getSupabaseClient();
     const { data, error: dbError } = await supabase
       .from("contact_submissions")
       .insert([
