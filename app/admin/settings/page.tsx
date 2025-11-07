@@ -12,6 +12,7 @@ interface User {
   first_name: string;
   last_name: string;
   role: "admin" | "employee" | "client";
+  subscription_tier?: "free" | "pro" | "enterprise" | "none";
   two_factor_enabled: boolean;
   is_active: boolean;
 }
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedTier, setSelectedTier] = useState<string>("free");
   const [processing, setProcessing] = useState(false);
   const [userSearch, setUserSearch] = useState<string>("");
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -68,27 +70,48 @@ export default function SettingsPage() {
     const user = users.find((u) => u.id === selectedUser);
     if (!user) return;
 
-    if (!confirm(`Promote ${user.first_name} ${user.last_name} to ${selectedRole.toUpperCase()}?\n\nThey will receive an email notification.`)) {
+    const confirmMessage = selectedRole === "client" 
+      ? `Promote ${user.first_name} ${user.last_name} to ${selectedRole.toUpperCase()} (${selectedTier.toUpperCase()} tier)?\n\nThey will receive an email notification.`
+      : `Promote ${user.first_name} ${user.last_name} to ${selectedRole.toUpperCase()}?\n\nThey will receive an email notification.`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     setProcessing(true);
     try {
-      const response = await fetch("/api/users/update-role", {
+      // Update role first
+      const roleResponse = await fetch("/api/users/update-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: selectedUser, newRole: selectedRole }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (!roleResponse.ok) {
+        const error = await roleResponse.json();
         throw new Error(error.error || "Failed to update role");
       }
 
-      alert(`✓ User successfully promoted to ${selectedRole}!\n\nA notification email has been sent.`);
+      // If client role, update subscription tier
+      if (selectedRole === "client") {
+        const tierResponse = await fetch("/api/users/update-tier", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: selectedUser, newTier: selectedTier }),
+        });
+
+        if (!tierResponse.ok) {
+          const error = await tierResponse.json();
+          throw new Error(error.error || "Failed to update subscription tier");
+        }
+      }
+
+      await fetchUsers();
+      alert(`✓ User successfully promoted to ${selectedRole}${selectedRole === "client" ? ` (${selectedTier} tier)` : ""}!\n\nNotification emails have been sent.`);
       setSelectedUser("");
       setSelectedRole("");
-      fetchUsers();
+      setSelectedTier("free");
+      setUserSearch("");
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -267,6 +290,27 @@ export default function SettingsPage() {
                       <option value="client">Client - Limited Access</option>
                     </select>
                   </div>
+
+                  {selectedRole === "client" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Subscription Tier
+                      </label>
+                      <select
+                        value={selectedTier}
+                        onChange={(e) => setSelectedTier(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        disabled={processing}
+                      >
+                        <option value="free">Free - Basic Access</option>
+                        <option value="pro">Pro - Premium Features</option>
+                        <option value="enterprise">Enterprise - Full Suite</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select the subscription tier for this client account
+                      </p>
+                    </div>
+                  )}
 
                   <Button
                     onClick={promoteUser}
