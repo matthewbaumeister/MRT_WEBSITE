@@ -49,7 +49,34 @@ export default function LoginPage() {
         } else if (result.error === "Invalid or expired verification code") {
           setError("The verification code is invalid or expired. Please request a new code.");
         } else if (result.error === "CredentialsSignin") {
-          setError("Invalid email or password. Please check your credentials.");
+          // Check if this might be a 2FA case (credentials correct but need code)
+          // If not already in 2FA mode, check if user has 2FA enabled
+          if (!show2FA && email && password) {
+            // Try to detect if 2FA is needed by making a check request
+            fetch("/api/auth/check-2fa", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            })
+              .then(res => res.json())
+              .then(data => {
+                if (data.requires2FA) {
+                  setShow2FA(true);
+                  setError("✓ Verification code sent to your email. Please enter the 6-digit code below.");
+                  setLoading(false);
+                } else {
+                  setError("Invalid email or password. Please check your credentials.");
+                  setLoading(false);
+                }
+              })
+              .catch(() => {
+                setError("Invalid email or password. Please check your credentials.");
+                setLoading(false);
+              });
+            return; // Wait for the check to complete
+          } else {
+            setError("Invalid email or password. Please check your credentials.");
+          }
         } else if (result.error.includes("verify your email")) {
           // Account exists but not verified
           setError(`${result.error} Click here to resend verification code.`);
