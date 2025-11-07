@@ -56,12 +56,12 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="relative h-10 w-auto">
+            <div className="relative h-14 w-auto">
               <Image
                 src="/images/logo.png"
                 alt="Make Ready Logo"
-                width={140}
-                height={40}
+                width={210}
+                height={60}
                 className="object-contain"
                 priority
               />

@@ -18,7 +18,6 @@ async function getUserByEmail(email: string) {
       .from("users")
       .select("*")
       .eq("email", email)
-      .eq("is_active", true)
       .single();
 
     if (error || !data) {
@@ -28,11 +27,12 @@ async function getUserByEmail(email: string) {
     return {
       id: data.id,
       email: data.email,
-      name: `${data.first_name} ${data.last_name}`,
+      name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
       password: data.password_hash,
       role: data.role,
       twoFactorEnabled: data.two_factor_enabled,
       twoFactorSecret: data.two_factor_secret,
+      isActive: data.is_active,
     };
   } catch (error) {
     console.error("Error fetching user:", error);
