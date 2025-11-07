@@ -65,7 +65,6 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        token: { label: "2FA Token", type: "text", optional: true },
       },
       async authorize(credentials) {
         try {
@@ -114,32 +113,6 @@ export const authOptions: NextAuthOptions = {
           if (user.isActive === false) {
             console.log("Login blocked: Account not verified for", credentials.email);
             return null;
-          }
-
-          // Check 2FA if enabled (Email-based 2FA via SendGrid)
-          if (user.twoFactorEnabled) {
-            if (!credentials.token) {
-              // Generate and send 2FA code via email
-              const code = generateTwoFactorCode();
-              await storeTwoFactorCode(user.email, code);
-              
-              await sendTwoFactorEmail({
-                email: user.email,
-                name: user.name,
-                code,
-              });
-              
-              console.log("2FA code sent");
-              return null;
-            }
-
-            // Verify the code entered by user
-            const verified = await verifyTwoFactorCode(user.email, credentials.token);
-            
-            if (!verified) {
-              console.log("2FA verification failed");
-              return null;
-            }
           }
 
           // Update last login time
