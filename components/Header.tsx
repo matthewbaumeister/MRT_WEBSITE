@@ -100,6 +100,7 @@ const Header = () => {
                 </Link>
               )
             )}
+            <UserMenu />
           </div>
 
           {/* Mobile Menu Button */}
