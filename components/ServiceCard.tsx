@@ -29,17 +29,17 @@ const ServiceCard = ({
   const getIcon = () => {
     switch (title) {
       case "Program Management":
-        return <ProgramManagementIcon className="w-20 h-20" />;
+        return <ProgramManagementIcon className="w-32 h-32" />;
       case "Artificial Intelligence":
-        return <AIIcon className="w-20 h-20" />;
+        return <AIIcon className="w-32 h-32" />;
       case "Geospatial Science":
-        return <GeospatialIcon className="w-20 h-20" />;
+        return <GeospatialIcon className="w-32 h-32" />;
       case "IT Support":
-        return <ITSupportIcon className="w-20 h-20" />;
+        return <ITSupportIcon className="w-32 h-32" />;
       case "Data Analytics":
-        return <DataAnalyticsIcon className="w-20 h-20" />;
+        return <DataAnalyticsIcon className="w-32 h-32" />;
       case "Corporate Support":
-        return <CorporateSupportIcon className="w-20 h-20" />;
+        return <CorporateSupportIcon className="w-32 h-32" />;
       default:
         return null;
     }
