@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 to-dark-900">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 to-dark-900 pt-20">
       <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
