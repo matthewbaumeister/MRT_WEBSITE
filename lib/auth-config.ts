@@ -165,7 +165,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  debug: true, // Enable debug mode to see detailed logs
+  debug: process.env.NODE_ENV === "development", // Only debug in development
   callbacks: {
     async jwt({ token, user }) {
       try {
