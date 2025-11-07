@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseServiceClient } from "@/lib/supabase";
 import { verifyTwoFactorCode } from "@/lib/two-factor";
 
 export async function POST(request: NextRequest) {
@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Activate the user account
-    const supabase = getSupabaseClient();
+    // Activate the user account (use service role to bypass RLS)
+    const supabase = getSupabaseServiceClient();
     const { error: updateError } = await supabase
       .from("users")
       .update({ is_active: true })

@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { User } from "@/types/auth";
-import { getSupabaseClient } from "./supabase";
+import { getSupabaseServiceClient } from "./supabase";
 import {
   generateTwoFactorCode,
   sendTwoFactorEmail,
@@ -13,7 +13,8 @@ import {
 // Get user from Supabase database
 async function getUserByEmail(email: string) {
   try {
-    const supabase = getSupabaseClient();
+    // Use service role to bypass RLS for authentication
+    const supabase = getSupabaseServiceClient();
     const { data, error } = await supabase
       .from("users")
       .select("*")
@@ -45,7 +46,8 @@ async function getUserByEmail(email: string) {
 // Update last login time
 async function updateLastLogin(userId: string) {
   try {
-    const supabase = getSupabaseClient();
+    // Use service role to bypass RLS
+    const supabase = getSupabaseServiceClient();
     await supabase
       .from("users")
       .update({ last_login: new Date().toISOString() })

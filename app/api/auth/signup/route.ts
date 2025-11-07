@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseServiceClient } from "@/lib/supabase";
 import { generateTwoFactorCode, storeTwoFactorCode } from "@/lib/two-factor";
 import { sendEmail } from "@/lib/sendgrid";
 
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabaseClient();
+    // Use service role client to bypass RLS for user creation
+    const supabase = getSupabaseServiceClient();
 
     // Check if user already exists
     const { data: existingUser } = await supabase
