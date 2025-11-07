@@ -40,7 +40,7 @@ export default function LoginPage() {
         redirect: false,
       });
       
-      setError("✓ New verification code sent! Check your email.");
+      setError("New verification code sent! Check your email.");
     } catch (err) {
       setError("Failed to resend code. Please try again.");
     }
@@ -69,7 +69,7 @@ export default function LoginPage() {
         // Handle specific error messages
         if (result.error === "2FA_CODE_SENT") {
           setShow2FA(true);
-          setError("✓ Verification code sent! Check your email for the 6-digit code.");
+          setError("Verification code sent! Check your email for the 6-digit code.");
         } else if (result.error === "2FA token required") {
           setShow2FA(true);
           setError("Please enter your verification code from email.");
@@ -91,7 +91,7 @@ export default function LoginPage() {
               .then(data => {
                 if (data.requires2FA) {
                   setShow2FA(true);
-                  setError("✓ Verification code sent to your email. Please enter the 6-digit code below.");
+                  setError("Verification code sent to your email. Please enter the 6-digit code below.");
                   setLoading(false);
                 } else {
                   setError("Invalid email or password. Please check your credentials.");
@@ -229,9 +229,9 @@ export default function LoginPage() {
           )}
 
           {error && (
-            <div className={`${error.includes("✓") || error.includes("Check your email") ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-red-50 border-red-200 text-red-700"} border px-4 py-3 rounded-lg text-sm`}>
+            <div className={`${error.includes("sent") || error.includes("Check your email") ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-red-50 border-red-200 text-red-700"} border px-4 py-3 rounded-lg text-sm`}>
               <div className="flex items-start">
-                {error.includes("✓") ? (
+                {(error.includes("sent") || error.includes("Check your email")) ? (
                   <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
