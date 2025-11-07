@@ -102,27 +102,6 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Quick Links
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="w-full">
-              View Contact Submissions
-            </Button>
-            <Button variant="outline" className="w-full">
-              Company Directory
-            </Button>
-            <Button variant="outline" className="w-full">
-              Submit Time Off Request
-            </Button>
-            <Button variant="outline" className="w-full">
-              View Announcements
-            </Button>
-          </div>
-        </div>
-
         {/* Recent Activity */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">
