@@ -99,6 +99,24 @@ export const UserMenu = () => {
           >
             View Submissions
           </Link>
+          {session.user.role === "admin" && (
+            <>
+              <Link
+                href="/admin/users"
+                className="block px-4 py-2 text-white hover:bg-primary-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Manage Users
+              </Link>
+              <Link
+                href="/admin/settings"
+                className="block px-4 py-2 text-white hover:bg-primary-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Settings
+              </Link>
+            </>
+          )}
           <button
             onClick={() => {
               setIsOpen(false);
