@@ -28,13 +28,17 @@ export default function AdminLoginPage() {
       });
 
       if (result?.error) {
-        if (result.error === "2FA token required") {
+        if (result.error === "2FA_CODE_SENT") {
           setShow2FA(true);
-          setError("Please enter your 2FA code");
+          setError("A verification code has been sent to your email. Please check your inbox.");
+        } else if (result.error === "2FA token required") {
+          setShow2FA(true);
+          setError("Please enter your verification code");
         } else {
           setError(result.error);
         }
       } else if (result?.ok) {
+        // Redirect based on role (will be handled by session)
         router.push("/admin/dashboard");
         router.refresh();
       }
@@ -98,21 +102,30 @@ export default function AdminLoginPage() {
                 htmlFor="token"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                2FA Code
+                Verification Code
               </label>
               <input
                 id="token"
                 type="text"
                 value={token}
-                onChange={(e) => setToken(e.target.value)}
+                onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-center text-2xl tracking-widest"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-center text-2xl tracking-widest font-mono"
                 placeholder="000000"
                 maxLength={6}
+                autoComplete="off"
               />
-              <p className="text-sm text-gray-500 mt-2">
-                Enter the 6-digit code from your authenticator app
-              </p>
+              <div className="mt-2 p-3 bg-accent-50 rounded-lg">
+                <p className="text-sm text-gray-700 flex items-center">
+                  <svg className="w-5 h-5 text-accent-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Check your email for the 6-digit verification code
+                </p>
+                <p className="text-xs text-gray-500 mt-1 ml-7">
+                  Code expires in 10 minutes
+                </p>
+              </div>
             </div>
           )}
 

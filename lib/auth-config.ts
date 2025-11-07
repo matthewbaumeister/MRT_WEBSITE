@@ -3,6 +3,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { User } from "@/types/auth";
 import { getSupabaseClient } from "./supabase";
+import {
+  generateTwoFactorCode,
+  sendTwoFactorEmail,
+  storeTwoFactorCode,
+  verifyTwoFactorCode,
+} from "./two-factor";
 
 // Get user from Supabase database
 async function getUserByEmail(email: string) {
@@ -78,22 +84,27 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // Check 2FA if enabled
-        if (user.twoFactorEnabled && user.twoFactorSecret) {
+        // Check 2FA if enabled (Email-based 2FA via SendGrid)
+        if (user.twoFactorEnabled) {
           if (!credentials.token) {
-            throw new Error("2FA token required");
+            // Generate and send 2FA code via email
+            const code = generateTwoFactorCode();
+            storeTwoFactorCode(user.email, code);
+            
+            await sendTwoFactorEmail({
+              email: user.email,
+              name: user.name,
+              code,
+            });
+            
+            throw new Error("2FA_CODE_SENT");
           }
 
-          const speakeasy = require("speakeasy");
-          const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
-            encoding: "base32",
-            token: credentials.token,
-            window: 2,
-          });
-
+          // Verify the code entered by user
+          const verified = verifyTwoFactorCode(user.email, credentials.token);
+          
           if (!verified) {
-            throw new Error("Invalid 2FA token");
+            throw new Error("Invalid or expired verification code");
           }
         }
 
