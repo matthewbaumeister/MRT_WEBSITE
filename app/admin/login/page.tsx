@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
@@ -38,9 +40,8 @@ export default function AdminLoginPage() {
           setError(result.error);
         }
       } else if (result?.ok) {
-        // Redirect based on role (will be handled by session)
-        router.push("/admin/dashboard");
-        router.refresh();
+        // Redirect to callback URL or dashboard
+        window.location.href = callbackUrl;
       }
     } catch (err) {
       setError("An error occurred. Please try again.");

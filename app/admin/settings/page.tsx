@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/admin/login");
+      router.push(`/admin/login?callbackUrl=${encodeURIComponent("/admin/settings")}`);
     }
     if (session && session.user.role !== "admin") {
       router.push("/admin/dashboard");
