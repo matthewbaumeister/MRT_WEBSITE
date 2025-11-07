@@ -53,7 +53,7 @@ export default function MatrixPage() {
                 href="/admin/login"
                 variant="primary"
                 size="lg"
-                className="bg-white text-accent-600 hover:bg-gray-100 font-bold"
+                className="bg-white text-primary-600 hover:bg-primary-600 hover:text-white font-bold transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Try It Now →
               </Button>
@@ -64,7 +64,7 @@ export default function MatrixPage() {
                 href="/contact"
                 variant="outline"
                 size="lg"
-                className="border-white text-white hover:bg-white hover:text-accent-600"
+                className="border-2 border-white text-white hover:bg-white hover:text-accent-600 font-semibold"
               >
                 Contact Sales
               </Button>
