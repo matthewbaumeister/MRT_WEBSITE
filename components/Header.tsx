@@ -44,12 +44,15 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="relative w-40 h-12">
-              {/* Placeholder for logo - replace with actual logo */}
-              <div className="text-white font-bold text-xl">
-                <span className="text-primary-400">MAKE</span>{" "}
-                <span className="text-white">READY</span>
-              </div>
+            <div className="relative h-12 w-auto">
+              <Image
+                src="/images/logo.png"
+                alt="Make Ready Logo"
+                width={160}
+                height={48}
+                className="object-contain"
+                priority
+              />
             </div>
           </Link>
 

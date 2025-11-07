@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const Footer = () => {
   return (
@@ -8,10 +9,13 @@ const Footer = () => {
           {/* Logo and Contact */}
           <div>
             <div className="mb-4">
-              <div className="text-2xl font-bold">
-                <span className="text-primary-400">MAKE</span>{" "}
-                <span className="text-white">READY</span>
-              </div>
+              <Image
+                src="/images/logo.png"
+                alt="Make Ready Logo"
+                width={140}
+                height={42}
+                className="object-contain"
+              />
             </div>
             <div className="space-y-2 text-gray-300">
               <p>
