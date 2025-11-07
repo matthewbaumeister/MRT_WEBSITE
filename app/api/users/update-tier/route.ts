@@ -95,13 +95,20 @@ Make Ready Team
           
           <p>Your Make Ready subscription tier has been updated to:</p>
           
-          <div style="text-align: center; margin: 30px 0;">
-            <div style="background: linear-gradient(-138deg, #2F2F72 0%, #6464AA 100%); 
-                        color: #FFFFFF !important; padding: 20px; border-radius: 8px; display: inline-block;">
-              <h3 style="margin: 0; font-size: 24px; font-weight: bold; color: #FFFFFF !important;">${tierName.toUpperCase()}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9; color: #FFFFFF !important;">Subscription Tier</p>
-            </div>
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+            <tr>
+              <td align="center">
+                <table cellpadding="0" cellspacing="0" border="0" style="background: #2F2F72; border-radius: 8px;">
+                  <tr>
+                    <td style="padding: 20px; text-align: center;">
+                      <h3 style="margin: 0; font-size: 24px; font-weight: bold; color: #FFFFFF; font-family: Arial, sans-serif;">${tierName.toUpperCase()}</h3>
+                      <p style="margin: 5px 0 0 0; font-size: 14px; color: #FFFFFF; font-family: Arial, sans-serif;">Subscription Tier</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
           
           ${newTier === "pro" ? `
           <div style="background-color: #F0F4FF; border-left: 4px solid #D4AF37; padding: 15px; margin: 20px 0;">
@@ -125,14 +132,22 @@ Make Ready Team
           </div>
           ` : ''}
           
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXTAUTH_URL}/platforms" 
-               style="display: inline-block; background: linear-gradient(-138deg, #2F2F72 0%, #6464AA 100%); 
-                      color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
-                      font-weight: bold; font-size: 16px;">
-              <span style="color: #FFFFFF !important;">Access MRT Platforms</span>
-            </a>
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+            <tr>
+              <td align="center">
+                <table cellpadding="0" cellspacing="0" border="0" style="background: #2F2F72; border-radius: 8px;">
+                  <tr>
+                    <td style="padding: 14px 32px; text-align: center;">
+                      <a href="${process.env.NEXTAUTH_URL}/platforms" 
+                         style="color: #FFFFFF; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, sans-serif; display: block;">
+                        Access MRT Platforms
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
           
           <p style="color: #666;">If you have questions about your subscription, contact us at info@make-ready-consulting.com</p>
           
