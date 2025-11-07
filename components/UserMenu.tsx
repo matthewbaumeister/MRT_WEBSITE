@@ -2,10 +2,12 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
 export const UserMenu = () => {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +29,7 @@ export const UserMenu = () => {
   if (!session) {
     return (
       <Link
-        href="/login"
+        href={`/login?callbackUrl=${encodeURIComponent(pathname)}`}
         className="text-white hover:text-accent-400 transition-colors duration-200 font-medium"
       >
         Login
