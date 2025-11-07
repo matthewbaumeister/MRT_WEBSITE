@@ -1,12 +1,9 @@
-"use client";
-
-import { SessionProvider } from "next-auth/react";
+import { Suspense } from "react";
 
 export default function LoginLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>;
 }
-

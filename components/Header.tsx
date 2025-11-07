@@ -106,9 +106,14 @@ const Header = () => {
             {session && (
               <Link
                 href="/platforms"
-                className={`px-4 py-2 border-2 border-primary-500 text-white hover:bg-primary-600 hover:border-primary-600 transition-all duration-200 font-bold rounded-lg ${
-                  pathname === "/platforms" ? "bg-primary-600 border-primary-600" : ""
+                className={`px-4 py-2 border-2 bg-gradient-to-r from-primary-500 via-primary-600 to-accent-600 hover:from-primary-600 hover:via-accent-600 hover:to-accent-700 text-white transition-all duration-300 font-bold rounded-lg shadow-lg hover:shadow-xl animate-pulse-slow ${
+                  pathname === "/platforms" ? "from-primary-600 via-accent-600 to-accent-700" : ""
                 }`}
+                style={{
+                  border: '2px solid transparent',
+                  backgroundClip: 'padding-box',
+                  animation: pathname === "/platforms" ? 'none' : 'pulse 3s ease-in-out infinite'
+                }}
               >
                 MRT Platforms
               </Link>
