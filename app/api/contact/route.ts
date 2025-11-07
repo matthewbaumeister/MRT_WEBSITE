@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendContactFormEmail } from "@/lib/sendgrid";
+import { sendContactFormEmail, sendCustomerConfirmationEmail } from "@/lib/sendgrid";
+import { supabase, generateTicketNumber } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,41 +28,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if SendGrid API key is configured
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error("SENDGRID_API_KEY not configured");
-      return NextResponse.json(
-        { error: "Email service not configured. Please contact us directly at info@make-ready-consulting.com" },
-        { status: 500 }
-      );
+    // Generate ticket number
+    const ticketNumber = generateTicketNumber();
+    console.log("Generated ticket number:", ticketNumber);
+
+    // Save to Supabase
+    const { data, error: dbError } = await supabase
+      .from("contact_submissions")
+      .insert([
+        {
+          ticket_number: ticketNumber,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          subject: subject,
+          message: message,
+          status: "open",
+        },
+      ])
+      .select();
+
+    if (dbError) {
+      console.error("Database error:", dbError);
+      throw new Error("Failed to save submission");
     }
 
-    console.log("Attempting to send email via SendGrid...");
+    console.log("Saved to database successfully");
 
-    // Send email via SendGrid
-    const result = await sendContactFormEmail({
+    // Send email to company
+    const companyEmailResult = await sendContactFormEmail({
       firstName,
       lastName,
       email,
       subject,
       message,
+      ticketNumber,
     });
 
-    if (!result.success) {
-      console.error("SendGrid error:", result.error);
-      throw new Error(result.error || "Failed to send email");
+    if (!companyEmailResult.success) {
+      console.error("Failed to send company email:", companyEmailResult.error);
     }
 
-    console.log("Email sent successfully!");
+    // Send confirmation email to customer
+    const customerEmailResult = await sendCustomerConfirmationEmail({
+      firstName,
+      lastName,
+      email,
+      subject,
+      ticketNumber,
+    });
+
+    if (!customerEmailResult.success) {
+      console.error("Failed to send customer confirmation:", customerEmailResult.error);
+    }
+
+    console.log("Emails sent successfully!");
     return NextResponse.json(
-      { message: "Email sent successfully" },
+      { 
+        message: "Thank you for your message! We'll get back to you soon.",
+        ticketNumber: ticketNumber
+      },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("Error processing contact form:", error);
     console.error("Error details:", error.message, error.stack);
     return NextResponse.json(
-      { error: "Failed to send email. Please contact us directly at info@make-ready-consulting.com" },
+      { error: "Failed to process your request. Please contact us directly at info@make-ready-consulting.com" },
       { status: 500 }
     );
   }

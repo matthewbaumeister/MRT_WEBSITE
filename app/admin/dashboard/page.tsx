@@ -55,12 +55,12 @@ export default function AdminDashboard() {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Dashboard Cards */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/admin/submissions')}>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Contact Form Submissions
             </h3>
-            <p className="text-3xl font-bold text-primary-600">0</p>
-            <p className="text-sm text-gray-500 mt-2">Coming soon</p>
+            <p className="text-3xl font-bold text-primary-600">View All</p>
+            <p className="text-sm text-gray-500 mt-2">Click to manage</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
             Quick Actions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="primary" className="w-full">
+            <Button variant="primary" className="w-full" onClick={() => router.push('/admin/submissions')}>
               View Contact Submissions
             </Button>
             <Button variant="outline" className="w-full">
