@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [processing, setProcessing] = useState(false);
+  const [userSearch, setUserSearch] = useState<string>("");
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -176,25 +178,77 @@ export default function SettingsPage() {
                 </p>
 
                 <div className="space-y-4">
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Select User
                     </label>
-                    <select
-                      value={selectedUser}
-                      onChange={(e) => setSelectedUser(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      disabled={loading || processing}
-                    >
-                      <option value="">Choose a user...</option>
-                      {users
-                        .filter((u) => u.id !== session.user.id)
-                        .map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.first_name} {user.last_name} ({user.email}) - Currently: {user.role}
-                          </option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={userSearch}
+                        onChange={(e) => {
+                          setUserSearch(e.target.value);
+                          setShowUserDropdown(true);
+                          if (!e.target.value) {
+                            setSelectedUser("");
+                          }
+                        }}
+                        onFocus={() => setShowUserDropdown(true)}
+                        placeholder="Search by name or email..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        disabled={loading || processing}
+                      />
+                      <svg 
+                        className="absolute right-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    
+                    {showUserDropdown && userSearch && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {users
+                          .filter((u) => u.id !== session.user.id)
+                          .filter((u) => 
+                            u.first_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                            u.last_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                            u.email.toLowerCase().includes(userSearch.toLowerCase())
+                          )
+                          .map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedUser(user.id);
+                                setUserSearch(`${user.first_name} ${user.last_name} (${user.email})`);
+                                setShowUserDropdown(false);
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-gray-100 last:border-0"
+                            >
+                              <div className="font-medium text-gray-900">
+                                {user.first_name} {user.last_name}
+                              </div>
+                              <div className="text-sm text-gray-600">{user.email}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Current role: <span className="font-semibold capitalize">{user.role}</span>
+                              </div>
+                            </button>
+                          ))}
+                        {users.filter((u) => 
+                          u.id !== session.user.id &&
+                          (u.first_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                           u.last_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                           u.email.toLowerCase().includes(userSearch.toLowerCase()))
+                        ).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            No users found matching "{userSearch}"
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
