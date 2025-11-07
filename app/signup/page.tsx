@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/platforms";
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -96,7 +98,7 @@ export default function SignUpPage() {
       }
 
       alert("✓ Email verified! You can now login.");
-      router.push("/login");
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     } catch (err: any) {
       setError(err.message || "Verification failed. Please try again.");
     } finally {
