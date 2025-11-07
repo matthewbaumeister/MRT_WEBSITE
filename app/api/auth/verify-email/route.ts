@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the code
-    const isValid = verifyTwoFactorCode(email, code);
+    // Verify the code (now async)
+    const isValid = await verifyTwoFactorCode(email, code);
 
     if (!isValid) {
       return NextResponse.json(

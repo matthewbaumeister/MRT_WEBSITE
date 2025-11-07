@@ -1,4 +1,5 @@
 import { sendEmail } from "./sendgrid";
+import { getSupabaseServiceClient } from "./supabase";
 
 // Generate random 6-digit code
 export function generateTwoFactorCode(): string {
@@ -82,36 +83,76 @@ Make Ready Security Team
   return await sendEmail(emailContent);
 }
 
-// Store 2FA code temporarily (in production, use Redis or database)
-const twoFactorCodes = new Map<string, { code: string; expiresAt: number }>();
-
-export function storeTwoFactorCode(email: string, code: string) {
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-  twoFactorCodes.set(email, { code, expiresAt });
-  
-  // Clean up expired codes
-  setTimeout(() => {
-    twoFactorCodes.delete(email);
-  }, 10 * 60 * 1000);
+// Store 2FA code in Supabase (persistent across serverless invocations)
+export async function storeTwoFactorCode(email: string, code: string) {
+  try {
+    const supabase = getSupabaseServiceClient();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    
+    // Delete any existing codes for this email
+    await supabase
+      .from("verification_codes")
+      .delete()
+      .eq("email", email);
+    
+    // Insert new code
+    const { error } = await supabase
+      .from("verification_codes")
+      .insert([
+        {
+          email,
+          code,
+          expires_at: expiresAt.toISOString(),
+        },
+      ]);
+    
+    if (error) {
+      console.error("Error storing verification code:", error);
+    }
+  } catch (error) {
+    console.error("Failed to store verification code:", error);
+  }
 }
 
-export function verifyTwoFactorCode(email: string, code: string): boolean {
-  const stored = twoFactorCodes.get(email);
-  
-  if (!stored) {
-    return false;
-  }
-  
-  if (Date.now() > stored.expiresAt) {
-    twoFactorCodes.delete(email);
-    return false;
-  }
-  
-  if (stored.code === code) {
-    twoFactorCodes.delete(email);
+export async function verifyTwoFactorCode(email: string, code: string): Promise<boolean> {
+  try {
+    const supabase = getSupabaseServiceClient();
+    
+    // Get the code for this email
+    const { data, error } = await supabase
+      .from("verification_codes")
+      .select("*")
+      .eq("email", email)
+      .eq("code", code)
+      .single();
+    
+    if (error || !data) {
+      console.log("No matching verification code found for", email);
+      return false;
+    }
+    
+    // Check if expired
+    const expiresAt = new Date(data.expires_at);
+    if (Date.now() > expiresAt.getTime()) {
+      console.log("Verification code expired for", email);
+      // Delete expired code
+      await supabase
+        .from("verification_codes")
+        .delete()
+        .eq("email", email);
+      return false;
+    }
+    
+    // Code is valid - delete it (one-time use)
+    await supabase
+      .from("verification_codes")
+      .delete()
+      .eq("email", email);
+    
     return true;
+  } catch (error) {
+    console.error("Error verifying code:", error);
+    return false;
   }
-  
-  return false;
 }
 
