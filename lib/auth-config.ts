@@ -91,11 +91,13 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             role: user.role,
             isActive: user.isActive,
-            twoFactorEnabled: user.twoFactorEnabled
+            twoFactorEnabled: user.twoFactorEnabled,
+            subscriptionTier: user.subscriptionTier
           });
 
           // Verify password
           console.log("Verifying password...");
+          console.log("Password hash from DB:", user.password ? "exists" : "MISSING");
           const isValidPassword = await bcrypt.compare(
             credentials.password,
             user.password
