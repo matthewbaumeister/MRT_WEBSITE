@@ -94,9 +94,9 @@ Make Ready Team
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" 
                style="display: inline-block; background: linear-gradient(-138deg, #2F2F72 0%, #6464AA 100%); 
-                      color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
+                      color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
                       font-weight: bold; font-size: 16px;">
-              Reset Password
+              <span style="color: #FFFFFF !important;">Reset Password</span>
             </a>
           </div>
           
