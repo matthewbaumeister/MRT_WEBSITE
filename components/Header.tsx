@@ -37,19 +37,19 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-dark-900 shadow-lg" : "bg-dark-900/95"
+        isScrolled ? "bg-dark-900 shadow-lg py-4" : "bg-dark-900/95 py-6"
       }`}
     >
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="relative h-12 w-auto">
+            <div className="relative h-10 w-auto">
               <Image
                 src="/images/logo.png"
                 alt="Make Ready Logo"
-                width={160}
-                height={48}
+                width={140}
+                height={40}
                 className="object-contain"
                 priority
               />
