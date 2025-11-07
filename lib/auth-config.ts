@@ -113,40 +113,48 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-        // Check 2FA if enabled (Email-based 2FA via SendGrid)
-        if (user.twoFactorEnabled) {
-          if (!credentials.token) {
-            // Generate and send 2FA code via email
-            const code = generateTwoFactorCode();
-            storeTwoFactorCode(user.email, code);
+          // Check 2FA if enabled (Email-based 2FA via SendGrid)
+          if (user.twoFactorEnabled) {
+            if (!credentials.token) {
+              // Generate and send 2FA code via email
+              const code = generateTwoFactorCode();
+              await storeTwoFactorCode(user.email, code);
+              
+              await sendTwoFactorEmail({
+                email: user.email,
+                name: user.name,
+                code,
+              });
+              
+              console.log("2FA code sent");
+              return null;
+            }
+
+            // Verify the code entered by user
+            const verified = await verifyTwoFactorCode(user.email, credentials.token);
             
-            await sendTwoFactorEmail({
-              email: user.email,
-              name: user.name,
-              code,
-            });
-            
-            throw new Error("2FA_CODE_SENT");
+            if (!verified) {
+              console.log("2FA verification failed");
+              return null;
+            }
           }
 
-          // Verify the code entered by user
-          const verified = verifyTwoFactorCode(user.email, credentials.token);
+          // Update last login time
+          await updateLastLogin(user.id);
+
+          console.log("=== LOGIN SUCCESSFUL ===");
           
-          if (!verified) {
-            throw new Error("Invalid or expired verification code");
-          }
+          // Return user object (exclude sensitive data)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          };
+        } catch (error: any) {
+          console.error("=== LOGIN ERROR ===", error);
+          return null;
         }
-
-        // Update last login time
-        await updateLastLogin(user.id);
-
-        // Return user object (exclude sensitive data)
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
       },
     }),
   ],
