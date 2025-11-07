@@ -36,12 +36,12 @@ export default function Home() {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative h-96 lg:h-[500px] bg-gradient-to-br from-primary-600 to-primary-800 rounded-lg shadow-xl p-8 flex flex-col justify-between text-white">
+            <div className="relative min-h-96 lg:min-h-[500px] bg-gradient-to-br from-primary-600 to-primary-800 rounded-lg shadow-xl p-8 flex flex-col justify-between text-white">
               <div>
                 <h3 className="text-3xl font-bold mb-6 text-white">
                   Small Business Certifications
                 </h3>
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-start bg-white/10 backdrop-blur-sm rounded-lg p-4">
                     <div className="flex-shrink-0 w-12 h-12 bg-accent-500 rounded-full flex items-center justify-center mr-4">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,8 +80,8 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="border-t border-white/20 pt-6 mt-6">
-                <p className="text-sm text-gray-200 text-center">
+              <div className="border-t border-white/20 pt-4 mt-4">
+                <p className="text-sm text-gray-200 text-center leading-relaxed">
                   Qualified for set-aside contracts and priority consideration in federal procurement
                 </p>
               </div>
