@@ -16,6 +16,35 @@ export default function LoginPage() {
   const [show2FA, setShow2FA] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+    
+    setError("");
+    setResendCooldown(60); // 60 second cooldown
+    
+    try {
+      // Trigger a new login attempt without token to resend code
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      
+      setError("✓ New verification code sent! Check your email.");
+    } catch (err) {
+      setError("Failed to resend code. Please try again.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,6 +206,24 @@ export default function LoginPage() {
                 <p className="text-xs text-gray-500 mt-1 ml-7">
                   Code expires in 10 minutes
                 </p>
+              </div>
+              
+              {/* Resend Code Button */}
+              <div className="mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendCooldown > 0}
+                  className={`text-sm font-medium ${
+                    resendCooldown > 0 
+                      ? "text-gray-400 cursor-not-allowed" 
+                      : "text-primary-600 hover:text-primary-700 cursor-pointer"
+                  }`}
+                >
+                  {resendCooldown > 0 
+                    ? `Resend code in ${resendCooldown}s` 
+                    : "Didn't receive code? Resend"}
+                </button>
               </div>
             </div>
           )}
