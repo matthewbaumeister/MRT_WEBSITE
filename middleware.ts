@@ -4,12 +4,27 @@ import { NextResponse } from "next/server";
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
-    const isAdmin = token?.role === "admin";
-    const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
+    const path = req.nextUrl.pathname;
 
-    // Protect admin routes
-    if (isAdminRoute && !isAdmin) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+    // Allow login and admin/login pages without restriction
+    if (path === "/login" || path === "/admin/login") {
+      return NextResponse.next();
+    }
+
+    // Check admin routes
+    const isAdmin = token?.role === "admin";
+    const isEmployee = token?.role === "employee";
+
+    if (path.startsWith("/admin")) {
+      if (!isAdmin) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+
+    if (path.startsWith("/employee")) {
+      if (!isEmployee && !isAdmin) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
     }
 
     return NextResponse.next();
@@ -17,14 +32,22 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Allow access to login page
-        if (req.nextUrl.pathname === "/admin/login") {
+        const path = req.nextUrl.pathname;
+        
+        // Always allow login pages
+        if (path === "/login" || path === "/admin/login") {
           return true;
         }
-        // Require authentication for /admin routes
-        if (req.nextUrl.pathname.startsWith("/admin")) {
+        
+        // Require authentication for protected routes
+        if (
+          path.startsWith("/admin") ||
+          path.startsWith("/employee") ||
+          path.startsWith("/platforms")
+        ) {
           return !!token;
         }
+        
         return true;
       },
     },
@@ -32,6 +55,6 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/employee/:path*", "/platforms/:path*"],
+  matcher: ["/admin/:path*", "/employee/:path*", "/platforms/:path*", "/login"],
 };
 

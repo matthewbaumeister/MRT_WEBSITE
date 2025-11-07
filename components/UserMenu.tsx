@@ -27,7 +27,7 @@ export const UserMenu = () => {
   if (!session) {
     return (
       <Link
-        href="/admin/login"
+        href="/login"
         className="text-white hover:text-accent-400 transition-colors duration-200 font-medium"
       >
         Login

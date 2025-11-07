@@ -51,7 +51,7 @@ export default function MatrixPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/admin/login"
+                href="/login"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg bg-white text-primary-600 hover:bg-primary-600 hover:text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Try It Now →
