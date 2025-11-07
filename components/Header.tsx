@@ -38,14 +38,6 @@ const Header = () => {
     { name: "Contact", href: "/contact" },
   ];
 
-  // Add MRT Platforms link if logged in
-  if (session) {
-    navLinks.splice(navLinks.length - 1, 0, {
-      name: "MRT Platforms",
-      href: "/platforms",
-    });
-  }
-
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -109,6 +101,19 @@ const Header = () => {
                 </Link>
               )
             )}
+            
+            {/* MRT Platforms Button - Only shown when logged in */}
+            {session && (
+              <Link
+                href="/platforms"
+                className={`px-4 py-2 border-2 border-primary-500 text-white hover:bg-primary-600 hover:border-primary-600 transition-all duration-200 font-bold rounded-lg ${
+                  pathname === "/platforms" ? "bg-primary-600 border-primary-600" : ""
+                }`}
+              >
+                MRT Platforms
+              </Link>
+            )}
+            
             <UserMenu />
           </div>
 
