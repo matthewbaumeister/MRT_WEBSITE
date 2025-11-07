@@ -41,16 +41,17 @@ export default function UsersManagementPage() {
   async function fetchUsers() {
     setLoading(true);
     try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
+      const response = await fetch("/api/users/list");
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      
+      const data = await response.json();
+      setUsers(data.users || []);
     } catch (error) {
       console.error("Error fetching users:", error);
+      alert("Failed to load users. Please try again.");
     } finally {
       setLoading(false);
     }
