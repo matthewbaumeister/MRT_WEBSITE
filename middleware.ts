@@ -6,6 +6,11 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
+    // CRITICAL: Always allow NextAuth API routes (must come first!)
+    if (path.startsWith("/api/auth")) {
+      return NextResponse.next();
+    }
+
     // Allow login, signup, and admin/login pages without restriction
     if (path === "/login" || path === "/signup" || path === "/admin/login") {
       return NextResponse.next();
@@ -33,6 +38,11 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
+        
+        // CRITICAL: Always allow NextAuth API routes
+        if (path.startsWith("/api/auth")) {
+          return true;
+        }
         
         // Always allow login and signup pages
         if (path === "/login" || path === "/signup" || path === "/admin/login") {
