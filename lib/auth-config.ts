@@ -165,6 +165,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
+  debug: true, // Enable debug mode to see detailed logs
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
