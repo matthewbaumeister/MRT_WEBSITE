@@ -11,9 +11,17 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/admin/login");
+      router.push("/login");
     }
-  }, [status, router]);
+    if (session && session.user.role !== "admin") {
+      // Non-admins should go to their appropriate portal
+      if (session.user.role === "employee") {
+        router.push("/employee/dashboard");
+      } else {
+        router.push("/platforms");
+      }
+    }
+  }, [status, session, router]);
 
   if (status === "loading") {
     return (

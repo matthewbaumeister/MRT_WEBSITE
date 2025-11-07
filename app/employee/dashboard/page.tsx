@@ -11,10 +11,11 @@ export default function EmployeeDashboard() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/admin/login");
+      router.push("/login");
     }
     if (session && session.user.role !== "employee" && session.user.role !== "admin") {
-      router.push("/admin/dashboard");
+      // Clients or other roles should go to their platforms page
+      router.push("/platforms");
     }
   }, [status, session, router]);
 
