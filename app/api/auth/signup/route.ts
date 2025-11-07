@@ -31,13 +31,52 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     const { data: existingUser } = await supabase
       .from("users")
-      .select("id")
+      .select("id, is_active")
       .eq("email", email)
       .single();
 
     if (existingUser) {
+      // If user exists but isn't verified, resend verification code
+      if (existingUser.is_active === false) {
+        console.log("User exists but not verified, resending code");
+        
+        // Generate new verification code
+        const verificationCode = generateTwoFactorCode();
+        await storeTwoFactorCode(email, verificationCode);
+
+        // Send verification email
+        await sendEmail({
+          to: email,
+          from: process.env.EMAIL_FROM || "info@make-ready-consulting.com",
+          subject: "Verify Your Make Ready Account",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #2F2F72;">Verify Your Email Address</h2>
+              <p>Hello,</p>
+              <p>You're trying to access your Make Ready account. Please verify your email using the code below:</p>
+              <div style="background: linear-gradient(-138deg, #D4AF37 0%, #F4D479 50%, #D4AF37 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0;">
+                <h1 style="margin: 0; font-size: 48px; color: #2F2F72 !important; font-weight: bold; letter-spacing: 8px;">
+                  ${verificationCode}
+                </h1>
+              </div>
+              <p style="color: #666; font-size: 14px;"><strong>This code expires in 10 minutes.</strong></p>
+            </div>
+          `,
+        });
+
+        return NextResponse.json(
+          {
+            message: "Account exists but not verified. A new verification code has been sent.",
+            email: email,
+            needsVerification: true,
+          },
+          { status: 200 }
+        );
+      }
+      
+      // User exists and is verified
       return NextResponse.json(
-        { error: "An account with this email already exists" },
+        { error: "An account with this email already exists. Please login instead." },
         { status: 400 }
       );
     }

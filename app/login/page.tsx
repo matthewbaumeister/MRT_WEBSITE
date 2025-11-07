@@ -48,6 +48,9 @@ export default function LoginPage() {
           setError("The verification code is invalid or expired. Please request a new code.");
         } else if (result.error === "CredentialsSignin") {
           setError("Invalid email or password. Please check your credentials.");
+        } else if (result.error.includes("verify your email")) {
+          // Account exists but not verified
+          setError(`${result.error} Click here to resend verification code.`);
         } else {
           setError(`Login failed: ${result.error}`);
         }

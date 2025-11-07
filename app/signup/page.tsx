@@ -59,8 +59,14 @@ export default function SignUpPage() {
         throw new Error(data.error || "Sign up failed");
       }
 
-      setShowVerification(true);
-      setError("✓ Account created! Please check your email for the verification code.");
+      // Check if account needs verification (existing unverified account)
+      if (data.needsVerification) {
+        setShowVerification(true);
+        setError("✓ Verification code sent! Please check your email.");
+      } else {
+        setShowVerification(true);
+        setError("✓ Account created! Please check your email for the verification code.");
+      }
     } catch (err: any) {
       setError(err.message || "Sign up failed. Please try again.");
     } finally {
