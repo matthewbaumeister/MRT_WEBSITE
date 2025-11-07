@@ -36,6 +36,7 @@ async function getUserByEmail(email: string) {
       twoFactorEnabled: data.two_factor_enabled,
       twoFactorSecret: data.two_factor_secret,
       isActive: data.is_active !== undefined ? data.is_active : true, // Default to true if column doesn't exist
+      subscriptionTier: data.subscription_tier || "free",
     };
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -150,6 +151,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
+            subscriptionTier: user.subscriptionTier,
           };
         } catch (error: any) {
           console.error("=== LOGIN ERROR ===", error);
@@ -173,7 +175,8 @@ export const authOptions: NextAuthOptions = {
         if (user) {
           token.role = user.role;
           token.id = user.id;
-          console.log("[JWT Callback] Added role and id to token");
+          token.subscriptionTier = user.subscriptionTier;
+          console.log("[JWT Callback] Added role, id, and subscriptionTier to token");
         }
         console.log("[JWT Callback] Success");
         return token;
@@ -188,7 +191,8 @@ export const authOptions: NextAuthOptions = {
         if (session?.user && token) {
           session.user.role = (token.role as string) || "client";
           session.user.id = (token.id as string) || "";
-          console.log("[Session Callback] Set role:", session.user.role);
+          session.user.subscriptionTier = (token.subscriptionTier as string) || "free";
+          console.log("[Session Callback] Set role:", session.user.role, "tier:", session.user.subscriptionTier);
         }
         console.log("[Session Callback] Success");
         return session;

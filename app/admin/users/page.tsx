@@ -137,6 +137,31 @@ export default function UsersManagementPage() {
     }
   }
 
+  async function updateSubscriptionTier(userId: string, newTier: string) {
+    setUpdating(userId);
+    try {
+      const response = await fetch("/api/users/update-tier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, newTier }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update subscription tier");
+      }
+
+      await fetchUsers();
+      alert("Subscription tier updated successfully! A notification email has been sent.");
+    } catch (error: any) {
+      console.error("Error updating subscription tier:", error);
+      alert(error.message || "Failed to update subscription tier. Please try again.");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   if (status === "loading" || !session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -228,6 +253,9 @@ export default function UsersManagementPage() {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Subscription
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -262,6 +290,27 @@ export default function UsersManagementPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {user.role === "client" ? (
+                        <span
+                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.subscription_tier === "pro"
+                              ? "bg-purple-100 text-purple-800"
+                              : user.subscription_tier === "enterprise"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {user.subscription_tier === "pro"
+                            ? "PRO"
+                            : user.subscription_tier === "enterprise"
+                            ? "ENTERPRISE"
+                            : "FREE"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           user.is_active
@@ -280,38 +329,55 @@ export default function UsersManagementPage() {
                         ? new Date(user.last_login).toLocaleDateString()
                         : "Never"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {user.id !== session.user.id && (
-                        <>
-                          <select
-                            value={user.role}
-                            onChange={(e) =>
-                              updateUserRole(user.id, e.target.value as any)
-                            }
-                            disabled={updating === user.id}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="employee">Employee</option>
-                            <option value="client">Client</option>
-                          </select>
-                          <button
-                            onClick={() => toggle2FA(user.id, user.two_factor_enabled)}
-                            disabled={updating === user.id}
-                            className="text-primary-600 hover:text-primary-900"
-                          >
-                            {user.two_factor_enabled ? "Disable 2FA" : "Enable 2FA"}
-                          </button>
-                          <button
-                            onClick={() => toggleUserStatus(user.id, user.is_active)}
-                            disabled={updating === user.id}
-                            className={user.is_active ? "text-red-600 hover:text-red-900" : "text-green-600 hover:text-green-900"}
-                          >
-                            {user.is_active ? "Deactivate" : "Activate"}
-                          </button>
-                        </>
-                      )}
-                      {user.id === session.user.id && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {user.id !== session.user.id ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={user.role}
+                              onChange={(e) =>
+                                updateUserRole(user.id, e.target.value as any)
+                              }
+                              disabled={updating === user.id}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="employee">Employee</option>
+                              <option value="client">Client</option>
+                            </select>
+                            {user.role === "client" && (
+                              <select
+                                value={user.subscription_tier || "free"}
+                                onChange={(e) =>
+                                  updateSubscriptionTier(user.id, e.target.value)
+                                }
+                                disabled={updating === user.id}
+                                className="px-2 py-1 border border-gray-300 rounded text-sm"
+                              >
+                                <option value="free">Free</option>
+                                <option value="pro">Pro</option>
+                                <option value="enterprise">Enterprise</option>
+                              </select>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => toggle2FA(user.id, user.two_factor_enabled)}
+                              disabled={updating === user.id}
+                              className="text-primary-600 hover:text-primary-900 text-xs"
+                            >
+                              {user.two_factor_enabled ? "Disable 2FA" : "Enable 2FA"}
+                            </button>
+                            <button
+                              onClick={() => toggleUserStatus(user.id, user.is_active)}
+                              disabled={updating === user.id}
+                              className={`text-xs ${user.is_active ? "text-red-600 hover:text-red-900" : "text-green-600 hover:text-green-900"}`}
+                            >
+                              {user.is_active ? "Deactivate" : "Activate"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
                         <span className="text-gray-400 italic">You (current user)</span>
                       )}
                     </td>
