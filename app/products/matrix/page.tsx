@@ -2,32 +2,32 @@ import Button from "@/components/ui/Button";
 import ContactForm from "@/components/ContactForm";
 
 export const metadata = {
-  title: "Matrix - Make Ready Consulting",
+  title: "Matrix - AI Market Research Platform | Make Ready Consulting",
   description:
-    "Matrix is an advanced platform for data integration, analysis, and visualization designed for government and defense applications.",
+    "Matrix is an AI-powered market research and intelligence platform delivering comprehensive market analysis, competitive intelligence, and strategic insights for government and defense sectors.",
 };
 
 export default function MatrixPage() {
   const features = [
     {
-      title: "Data Integration",
+      title: "AI-Powered Market Analysis",
       description:
-        "Seamlessly integrate data from multiple sources into a unified platform for comprehensive analysis.",
+        "Leverage advanced artificial intelligence and machine learning to analyze market trends, identify opportunities, and predict future developments with unprecedented accuracy.",
     },
     {
-      title: "Advanced Visualization",
+      title: "Competitive Intelligence",
       description:
-        "Transform complex data into clear, actionable visualizations that drive better decision-making.",
+        "Gain deep insights into competitor strategies, capabilities, and positioning. Monitor market movements and competitive threats in real-time.",
     },
     {
-      title: "Collaborative Environment",
+      title: "Strategic Market Research",
       description:
-        "Enable team collaboration with shared workspaces and real-time data synchronization.",
+        "Comprehensive market research reports covering industry trends, customer segments, market sizing, and growth projections tailored for government contractors.",
     },
     {
-      title: "Custom Workflows",
+      title: "Automated Data Collection",
       description:
-        "Build custom workflows tailored to your specific operational requirements and processes.",
+        "Continuously gather and process market data from thousands of sources including government databases, industry reports, and public records.",
     },
   ];
 
@@ -39,15 +39,25 @@ export default function MatrixPage() {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-7xl font-bold mb-6">Matrix</h1>
             <p className="text-xl md:text-2xl text-accent-100 mb-8">
-              Unify Your Data, Amplify Your Insights
+              AI-Powered Market Research & Intelligence
             </p>
             <p className="text-lg text-accent-200 mb-12">
-              Matrix is a powerful platform that brings together disparate data
-              sources, enabling comprehensive analysis and visualization for
-              mission-critical operations and strategic planning.
+              Matrix is an advanced AI-powered market research platform specifically designed
+              for government contractors. Unify vendor intelligence, accelerate acquisition cycles,
+              and leverage predictive analytics to win more contracts. Our neural graph
+              architecture processes over 500,000 interconnected data points from 19+ federal
+              feeds to deliver Army-specific intelligence you can't find anywhere else.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button href="#demo" variant="primary" size="lg">
+              <Button
+                href="/admin/login"
+                variant="primary"
+                size="lg"
+                className="bg-white text-accent-600 hover:bg-gray-100 font-bold"
+              >
+                Try It Now →
+              </Button>
+              <Button href="#demo" variant="secondary" size="lg">
                 Request Demo
               </Button>
               <Button
@@ -71,8 +81,8 @@ export default function MatrixPage() {
               Key Capabilities
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Matrix delivers enterprise-grade capabilities designed for the most
-              demanding operational environments.
+              Matrix combines AI-powered analysis with comprehensive market intelligence
+              to deliver actionable insights for government contractors and defense organizations.
             </p>
           </div>
 
@@ -102,29 +112,32 @@ export default function MatrixPage() {
             <div className="space-y-8">
               <div className="bg-white rounded-lg p-8 shadow-md">
                 <h3 className="text-2xl font-bold text-accent-600 mb-4">
-                  Enhanced Situational Awareness
+                  Win More Contracts
                 </h3>
                 <p className="text-gray-700">
-                  Gain comprehensive visibility across all your data sources with
-                  integrated dashboards and real-time updates.
+                  Identify high-value opportunities before your competitors. Matrix analyzes
+                  government contracting data, budget allocations, and agency priorities to
+                  help you target the right opportunities at the right time.
                 </p>
               </div>
               <div className="bg-white rounded-lg p-8 shadow-md">
                 <h3 className="text-2xl font-bold text-accent-600 mb-4">
-                  Accelerated Decision-Making
+                  Accelerate Capture & Proposal Development
                 </h3>
                 <p className="text-gray-700">
-                  Make faster, more informed decisions with instant access to
-                  analyzed and visualized data.
+                  Build stronger proposals with comprehensive market intelligence. Access
+                  competitor analysis, past performance data, pricing benchmarks, and
+                  customer insights all in one place.
                 </p>
               </div>
               <div className="bg-white rounded-lg p-8 shadow-md">
                 <h3 className="text-2xl font-bold text-accent-600 mb-4">
-                  Improved Collaboration
+                  Strategic Market Intelligence
                 </h3>
                 <p className="text-gray-700">
-                  Break down silos and enable seamless collaboration across teams
-                  and departments.
+                  Stay ahead of market trends with AI-powered predictive analytics. Understand
+                  emerging technologies, budget shifts, and policy changes that impact your
+                  business development strategy.
                 </p>
               </div>
             </div>
