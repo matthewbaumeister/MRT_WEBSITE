@@ -43,8 +43,10 @@ export const UserMenu = () => {
         return { href: "/admin/dashboard", label: "Admin Portal" };
       case "employee":
         return { href: "/employee/dashboard", label: "Employee Portal" };
+      case "client":
+        return { href: "/platforms", label: "My Platforms" };
       default:
-        return { href: "/admin/dashboard", label: "Dashboard" };
+        return { href: "/platforms", label: "Dashboard" };
     }
   };
 
@@ -94,13 +96,15 @@ export const UserMenu = () => {
           >
             {portal.label}
           </Link>
-          <Link
-            href="/admin/submissions"
-            className="block px-4 py-2 text-white hover:bg-primary-600 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            View Submissions
-          </Link>
+          {(session.user.role === "admin" || session.user.role === "employee") && (
+            <Link
+              href="/admin/submissions"
+              className="block px-4 py-2 text-white hover:bg-primary-600 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              View Submissions
+            </Link>
+          )}
           {session.user.role === "admin" && (
             <>
               <Link
