@@ -67,50 +67,51 @@ export const authOptions: NextAuthOptions = {
         token: { label: "2FA Token", type: "text", optional: true },
       },
       async authorize(credentials) {
-        console.log("=== LOGIN ATTEMPT ===");
-        console.log("Email:", credentials?.email);
-        console.log("Password provided:", !!credentials?.password);
-        
-        if (!credentials?.email || !credentials?.password) {
-          console.log("Missing credentials");
-          throw new Error("Email and password required");
-        }
+        try {
+          console.log("=== LOGIN ATTEMPT ===");
+          console.log("Email:", credentials?.email);
+          console.log("Password provided:", !!credentials?.password);
+          
+          if (!credentials?.email || !credentials?.password) {
+            console.log("Missing credentials");
+            return null;
+          }
 
-        // Get user from Supabase
-        console.log("Fetching user from database...");
-        const user = await getUserByEmail(credentials.email);
-        
-        if (!user) {
-          console.log("User not found in database");
-          throw new Error("Invalid credentials");
-        }
-        
-        console.log("User found:", {
-          email: user.email,
-          role: user.role,
-          isActive: user.isActive,
-          twoFactorEnabled: user.twoFactorEnabled
-        });
+          // Get user from Supabase
+          console.log("Fetching user from database...");
+          const user = await getUserByEmail(credentials.email);
+          
+          if (!user) {
+            console.log("User not found in database");
+            return null;
+          }
+          
+          console.log("User found:", {
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive,
+            twoFactorEnabled: user.twoFactorEnabled
+          });
 
-        // Verify password
-        console.log("Verifying password...");
-        const isValidPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        console.log("Password valid:", isValidPassword);
+          // Verify password
+          console.log("Verifying password...");
+          const isValidPassword = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          console.log("Password valid:", isValidPassword);
 
-        if (!isValidPassword) {
-          console.log("Password verification failed");
-          throw new Error("Invalid credentials");
-        }
+          if (!isValidPassword) {
+            console.log("Password verification failed");
+            return null;
+          }
 
-        // Check if account is active (email verified)
-        // Only check if is_active exists and is explicitly false
-        if (user.isActive === false) {
-          console.log("Login blocked: Account not verified for", credentials.email);
-          throw new Error("Please verify your email before logging in. Check your inbox for the verification code.");
-        }
+          // Check if account is active (email verified)
+          // Only check if is_active exists and is explicitly false
+          if (user.isActive === false) {
+            console.log("Login blocked: Account not verified for", credentials.email);
+            return null;
+          }
 
         // Check 2FA if enabled (Email-based 2FA via SendGrid)
         if (user.twoFactorEnabled) {
