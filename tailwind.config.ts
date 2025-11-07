@@ -9,32 +9,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand colors - Purple and Gold
+        // Brand colors from Make Ready Brand Guide
         primary: {
-          DEFAULT: "#6B46C1", // Purple
-          50: "#F5F3FF",
-          100: "#EDE9FE",
-          200: "#DDD6FE",
-          300: "#C4B5FD",
-          400: "#A78BFA",
-          500: "#8B5CF6",
-          600: "#6B46C1",
-          700: "#5B21B6",
-          800: "#4C1D95",
-          900: "#3B0764",
+          DEFAULT: "#2F2F72", // Brand Purple
+          50: "#F5F5FF",
+          100: "#EBEBFF",
+          200: "#D6D6FF",
+          300: "#B8B8F5",
+          400: "#9595D6",
+          500: "#6464AA",
+          600: "#2F2F72",
+          700: "#252557",
+          800: "#1C1C42",
+          900: "#14142E",
         },
         accent: {
-          DEFAULT: "#F59E0B", // Gold
-          50: "#FFFBEB",
-          100: "#FEF3C7",
-          200: "#FDE68A",
-          300: "#FCD34D",
-          400: "#FBBF24",
-          500: "#F59E0B",
-          600: "#D97706",
-          700: "#B45309",
-          800: "#92400E",
-          900: "#78350F",
+          DEFAULT: "#D4AF37", // Brand Gold
+          50: "#FFFEF5",
+          100: "#FFF9E0",
+          200: "#FFF0B8",
+          300: "#FFE68A",
+          400: "#EDD15C",
+          500: "#D4AF37",
+          600: "#B8941F",
+          700: "#997A15",
+          800: "#7A5F0D",
+          900: "#5C4708",
         },
         dark: {
           DEFAULT: "#1a1a1a",

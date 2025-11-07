@@ -73,11 +73,11 @@ ${message}
     `,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #6B46C1;">New Contact Form Submission</h2>
+        <h2 style="color: #2F2F72;">New Contact Form Submission</h2>
         ${
           ticketNumber
-            ? `<div style="background-color: #F59E0B; color: white; padding: 10px 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <strong>Ticket #${ticketNumber}</strong>
+            ? `<div style="background: linear-gradient(-138deg, #D4AF37 0%, #F4D479 50%, #D4AF37 100%); color: #2F2F72; padding: 10px 20px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold;">
+                Ticket #${ticketNumber}
               </div>`
             : ""
         }
@@ -141,36 +141,36 @@ This is an automated confirmation email. Please do not reply directly to this me
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #6B46C1; margin: 0;">MAKE READY</h1>
+          <h1 style="color: #2F2F72; margin: 0; font-weight: 600;">MAKE READY</h1>
           <p style="color: #666; margin: 5px 0;">Strategic Solutions for Government Success</p>
         </div>
         
-        <h2 style="color: #6B46C1;">Thank You for Contacting Us!</h2>
+        <h2 style="color: #2F2F72;">Thank You for Contacting Us!</h2>
         
         <p>Dear ${firstName} ${lastName},</p>
         
         <p>Thank you for contacting Make Ready Consulting! We have received your inquiry and assigned it the following ticket number:</p>
         
-        <div style="background: linear-gradient(135deg, #6B46C1 0%, #8B5CF6 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-          <h2 style="margin: 0; font-size: 32px; color: #FFFFFF !important;">Ticket #${ticketNumber}</h2>
-          <p style="margin: 10px 0 0 0; color: #FFFFFF !important; opacity: 0.9;">Please reference this number for future correspondence</p>
+        <div style="background: linear-gradient(-138deg, #D4AF37 0%, #F4D479 50%, #D4AF37 100%); color: #2F2F72; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <h2 style="margin: 0; font-size: 32px; color: #2F2F72 !important; font-weight: bold;">Ticket #${ticketNumber}</h2>
+          <p style="margin: 10px 0 0 0; color: #2F2F72 !important;">Please reference this number for future correspondence</p>
         </div>
         
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0 0 10px 0;"><strong>Subject:</strong> ${subject}</p>
-          <p style="margin: 0;"><strong>Status:</strong> <span style="color: #F59E0B;">Under Review</span></p>
+          <p style="margin: 0;"><strong>Status:</strong> <span style="color: #D4AF37; font-weight: bold;">Under Review</span></p>
         </div>
         
-        <h3 style="color: #6B46C1;">What Happens Next?</h3>
+        <h3 style="color: #2F2F72;">What Happens Next?</h3>
         <ul style="line-height: 1.8;">
           <li>Our team will review your inquiry</li>
           <li>You'll receive a response within 24 business hours</li>
           <li>We'll keep you updated on the status of your request</li>
         </ul>
         
-        <div style="background-color: #EDE9FE; padding: 20px; border-radius: 8px; margin: 30px 0;">
-          <h3 style="color: #6B46C1; margin-top: 0;">Need Immediate Assistance?</h3>
-          <p style="margin: 10px 0;"><strong>Email:</strong> <a href="mailto:info@make-ready-consulting.com" style="color: #6B46C1;">info@make-ready-consulting.com</a></p>
+        <div style="background-color: #F5F5FF; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="color: #2F2F72; margin-top: 0;">Need Immediate Assistance?</h3>
+          <p style="margin: 10px 0;"><strong>Email:</strong> <a href="mailto:info@make-ready-consulting.com" style="color: #2F2F72;">info@make-ready-consulting.com</a></p>
           <p style="margin: 10px 0;"><strong>Address:</strong> 9409 B Battle Street, Manassas, VA 20110</p>
         </div>
         
