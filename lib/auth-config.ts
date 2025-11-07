@@ -168,18 +168,34 @@ export const authOptions: NextAuthOptions = {
   debug: true, // Enable debug mode to see detailed logs
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.id = user.id;
+      try {
+        console.log("[JWT Callback] Input:", { hasUser: !!user, hasToken: !!token });
+        if (user) {
+          token.role = user.role;
+          token.id = user.id;
+          console.log("[JWT Callback] Added role and id to token");
+        }
+        console.log("[JWT Callback] Success");
+        return token;
+      } catch (error) {
+        console.error("[JWT Callback] ERROR:", error);
+        return token;
       }
-      return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
+      try {
+        console.log("[Session Callback] Input:", { hasSession: !!session, hasToken: !!token });
+        if (session?.user && token) {
+          session.user.role = (token.role as string) || "client";
+          session.user.id = (token.id as string) || "";
+          console.log("[Session Callback] Set role:", session.user.role);
+        }
+        console.log("[Session Callback] Success");
+        return session;
+      } catch (error) {
+        console.error("[Session Callback] ERROR:", error);
+        return session;
       }
-      return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
