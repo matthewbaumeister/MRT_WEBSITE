@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { sendContactFormEmail } from "@/lib/sendgrid";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,53 +14,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Send email via SendGrid
+    const result = await sendContactFormEmail({
+      firstName,
+      lastName,
+      email,
+      subject,
+      message,
     });
 
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL_FROM,
-      to: process.env.EMAIL_TO,
-      subject: `Website Contact Form: ${subject}`,
-      html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>From:</strong> ${firstName} ${lastName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <h3>Message:</h3>
-        <p>${message.replace(/\n/g, "<br>")}</p>
-      `,
-      text: `
-        New Contact Form Submission
-        
-        From: ${firstName} ${lastName}
-        Email: ${email}
-        Subject: ${subject}
-        
-        Message:
-        ${message}
-      `,
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to send email");
+    }
 
     return NextResponse.json(
       { message: "Email sent successfully" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending email:", error);
     return NextResponse.json(
-      { error: "Failed to send email" },
+      { error: "Failed to send email. Please try again or contact us directly." },
       { status: 500 }
     );
   }
