@@ -6,12 +6,12 @@ import { User } from "@/types/auth";
 // This is a temporary in-memory user store
 // In production, replace with database (Supabase, PostgreSQL, etc.)
 const users: User[] = [
-  // Default admin user - CHANGE THIS PASSWORD IN PRODUCTION
+  // Default admin user - CHANGE THIS PASSWORD AFTER FIRST LOGIN
   {
     id: "1",
     email: "admin@make-ready-consulting.com",
     name: "Admin",
-    password: "$2a$10$YourHashedPasswordHere", // This will be replaced
+    password: "$2b$10$qmOIwPpRKnhboh.mrlCnLu5PCDQW6nU5M2V3YY19eFO8LPdh8CdQ6",
     role: "admin",
     twoFactorEnabled: false,
   },
