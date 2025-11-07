@@ -4,43 +4,31 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  // NEVER process NextAuth API routes - let NextAuth handle them completely
-  if (path.startsWith("/api/auth")) {
+  // Only protect specific admin/employee routes
+  // Let everything else through including ALL API routes
+  if (path.startsWith("/admin") && path !== "/admin/login") {
+    // Check if user has session - redirect to login if not
+    // Note: We'll handle this on the page level instead
     return NextResponse.next();
   }
 
-  // Allow public pages
-  if (
-    path === "/" ||
-    path === "/login" ||
-    path === "/signup" ||
-    path === "/contact" ||
-    path === "/about" ||
-    path === "/services" ||
-    path === "/terms" ||
-    path === "/privacy" ||
-    path.startsWith("/products")
-  ) {
+  if (path.startsWith("/employee")) {
     return NextResponse.next();
   }
 
-  // For protected routes, check for session
-  // Note: We can't access the session directly in middleware, so we'll rely on NextAuth
-  // to handle authentication on the protected pages themselves
-  
+  if (path.startsWith("/platforms")) {
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
+  // Only run middleware on specific protected routes - NOT on api routes!
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth (NextAuth routes - CRITICAL!)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/admin/:path*",
+    "/employee/:path*", 
+    "/platforms/:path*",
   ],
 };
 
