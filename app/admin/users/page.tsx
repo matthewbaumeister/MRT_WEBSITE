@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabase";
 import Button from "@/components/ui/Button";
 
 interface User {
