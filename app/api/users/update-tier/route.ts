@@ -97,9 +97,9 @@ Make Ready Team
           
           <div style="text-align: center; margin: 30px 0;">
             <div style="background: linear-gradient(-138deg, #2F2F72 0%, #6464AA 100%); 
-                        color: white; padding: 20px; border-radius: 8px; display: inline-block;">
-              <h3 style="margin: 0; font-size: 24px; font-weight: bold;">${tierName.toUpperCase()}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Subscription Tier</p>
+                        color: #FFFFFF !important; padding: 20px; border-radius: 8px; display: inline-block;">
+              <h3 style="margin: 0; font-size: 24px; font-weight: bold; color: #FFFFFF !important;">${tierName.toUpperCase()}</h3>
+              <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9; color: #FFFFFF !important;">Subscription Tier</p>
             </div>
           </div>
           
@@ -128,9 +128,9 @@ Make Ready Team
           <div style="text-align: center; margin: 30px 0;">
             <a href="${process.env.NEXTAUTH_URL}/platforms" 
                style="display: inline-block; background: linear-gradient(-138deg, #2F2F72 0%, #6464AA 100%); 
-                      color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
+                      color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
                       font-weight: bold; font-size: 16px;">
-              Access MRT Platforms
+              <span style="color: #FFFFFF !important;">Access MRT Platforms</span>
             </a>
           </div>
           
