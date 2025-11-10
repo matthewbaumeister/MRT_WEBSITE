@@ -65,14 +65,20 @@ export default function MatrixSidebar({
     try {
       let url = "/api/matrix/conversations";
       
-      // If no project is selected, show only conversations without a project ("Recents")
-      if (currentProjectId === null) {
+      // Special handling for "All Chats" view
+      if (currentProjectId === "ALL") {
+        // Fetch ALL conversations (no project filter)
+        url += "?all=true";
+        console.log(`Loading ALL conversations (All Chats view)`);
+      } else if (currentProjectId === null) {
+        // Show only conversations without a project ("Unsaved/Recents")
         url += "?project_id=null";
+        console.log(`Loading conversations without project`);
       } else if (currentProjectId) {
+        // Show only conversations for this specific project
         url += `?project_id=${currentProjectId}`;
+        console.log(`Loading conversations for project: ${currentProjectId}`);
       }
-      
-      console.log(`Loading conversations for project: ${currentProjectId}, URL: ${url}`);
       
       const response = await fetch(url);
       if (response.ok) {
@@ -232,7 +238,15 @@ export default function MatrixSidebar({
             {/* Recent Chats Section */}
             <div className="px-4 mb-6">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                {currentProjectId ? (
+                {currentProjectId === "ALL" ? (
+                  <>
+                    <div 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: "#6B7280" }}
+                    />
+                    All Chats
+                  </>
+                ) : currentProjectId ? (
                   <>
                     <div 
                       className="w-2 h-2 rounded-full" 
@@ -248,11 +262,21 @@ export default function MatrixSidebar({
                 </p>
               ) : (
                 <div className="space-y-1">
-                  {conversations.map((conversation) => (
+                  {conversations.map((conversation) => {
+                    // Find the project for this conversation (if any)
+                    const conversationProject = conversation.project_id 
+                      ? projects.find(p => p.id === conversation.project_id)
+                      : null;
+                    
+                    return (
                     <div key={conversation.id} className="relative group">
                       <button
                         onClick={() => {
                           onSelectChat(conversation.id);
+                          // If clicking from "All Chats" view and conversation has a project, switch to that project
+                          if (currentProjectId === "ALL" && conversation.project_id) {
+                            onSelectProject(conversation.project_id);
+                          }
                           onClose();
                         }}
                         className={`w-full text-left px-3 py-2 pr-10 rounded-lg text-sm transition-colors ${
@@ -261,7 +285,17 @@ export default function MatrixSidebar({
                             : "text-gray-400 hover:bg-gray-800 hover:text-white"
                         }`}
                       >
-                        <div className="truncate">{conversation.title || "New Research"}</div>
+                        <div className="flex items-center space-x-2">
+                          {/* Show project color dot in "All Chats" view */}
+                          {currentProjectId === "ALL" && conversationProject && (
+                            <div
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: conversationProject.color }}
+                              title={conversationProject.name}
+                            />
+                          )}
+                          <div className="truncate flex-1">{conversation.title || "New Research"}</div>
+                        </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {new Date(conversation.updated_at).toLocaleDateString()}
                         </div>
@@ -312,7 +346,8 @@ export default function MatrixSidebar({
                         )}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
@@ -380,14 +415,14 @@ export default function MatrixSidebar({
 
                 {showProjectsSection && (
                   <div className="mt-2 space-y-1 pl-4">
-                    {/* All Chats */}
+                    {/* All Chats - Shows ALL conversations with project indicators */}
                     <button
                       onClick={() => {
-                        onSelectProject(null);
+                        onSelectProject("ALL");
                         onClose();
                       }}
                       className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        currentProjectId === null
+                        currentProjectId === "ALL"
                           ? "bg-gray-800 text-white"
                           : "text-gray-400 hover:bg-gray-800 hover:text-white"
                       }`}
@@ -398,7 +433,6 @@ export default function MatrixSidebar({
                       />
                       <span>All Chats</span>
                     </button>
-
                     {/* Project List */}
                     {projects.map((project) => (
                       <div

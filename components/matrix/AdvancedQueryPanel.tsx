@@ -11,19 +11,93 @@ interface AdvancedQueryPanelProps {
   onMergeEnd?: () => void;
 }
 
-// Helper to parse simple markdown
+// Helper to parse markdown with better formatting support
 function parseMarkdown(text: string): string {
-  return text
-    // Bold
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>')
-    // Line breaks
-    .replace(/\n/g, '<br/>');
+  let html = text;
+  
+  // LaTeX math blocks \[ ... \] - render as code blocks
+  html = html.replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => {
+    return `<div class="bg-gray-900 rounded px-3 py-2 my-2 font-mono text-xs text-green-300 overflow-x-auto">${formula.trim()}</div>`;
+  });
+  
+  // LaTeX inline math \( ... \)
+  html = html.replace(/\\\((.*?)\\\)/g, (match, formula) => {
+    return `<code class="bg-gray-900 rounded px-2 py-0.5 text-green-300 font-mono text-xs">${formula}</code>`;
+  });
+  
+  // Headers (must come before other replacements)
+  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2 text-white">$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2 text-white">$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2 text-white">$1</h1>');
+  
+  // Bold (before italic to handle ** before *)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+  
+  // Italic
+  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+  
+  // Split into lines for list processing
+  const lines = html.split('\n');
+  const processedLines: string[] = [];
+  let inOrderedList = false;
+  let inUnorderedList = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Numbered lists (1. 2. 3. etc.)
+    if (/^\d+\.\s+(.+)/.test(line)) {
+      const match = line.match(/^\d+\.\s+(.+)/);
+      if (match) {
+        if (!inOrderedList) {
+          processedLines.push('<ol class="list-decimal list-inside space-y-2 my-3 ml-4">');
+          inOrderedList = true;
+        }
+        processedLines.push(`<li class="text-gray-300">${match[1]}</li>`);
+      }
+    } 
+    // Bullet lists (-, *, •)
+    else if (/^[-*•]\s+(.+)/.test(line)) {
+      const match = line.match(/^[-*•]\s+(.+)/);
+      if (match) {
+        if (inOrderedList) {
+          processedLines.push('</ol>');
+          inOrderedList = false;
+        }
+        if (!inUnorderedList) {
+          processedLines.push('<ul class="list-disc list-inside space-y-2 my-3 ml-4">');
+          inUnorderedList = true;
+        }
+        processedLines.push(`<li class="text-gray-300">${match[1]}</li>`);
+      }
+    } 
+    // Regular line
+    else {
+      if (inOrderedList) {
+        processedLines.push('</ol>');
+        inOrderedList = false;
+      }
+      if (inUnorderedList) {
+        processedLines.push('</ul>');
+        inUnorderedList = false;
+      }
+      
+      // Only add <br/> for non-empty lines that aren't HTML tags
+      if (line.trim() && !line.trim().startsWith('<')) {
+        processedLines.push(line + '<br/>');
+      } else if (line.trim().startsWith('<')) {
+        processedLines.push(line);
+      } else {
+        processedLines.push('<br/>');
+      }
+    }
+  }
+  
+  // Close any open lists
+  if (inOrderedList) processedLines.push('</ol>');
+  if (inUnorderedList) processedLines.push('</ul>');
+  
+  return processedLines.join('\n');
 }
 
 export default function AdvancedQueryPanel({

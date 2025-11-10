@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get("id");
     const projectId = searchParams.get("project_id");
+    const showAll = searchParams.get("all") === "true";
 
     // If requesting a specific conversation by ID
     if (conversationId) {
@@ -65,14 +66,20 @@ export async function GET(request: NextRequest) {
       .order("updated_at", { ascending: false });
 
     // Filter by project_id
-    if (projectId === "null" || projectId === null) {
-      // Show only conversations without a project (in "Recents")
+    if (showAll) {
+      // Show ALL conversations (for "All Chats" view)
+      // No additional filter needed
+      console.log("Fetching ALL conversations for user");
+    } else if (projectId === "null" || projectId === null) {
+      // Show only conversations without a project (unsaved/orphaned)
       query = query.is("project_id", null);
+      console.log("Fetching conversations without project");
     } else if (projectId) {
       // Show conversations for specific project
       query = query.eq("project_id", projectId);
+      console.log(`Fetching conversations for project: ${projectId}`);
     }
-    // If no projectId param at all, show ALL conversations
+    // If no params at all, show ALL conversations (default behavior)
 
     const { data: conversations, error } = await query;
 
