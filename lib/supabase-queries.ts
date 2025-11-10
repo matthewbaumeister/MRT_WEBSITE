@@ -24,6 +24,8 @@ const MATRIX_TABLES: Record<string, string[]> = {
     'army_innovation_phase_progress',
     'army_innovation_competition_stats',
     'army_innovation_prize_summary',
+    'army_innovation_documents',
+    'army_innovation_upcoming_deadlines',
   ],
   // MANTECH
   mantech: [
@@ -35,16 +37,38 @@ const MATRIX_TABLES: Record<string, string[]> = {
     'mantech_transition_pipeline',
     'mantech_recent_projects',
   ],
-  // Add your DOD contract tables here when ready
+  // DOD Contract News & Information
   dod_contracts: [
-    // 'dod_contract_news',  // Add when you create this table
-    // 'dod_contract_awards',
-    // 'fpds_small_business',
+    'dod_contract_news',
+    'dod_news_scraper_log',
+    'mil_recent_news',
+    'military_news_articles',
+    'military_news_scraper_log',
+  ],
+  // GSA Schedule & Contractors
+  gsa: [
+    'active_gsa_schedule_holders',
+    'gsa_contractors_with_pricing',
+    'gsa_gwac_scraper_log',
+    'gsa_labor_categories',
+    'gsa_price_lists',
+    'gsa_pricing_scraper_log',
+    'gsa_schedule_holders',
+    'gsa_sin_catalog',
+    'small_business_gsa_holders',
+  ],
+  // Stock Trades & Defense Contractors
+  financial: [
+    'congressional_stock_trades',
+    'defense_contractors_tickers',
+    'defense_stock_trades',
   ],
   // Small Business specific
   small_business: [
-    // 'sba_awards',  // Add when available
-    // 'dsip_awards',
+    'small_business_gsa_holders',
+    // 'sba_awards',  // Add when government API is back online
+    // 'dsip_awards', // Add when available
+    // 'fpds_small_business', // Add when imported
   ],
 };
 
