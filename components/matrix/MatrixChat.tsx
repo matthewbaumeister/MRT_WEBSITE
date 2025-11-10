@@ -628,55 +628,71 @@ export default function MatrixChat({
         
         const answer = data.answer;
         
-        // If merge instructions provided, update the section
-        if (mergeInstructions && selectedSection) {
+        // If this is a merge operation, update the section
+        if (mergeInstructions !== undefined && selectedSection) {
+          console.log(`[MERGE] Updating section ${selectedSection} with new data`);
+          
           // Show merging animation
           setReportSections(prev => prev.map(s => 
             s.id === selectedSection 
-              ? { ...s, isGenerating: true, generationStatus: "Merging advanced query into report..." }
+              ? { ...s, isGenerating: true, generationStatus: "Merging query results..." }
               : s
           ));
           
-          // Wait a bit for visual feedback
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Wait for visual feedback
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Update the section content with merged data
+          const currentSection = reportSections.find(s => s.id === selectedSection);
+          const updatedContent = currentSection?.content + "\n\n### Advanced Query Update\n\n" + answer;
+          
           setReportSections(prev => prev.map(s => 
             s.id === selectedSection 
               ? { 
                   ...s, 
-                  content: s.content + "\n\n### Advanced Query Results\n\n" + answer, 
+                  content: updatedContent, 
                   isGenerating: false, 
                   generationStatus: undefined 
                 }
               : s
           ));
           
+          console.log(`[MERGE] ✅ Section content updated`);
+          
           // Save updated report to database
           if (currentConversationId) {
-            setReportSections(currentSections => {
-              fetch("/api/matrix/conversations", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  id: currentConversationId,
-                  metadata: {
-                    isReport: true,
-                    reportTopic: researchTopic,
-                    reportSections: currentSections.map(s => ({
-                      id: s.id,
-                      title: s.title,
-                      content: s.content || "",
-                      sources: s.sources || [],
-                    })),
+            setTimeout(() => {
+              setReportSections(currentSections => {
+                console.log(`[MERGE] Saving to database...`);
+                fetch("/api/matrix/conversations", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    id: currentConversationId,
+                    metadata: {
+                      isReport: true,
+                      reportTopic: researchTopic,
+                      reportSections: currentSections.map(s => ({
+                        id: s.id,
+                        title: s.title,
+                        content: s.content || "",
+                        sources: s.sources || [],
+                      })),
+                    }
+                  }),
+                }).then(res => {
+                  if (res.ok) {
+                    console.log(`[MERGE] ✅ Saved to database`);
+                  } else {
+                    console.error(`[MERGE] ❌ Save failed: ${res.status}`);
                   }
-                }),
-              }).catch(error => {
-                console.error("Error saving merged report:", error);
+                }).catch(error => {
+                  console.error("[MERGE] ❌ Save error:", error);
+                });
+                
+                return currentSections;
               });
-              
-              return currentSections;
-            });
+            }, 100);
           }
         }
         
