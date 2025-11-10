@@ -428,107 +428,97 @@ export default function MatrixChat({
       console.log("💾 Will save report metadata after enrichment completes...");
     }
     
-    // FINAL ENRICHMENT STEP: Enhance with live public data
-    setLiveStatus("Final enrichment: Adding company intelligence...");
-    setSearchStatus(["🔍 Final Step: Enhancing report with live public data..."]);
+    // FINAL ENRICHMENT STEP: GPT-4o per-section enhancement
+    setLiveStatus("Final enrichment: Adding company intelligence with GPT-4o...");
+    setSearchStatus(["✨ Final Step: GPT-4o analyzing each section for public intelligence..."]);
     
     try {
-      // Extract companies and people from the report
-      setLiveStatus("Identifying companies and key executives...");
-      setSearchStatus(["🔍 Identifying companies and key personnel..."]);
+      console.log("🤖 Starting GPT-4o per-section enrichment...");
       
-      // Get current sections with content
-      const sectionsToEnhance = reportSections.map(s => ({
-        id: s.id,
-        title: s.title,
-        content: sectionContents[s.id] || "",
-      }));
-      
-      // Call server-side enrichment API
-      const enrichResponse = await fetch("/api/matrix/enrich", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sections: sectionsToEnhance,
-          topic,
-        }),
-      });
+      // Enrich each section individually with GPT-4o
+      for (const section of REPORT_SECTIONS) {
+        const sectionContent = sectionContents[section.id];
+        if (!sectionContent) continue;
+        
+        // Mark section as enriching
+        setReportSections(prev => prev.map(s => ({
+          ...s,
+          isEnriching: s.id === section.id,
+          generationStatus: s.id === section.id ? "Enriching with GPT-4o intelligence..." : s.generationStatus,
+        })));
+        
+        setLiveStatus(`Enriching ${section.title} with GPT-4o...`);
+        setSearchStatus([`✨ GPT-4o: Researching ${section.title}...`]);
+        
+        console.log(`[ENRICH] Section ${section.id}: ${section.title}`);
+        
+        // Call per-section enrichment API
+        const enrichResponse = await fetch("/api/matrix/enrich-section", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sectionId: section.id,
+            sectionTitle: section.title,
+            sectionContent: sectionContent,
+            topic: topic,
+          }),
+        });
 
-      if (!enrichResponse.ok) {
-        console.warn("Enrichment failed, skipping");
-        setSearchStatus([]);
-        setLiveStatus("");
-        return;
-      }
-
-      const enrichData = await enrichResponse.json();
-      const enhancements = enrichData.enhancements;
-      
-      // Apply enhancements section by section with live updates
-      for (const sectionId of Object.keys(enhancements.enhancedSections)) {
-        const section = REPORT_SECTIONS.find(s => s.id === sectionId);
-        if (section) {
-          // Mark section as enriching
+        if (!enrichResponse.ok) {
+          console.warn(`[ENRICH] Failed to enrich ${section.id}, skipping`);
           setReportSections(prev => prev.map(s => ({
             ...s,
-            isEnriching: s.id === sectionId
+            isEnriching: false,
+            generationStatus: s.id === section.id ? "" : s.generationStatus,
           })));
-          
-          setLiveStatus(`Enriching ${section.title} with company data...`);
-          setSearchStatus([`✨ Enriching ${section.title} with verified public data...`]);
-          
-          // Get enhancement content
-          const enhancement = enhancements.enhancedSections[sectionId];
-          
-          // Add web sources from enhancement
-          const webSources: DataSource[] = [];
-          
-          // Extract URLs from company data
-          enhancements.companies.forEach((company: any) => {
-            if (company.website) {
-              webSources.push({
-                name: `${company.name} - Official Website`,
-                url: company.website,
-              });
-            }
-            if (company.linkedin) {
-              webSources.push({
-                name: `${company.name} - LinkedIn`,
-                url: company.linkedin,
-              });
-            }
-          });
-          
-          // Extract URLs from key people data
-          enhancements.keyPeople.forEach((person: any) => {
-            if (person.linkedin) {
-              webSources.push({
-                name: `${person.name} (${person.title}) - LinkedIn`,
-                url: person.linkedin,
-              });
-            }
-          });
-          
-          // Update section with enhancement and new sources
-          setReportSections(prev => prev.map(s => {
-            if (s.id === sectionId) {
-              const existingSources = s.sources || [];
-              const combinedSources = [...existingSources, ...webSources];
-              
-              return {
-                ...s,
-                content: sectionContents[sectionId] + '\n\n' + enhancement,
-                sources: combinedSources,
-                isEnriching: false, // Clear enriching status
-              };
-            }
-            return { ...s, isEnriching: false }; // Clear all enriching flags
-          }));
-          
-          // Small delay to show progress
-          await new Promise(resolve => setTimeout(resolve, 800));
+          continue;
         }
+
+        const enrichData = await enrichResponse.json();
+        const { enhancedContent, companiesFound, webSearchPerformed } = enrichData;
+        
+        console.log(`[ENRICH] ✅ ${section.id}: +${enhancedContent.length - sectionContent.length} chars, ${companiesFound} companies, web: ${webSearchPerformed}`);
+        
+        // Extract URLs from enhanced content (sources are embedded)
+        const urlPattern = /\[Source:\s*(https?:\/\/[^\]]+)\]/g;
+        const webSources: DataSource[] = [];
+        let match;
+        while ((match = urlPattern.exec(enhancedContent)) !== null) {
+          webSources.push({
+            name: `Public Source - ${section.title}`,
+            url: match[1],
+          });
+        }
+        
+        // Update section with enhanced content
+        setReportSections(prev => prev.map(s => {
+          if (s.id === section.id) {
+            const existingSources = s.sources || [];
+            const combinedSources = [...existingSources, ...webSources];
+            
+            return {
+              ...s,
+              content: enhancedContent, // Use fully enriched content
+              sources: combinedSources,
+              isEnriching: false,
+              generationStatus: "",
+            };
+          }
+          return s;
+        }));
+        
+        // Update sectionContents for later use
+        sectionContents[section.id] = enhancedContent;
+        
+        // Small delay for visual progress
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      console.log("✅ GPT-4o enrichment complete for all sections!");
+      setSearchStatus(["✅ GPT-4o enrichment complete!"]);
+      
+      // Brief pause before clearing
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Save enriched report to metadata - wait for state to fully update
       if (conversationId) {
