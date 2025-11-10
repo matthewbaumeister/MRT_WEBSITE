@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -14,28 +15,51 @@ export default function MatrixChat({
   chatId,
   onNewChat,
 }: MatrixChatProps) {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [showOptions, setShowOptions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      setUploadedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && uploadedFiles.length === 0) return;
 
-    // Add user message
-    setMessages([...messages, { role: "user", content: input }]);
+    const userMessage = { role: "user", content: input, files: uploadedFiles };
+    setMessages([...messages, userMessage]);
     setInput("");
+    setUploadedFiles([]);
+    setIsLoading(true);
 
     // TODO: Call OpenAI API and add assistant response
+    // For now, just simulate a response
+    setTimeout(() => {
+      setMessages(prev => [
+        ...prev,
+        { 
+          role: "assistant", 
+          content: "I'm MATRIX, your AI assistant. I'm currently in development and will be able to help you with various tasks soon!" 
+        }
+      ]);
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+      <div className="flex items-center p-4 border-b border-gray-800">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden text-gray-400 hover:text-white"
+          className="text-gray-400 hover:text-white transition-colors"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -46,16 +70,6 @@ export default function MatrixChat({
             />
           </svg>
         </button>
-
-        {/* Logo */}
-        <div className="flex-1 flex justify-end">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-accent-500 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">MR</span>
-            </div>
-            <span className="text-white font-semibold hidden sm:block">MATRIX</span>
-          </div>
-        </div>
       </div>
 
       {/* Messages Area */}
@@ -64,30 +78,22 @@ export default function MatrixChat({
           /* Welcome Screen */
           <div className="h-full flex flex-col items-center justify-center p-8">
             <div className="text-center max-w-2xl">
-              {/* Welcome Icon */}
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary-600 to-accent-500 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
+              {/* MRT Logo */}
+              <div className="mb-8">
+                <Image
+                  src="/favicon.png"
+                  alt="Make Ready Technologies"
+                  width={120}
+                  height={120}
+                  className="mx-auto"
+                />
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Welcome, Matt
+                How can I help you today?
               </h1>
               <p className="text-gray-400 text-lg">
-                How can I help you today?
+                {session?.user?.name && `Welcome back, ${session.user.name.split(' ')[0]}`}
               </p>
             </div>
           </div>
@@ -102,16 +108,42 @@ export default function MatrixChat({
                 }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[80%] ${
                     message.role === "user"
                       ? "bg-gradient-to-r from-primary-600 to-primary-700 text-white"
                       : "bg-gray-800 text-gray-100"
-                  }`}
+                  } rounded-2xl px-4 py-3`}
                 >
-                  {message.content}
+                  {message.files && message.files.length > 0 && (
+                    <div className="mb-2 space-y-1">
+                      {message.files.map((file: File, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center space-x-2 text-sm opacity-90"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>{file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap">{message.content}</div>
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-800 text-gray-100 rounded-2xl px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -126,11 +158,17 @@ export default function MatrixChat({
                 {/* Action Buttons - Left Side */}
                 <div className="flex items-center space-x-1 p-2">
                   {/* Upload Button */}
-                  <button
-                    type="button"
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                  <label
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
                     title="Upload document"
                   >
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls"
+                    />
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -144,7 +182,7 @@ export default function MatrixChat({
                         d="M12 4v16m8-8H4"
                       />
                     </svg>
-                  </button>
+                  </label>
 
                   {/* Options Menu Button */}
                   <div className="relative">
@@ -247,13 +285,40 @@ export default function MatrixChat({
                 </div>
 
                 {/* Text Input */}
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="How can I help you today?"
-                  className="flex-1 bg-transparent text-white placeholder-gray-500 py-4 px-2 focus:outline-none"
-                />
+                <div className="flex-1 flex flex-col">
+                  {uploadedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 px-2 pt-2">
+                      {uploadedFiles.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center space-x-2 px-3 py-1 bg-gray-700 rounded-lg text-sm"
+                        >
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="text-gray-300">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="How can I help you today?"
+                    className="flex-1 bg-transparent text-white placeholder-gray-500 py-4 px-2 focus:outline-none"
+                    disabled={isLoading}
+                  />
+                </div>
 
                 {/* Model Selector & Submit - Right Side */}
                 <div className="flex items-center space-x-2 p-2">
@@ -280,22 +345,29 @@ export default function MatrixChat({
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={!input.trim()}
+                    disabled={(!input.trim() && uploadedFiles.length === 0) || isLoading}
                     className="p-2 bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 10l7-7m0 0l7 7m-7-7v18"
-                      />
-                    </svg>
+                    {isLoading ? (
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 10l7-7m0 0l7 7m-7-7v18"
+                        />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>

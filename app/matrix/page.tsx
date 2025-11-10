@@ -9,7 +9,7 @@ import MatrixChat from "@/components/matrix/MatrixChat";
 export default function MatrixPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   if (status === "loading") {
