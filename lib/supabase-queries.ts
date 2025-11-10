@@ -37,8 +37,11 @@ async function getSearchableColumns(tableName: string): Promise<string[]> {
     }
 
     if (!data || data.length === 0) {
-      // Table is empty, try to get schema via RPC (optional enhancement)
-      return await getSearchableColumnsViaRPC(tableName);
+      // Table is empty, try to get schema via RPC
+      console.log(`⚠️  ${tableName} is empty, trying RPC to get columns...`);
+      const rpcColumns = await getSearchableColumnsViaRPC(tableName);
+      console.log(`  ${tableName} (empty table): ${rpcColumns.join(', ')}`);
+      return rpcColumns;
     }
 
     // Get all column names from the first row
@@ -95,25 +98,25 @@ async function getSearchableColumnsViaRPC(tableName: string): Promise<string[]> 
       table_name_param: tableName
     });
 
-    if (error || !data || data.length === 0) {
-      return ['title', 'description', 'name'];
+    if (error) {
+      console.log(`RPC error for ${tableName}:`, error.message);
+      // Return empty array to skip this table
+      return [];
     }
 
-    // Filter to text-based columns
-    const textColumns = data
-      .filter((col: any) => {
-        const dataType = col.data_type?.toLowerCase() || '';
-        return (
-          dataType.includes('text') ||
-          dataType.includes('varchar') ||
-          dataType.includes('character varying')
-        );
-      })
-      .map((col: any) => col.column_name);
+    if (!data || data.length === 0) {
+      console.log(`No text columns found in ${tableName} schema, skipping`);
+      return [];
+    }
 
-    return textColumns.length > 0 ? textColumns : ['title', 'description', 'name'];
+    // All columns returned are text-based (filtered in SQL)
+    const textColumns = data.map((col: any) => col.column_name);
+
+    console.log(`✅ RPC found columns for ${tableName}:`, textColumns.join(', '));
+    return textColumns;
   } catch (error) {
-    return ['title', 'description', 'name'];
+    console.log(`Exception calling RPC for ${tableName}:`, error);
+    return [];
   }
 }
 
@@ -314,7 +317,13 @@ export async function searchSupabaseTables(
     for (const tableName of tablesToSearch) {
       try {
         // Get dynamically discovered columns for this table
-        const columnsToSearch = columnCache[tableName] || ['title', 'description', 'name'];
+        const columnsToSearch = columnCache[tableName];
+        
+        // Skip tables with no searchable columns (empty or no text columns)
+        if (!columnsToSearch || columnsToSearch.length === 0) {
+          console.log(`⏭️  Skipping ${tableName}: no searchable columns`);
+          continue;
+        }
         
         // Build OR query: column1 ILIKE '%topic%' OR column2 ILIKE '%topic%' ...
         const orConditions = columnsToSearch.map(col => `${col}.ilike.%${topic}%`).join(',');
