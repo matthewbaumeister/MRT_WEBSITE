@@ -418,53 +418,13 @@ export default function MatrixChat({
       }
     }
     
-    // Save the complete report as an assistant message AND store sections in metadata
+    // Save the complete report as an assistant message
     if (conversationId) {
       const reportSummary = `Generated complete market research report with ${REPORT_SECTIONS.length} sections on: ${topic}`;
       await saveMessage(conversationId, "assistant", reportSummary);
       
-      // Update conversation metadata with report structure
-      // Use state directly to get the most up-to-date sections with content
-      try {
-        // Wait a bit to ensure state is fully updated
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Get current sections from state
-        setReportSections(currentSections => {
-          // Save the current state to metadata
-          fetch("/api/matrix/conversations", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: conversationId,
-              metadata: {
-                settings: { extendedThinking, webSearch, research, smallBusinessFocus },
-                isReport: true,
-                reportTopic: topic,
-                reportSections: currentSections.map(s => ({
-                  id: s.id,
-                  title: s.title,
-                  content: s.content || "",
-                  sources: s.sources || [],
-                })),
-              }
-            }),
-          }).then(res => {
-            if (res.ok) {
-              console.log("✅ Report metadata saved successfully");
-            } else {
-              console.error("❌ Failed to save report metadata");
-            }
-          }).catch(error => {
-            console.error("Error saving report structure:", error);
-          });
-          
-          // Return unchanged state
-          return currentSections;
-        });
-      } catch (error) {
-        console.error("Error saving report structure:", error);
-      }
+      // Metadata will be saved after enrichment completes
+      console.log("💾 Will save report metadata after enrichment completes...");
     }
     
     // FINAL ENRICHMENT STEP: Enhance with live public data
@@ -569,29 +529,43 @@ export default function MatrixChat({
         }
       }
       
-      // Save enriched report to metadata
-      if (conversationId) {
+      // Save enriched report to metadata - wait for state to fully update
+      if (currentConversationId) {
+        console.log("💾 Saving complete report with enrichment to database...");
+        
+        // Wait for all state updates to finish
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Now save using the final state
         setReportSections(currentSections => {
+          console.log(`📊 Saving ${currentSections.length} sections to metadata`);
+          console.log("Sample content length:", currentSections[0]?.content?.length || 0);
+          
           fetch("/api/matrix/conversations", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              id: conversationId,
+              id: currentConversationId,
               metadata: {
                 settings: { extendedThinking, webSearch, research, smallBusinessFocus },
                 isReport: true,
                 reportTopic: researchTopic,
                 reportSections: currentSections.map(s => ({
                   id: s.id,
+                  number: s.number,
                   title: s.title,
                   content: s.content || "",
                   sources: s.sources || [],
                 })),
               }
             }),
-          }).then(res => {
+          }).then(async res => {
             if (res.ok) {
-              console.log("✅ Enriched report metadata saved");
+              const data = await res.json();
+              console.log("✅ Report metadata saved successfully!");
+              console.log("Saved report with", currentSections.length, "sections");
+            } else {
+              console.error("❌ Failed to save report metadata:", res.status);
             }
           }).catch(error => {
             console.error("Error saving enriched report:", error);
@@ -599,6 +573,8 @@ export default function MatrixChat({
           
           return currentSections;
         });
+      } else {
+        console.warn("⚠️  No conversation ID - cannot save report metadata");
       }
       
       setLiveStatus("Report complete!");

@@ -232,7 +232,9 @@ export default function MatrixSidebar({
             {/* Recent Chats Section */}
             <div className="px-4 mb-6">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Recents
+                {currentProjectId ? 
+                  projects.find(p => p.id === currentProjectId)?.name || "Project" 
+                  : "Recents"}
               </h3>
               {conversations.length === 0 ? (
                 <p className="text-sm text-gray-500 py-4 text-center">
