@@ -7,6 +7,23 @@ interface AdvancedQueryPanelProps {
   onClose: () => void;
   selectedSection: string | null;
   onQuery: (query: string, mergeInstructions?: string) => Promise<string>;
+  onMergeStart?: () => void;
+  onMergeEnd?: () => void;
+}
+
+// Helper to parse simple markdown
+function parseMarkdown(text: string): string {
+  return text
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>')
+    // Line breaks
+    .replace(/\n/g, '<br/>');
 }
 
 export default function AdvancedQueryPanel({
@@ -14,6 +31,8 @@ export default function AdvancedQueryPanel({
   onClose,
   selectedSection,
   onQuery,
+  onMergeStart,
+  onMergeEnd,
 }: AdvancedQueryPanelProps) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState("");
@@ -42,6 +61,12 @@ export default function AdvancedQueryPanel({
     if (!result) return;
 
     setIsLoading(true);
+    
+    // Notify parent that merge is starting
+    if (onMergeStart) {
+      onMergeStart();
+    }
+    
     try {
       await onQuery(query, mergeInstructions);
       setShowMerge(false);
@@ -52,6 +77,11 @@ export default function AdvancedQueryPanel({
       console.error("Merge error:", error);
     } finally {
       setIsLoading(false);
+      
+      // Notify parent that merge is complete
+      if (onMergeEnd) {
+        onMergeEnd();
+      }
     }
   };
 
@@ -164,9 +194,10 @@ export default function AdvancedQueryPanel({
                   Query Result:
                 </h3>
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-                    {result}
-                  </p>
+                  <div 
+                    className="text-sm text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: parseMarkdown(result) }}
+                  />
                 </div>
               </div>
 

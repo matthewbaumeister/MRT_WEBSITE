@@ -72,6 +72,7 @@ export default function MatrixChat({
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
   const [debugInfo, setDebugInfo] = useState<any>({});
+  const [isMerging, setIsMerging] = useState<boolean>(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -623,9 +624,20 @@ export default function MatrixChat({
         
         // If merge instructions provided, update the section
         if (mergeInstructions && selectedSection) {
+          // Show merging animation
           setReportSections(prev => prev.map(s => 
             s.id === selectedSection 
-              ? { ...s, content: s.content + "\n\n" + data.message.content }
+              ? { ...s, isGenerating: true, generationStatus: "Merging advanced query into report..." }
+              : s
+          ));
+          
+          // Wait a bit for visual feedback
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Update the section content
+          setReportSections(prev => prev.map(s => 
+            s.id === selectedSection 
+              ? { ...s, content: s.content + "\n\n" + data.message.content, isGenerating: false, generationStatus: undefined }
               : s
           ));
         }
@@ -1306,6 +1318,8 @@ export default function MatrixChat({
           onClose={() => setAdvancedPanelOpen(false)}
           selectedSection={selectedSection ? reportSections.find(s => s.id === selectedSection)?.title || null : null}
           onQuery={handleAdvancedQuery}
+          onMergeStart={() => setIsMerging(true)}
+          onMergeEnd={() => setIsMerging(false)}
         />
       )}
 
