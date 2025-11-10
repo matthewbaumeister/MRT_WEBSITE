@@ -530,8 +530,9 @@ export default function MatrixChat({
       }
       
       // Save enriched report to metadata - wait for state to fully update
-      if (currentConversationId) {
+      if (conversationId) {
         console.log("💾 Saving complete report with enrichment to database...");
+        console.log("Using conversation ID:", conversationId);
         
         // Wait for all state updates to finish
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -545,11 +546,11 @@ export default function MatrixChat({
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              id: currentConversationId,
+              id: conversationId,
               metadata: {
                 settings: { extendedThinking, webSearch, research, smallBusinessFocus },
                 isReport: true,
-                reportTopic: researchTopic,
+                reportTopic: topic,
                 reportSections: currentSections.map(s => ({
                   id: s.id,
                   number: s.number,
@@ -575,6 +576,7 @@ export default function MatrixChat({
         });
       } else {
         console.warn("⚠️  No conversation ID - cannot save report metadata");
+        console.warn("conversationId value:", conversationId);
       }
       
       setLiveStatus("Report complete!");
