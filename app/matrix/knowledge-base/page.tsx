@@ -47,7 +47,7 @@ export default function KnowledgeBasePage() {
   
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<"keyword" | "semantic">("keyword");
+  const [searchMode, setSearchMode] = useState<"keyword" | "semantic">("keyword"); // Default to keyword
   const [tableData, setTableData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,8 +58,19 @@ export default function KnowledgeBasePage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [pageSize, setPageSize] = useState(50);
   
-  const ROWS_PER_PAGE = 50;
+  // Smart features state
+  const [expandedSmartSearch, setExpandedSmartSearch] = useState(false);
+  const [expandedFilters, setExpandedFilters] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [extractingKeywords, setExtractingKeywords] = useState(false);
+  const [extractedKeywords, setExtractedKeywords] = useState<string>("");
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [findingSimilar, setFindingSimilar] = useState<string | null>(null);
+  const [similarRecords, setSimilarRecords] = useState<any[] | null>(null);
+  
+  const ROWS_PER_PAGE = pageSize;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -259,8 +270,105 @@ export default function KnowledgeBasePage() {
     setSortColumn(null);
     setSortDirection("asc");
     setCurrentPage(1);
+    setExtractedKeywords("");
+    setUploadedFile(null);
     if (selectedTable) {
       loadTableData();
+    }
+  };
+
+  // Handle document upload and keyword extraction
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedFile(file);
+    setExtractingKeywords(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/matrix/knowledge-base/extract-keywords", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to extract keywords");
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.keywords) {
+        setExtractedKeywords(result.keywords);
+        setSearchQuery(result.keywords);
+        setError(`Extracted keywords from ${result.documentName}`);
+      } else {
+        setError("No keywords found in document");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to extract keywords");
+      setUploadedFile(null);
+    } finally {
+      setExtractingKeywords(false);
+    }
+  };
+
+  // Handle Find Similar
+  const handleFindSimilar = async (record: any) => {
+    if (!selectedTable && !record._source_table) {
+      setError("Cannot find similar records without table information");
+      return;
+    }
+
+    const table = selectedTable || record._source_table;
+    setFindingSimilar(record.id);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/matrix/knowledge-base/find-similar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          record,
+          table,
+          limit: 10,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to find similar records");
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSimilarRecords(result.results);
+        setExpandedRow(record.id);
+        if (result.results.length === 0) {
+          setError("No similar records found");
+        } else {
+          setError(`Found ${result.results.length} similar records using ${result.method} search`);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to find similar records");
+      setSimilarRecords(null);
+    } finally {
+      setFindingSimilar(null);
+    }
+  };
+
+  // Toggle row expansion
+  const toggleRowExpansion = (recordId: string) => {
+    if (expandedRow === recordId) {
+      setExpandedRow(null);
+      setSimilarRecords(null);
+    } else {
+      setExpandedRow(recordId);
+      setSimilarRecords(null);
     }
   };
 
@@ -305,8 +413,93 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
 
+        {/* Smart Search Section - Collapsible */}
+        <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 rounded-lg border-2 border-green-700/30 mb-6 overflow-hidden">
+          <button
+            onClick={() => setExpandedSmartSearch(!expandedSmartSearch)}
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-green-900/10 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <h2 className="text-xl font-semibold text-green-400">Smart Search</h2>
+              <span className="px-2 py-1 bg-green-700/30 border border-green-600/50 rounded text-xs font-semibold text-green-300">
+                NEW
+              </span>
+              <span className="text-sm text-gray-400 italic">AI-powered document upload & keyword extraction</span>
+            </div>
+            <svg
+              className={`w-5 h-5 text-green-400 transition-transform ${expandedSmartSearch ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {expandedSmartSearch && (
+            <div className="px-6 pb-6 space-y-4">
+              <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3 text-sm text-yellow-300">
+                <strong>How it works:</strong> Upload a document (PDF, TXT, DOC) and AI will extract relevant keywords to search across all databases.
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Upload Document for Keyword Extraction
+                </label>
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  accept=".txt,.pdf,.doc,.docx"
+                  disabled={extractingKeywords}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-700 file:text-white hover:file:bg-green-600 file:cursor-pointer disabled:opacity-50"
+                />
+                {uploadedFile && (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {extractingKeywords ? '🔄 Extracting keywords...' : `✓ Uploaded: ${uploadedFile.name}`}
+                  </p>
+                )}
+              </div>
+
+              {extractedKeywords && (
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-300">Extracted Keywords:</span>
+                    <button
+                      onClick={() => {
+                        setExtractedKeywords("");
+                        setUploadedFile(null);
+                      }}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <p className="text-sm text-green-300">{extractedKeywords}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Search Bar */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 mb-6 overflow-hidden">
+          <button
+            onClick={() => setExpandedFilters(!expandedFilters)}
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+          >
+            <h2 className="text-lg font-semibold text-white">Search & Filters</h2>
+            <svg
+              className={`w-5 h-5 text-gray-400 transition-transform ${expandedFilters ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {expandedFilters && (
+            <div className="px-6 pb-6 space-y-4">
           <div className="space-y-4">
             {/* Search Mode Toggle */}
             <div className="flex items-center space-x-4">
@@ -407,7 +600,7 @@ export default function KnowledgeBasePage() {
             </div>
 
             {/* Clear Filters */}
-            {(searchQuery || sortColumn || selectedTable) && (
+            {(searchQuery || sortColumn || selectedTable || extractedKeywords) && (
               <button
                 onClick={handleClearFilters}
                 className="text-sm text-gray-400 hover:text-white transition-colors"
@@ -416,6 +609,8 @@ export default function KnowledgeBasePage() {
               </button>
             )}
           </div>
+            </div>
+          )}
         </div>
 
         {/* Error Message */}
@@ -428,15 +623,32 @@ export default function KnowledgeBasePage() {
         {/* Results Info */}
         {selectedTable && !isLoading && (
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-4">
-            <div className="flex items-center justify-between text-sm text-gray-400">
+            <div className="flex items-center justify-between text-sm text-gray-400 flex-wrap gap-3">
               <div>
                 Showing {((currentPage - 1) * ROWS_PER_PAGE) + 1} - {Math.min(currentPage * ROWS_PER_PAGE, totalRows)} of {totalRows} records
               </div>
-              {sortColumn && (
-                <div>
-                  Sorted by: <span className="text-white">{sortColumn}</span> ({sortDirection})
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500">Results per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(parseInt(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
                 </div>
-              )}
+                {sortColumn && (
+                  <div>
+                    Sorted by: <span className="text-white">{sortColumn}</span> ({sortDirection})
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -491,33 +703,98 @@ export default function KnowledgeBasePage() {
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {tableData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
-                      {/* Show source table if searching across multiple tables */}
-                      {!selectedTable && row._source_table && (
-                        <td className="px-4 py-3 text-xs">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
-                            {row._source_table.replace(/_/g, ' ')}
-                          </span>
+                    <>
+                      <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
+                        {/* Show source table if searching across multiple tables */}
+                        {!selectedTable && row._source_table && (
+                          <td className="px-4 py-3 text-xs">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
+                              {row._source_table.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                        )}
+                        {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
+                          <td key={column} className="px-4 py-3 text-sm text-gray-300">
+                            <div className="max-w-xs truncate" title={String(row[column] || '')}>
+                              {row[column] !== null && row[column] !== undefined
+                                ? String(row[column]).substring(0, 100)
+                                : '-'}
+                            </div>
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 text-sm space-x-2">
+                          <button
+                            onClick={() => toggleRowExpansion(row.id)}
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            {expandedRow === row.id ? 'Collapse' : 'Expand'}
+                          </button>
+                          <button
+                            onClick={() => handleFindSimilar(row)}
+                            disabled={findingSimilar === row.id}
+                            className="text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
+                          >
+                            {findingSimilar === row.id ? 'Finding...' : 'Find Similar'}
+                          </button>
+                          <button
+                            onClick={() => setSelectedRecord(row)}
+                            className="text-primary-400 hover:text-primary-300 transition-colors"
+                          >
+                            Modal
+                          </button>
                         </td>
+                      </tr>
+                      {/* Expanded Row Details */}
+                      {expandedRow === row.id && (
+                        <tr className="bg-gray-800/30">
+                          <td colSpan={!selectedTable && row._source_table ? 9 : 8} className="px-4 py-4">
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-4">
+                                {columns.filter(col => col !== 'id' && col !== '_source_table').map((column) => (
+                                  <div key={column} className="border-b border-gray-700 pb-2">
+                                    <dt className="text-xs font-medium text-gray-400 uppercase mb-1">
+                                      {column.replace(/_/g, ' ')}
+                                    </dt>
+                                    <dd className="text-sm text-gray-200">
+                                      {row[column] !== null && row[column] !== undefined ? String(row[column]) : '-'}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Similar Records Section */}
+                              {similarRecords && similarRecords.length > 0 && (
+                                <div className="mt-4 border-t border-gray-700 pt-4">
+                                  <h4 className="text-sm font-semibold text-green-400 mb-3">
+                                    Similar Records ({similarRecords.length}):
+                                  </h4>
+                                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {similarRecords.map((similar, sidx) => (
+                                      <div key={sidx} className="bg-gray-900 border border-gray-700 rounded p-3">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            {columns.slice(0, 3).map((col) => (
+                                              <div key={col} className="text-xs text-gray-400 truncate">
+                                                <strong>{col}:</strong> {String(similar[col] || '-').substring(0, 100)}
+                                              </div>
+                                            ))}
+                                          </div>
+                                          {similar._similarity && (
+                                            <span className="ml-2 px-2 py-1 bg-green-900/30 text-green-300 text-xs rounded">
+                                              {Math.round(similar._similarity * 100)}% match
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                      {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
-                        <td key={column} className="px-4 py-3 text-sm text-gray-300">
-                          <div className="max-w-xs truncate" title={String(row[column] || '')}>
-                            {row[column] !== null && row[column] !== undefined
-                              ? String(row[column]).substring(0, 100)
-                              : '-'}
-                          </div>
-                        </td>
-                      ))}
-                      <td className="px-4 py-3 text-sm">
-                        <button
-                          onClick={() => setSelectedRecord(row)}
-                          className="text-primary-400 hover:text-primary-300 transition-colors"
-                        >
-                          View Full
-                        </button>
-                      </td>
-                    </tr>
+                    </>
                   ))}
                 </tbody>
               </table>

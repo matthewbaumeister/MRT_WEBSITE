@@ -11,7 +11,7 @@ export default function MatrixPage() {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>("ALL"); // Default to "All Chats" view
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
   const [chatResetKey, setChatResetKey] = useState(0);
 
