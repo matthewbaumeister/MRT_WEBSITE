@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
-import { getSectionPrompt, generateDataSources } from "@/lib/report-prompts";
+import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -20,7 +20,7 @@ interface ReportSection {
   title: string;
   content: string;
   expanded: boolean;
-  sources?: string[];
+  sources?: DataSource[];
 }
 
 const REPORT_SECTIONS: Omit<ReportSection, "content" | "expanded">[] = [

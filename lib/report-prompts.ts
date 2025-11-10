@@ -141,43 +141,105 @@ ${useWebSearch ? '- Include recent public information from web sources' : ''}
 `;
 }
 
-// Generate mock data sources based on section content
-export function generateDataSources(sectionId: string, content: string): string[] {
-  const sources: string[] = [];
+// Data source with URL
+export interface DataSource {
+  name: string;
+  url: string;
+}
+
+// URL mappings for data sources
+const SOURCE_URLS: Record<string, string> = {
+  'Army xTech Competition Database': 'https://www.ausa.org/army-xtech',
+  'Army Innovation Programs': 'https://armyfuturescommand.com/army-applications-laboratory/',
+  'MANTECH Projects Database': 'https://www.dodmantech.com/',
+  'MANTECH SBIR Transitions': 'https://www.dodmantech.com/sbir',
+  'DSIP': 'https://www.defenseinnovation.mil/',
+  'Small Business Innovation Research Program': 'https://www.sbir.gov/',
+  'FUZE Innovation Platform': 'https://armyfuturescommand.com/fuze/',
+  'Navy SBIR/STTR': 'https://www.navysbir.com/',
+  'Air Force Innovation': 'https://www.afwerx.com/',
+  'AFWERX Programs': 'https://www.afwerx.com/',
+  'Federal Procurement Data System': 'https://www.fpds.gov/',
+  'USA Spending Database': 'https://www.usaspending.gov/',
+  'DOD Budget Documents': 'https://comptroller.defense.gov/',
+  'Defense Innovation Unit': 'https://www.diu.mil/',
+  'SBIR.gov': 'https://www.sbir.gov/',
+  'SAM.gov': 'https://sam.gov/',
+};
+
+// Generate data sources with URLs based on section content
+export function generateDataSources(sectionId: string, content: string): DataSource[] {
+  const sources: DataSource[] = [];
   
   // Parse content for mentioned programs and create specific source references
   if (content.includes('xTech') || content.includes('Army Innovation')) {
-    sources.push('Army xTech Competition Database - Innovation Submissions 2022-2024');
-    sources.push('Army Innovation Programs - Active Opportunities');
+    sources.push({
+      name: 'Army xTech Competition Database - Innovation Submissions 2022-2024',
+      url: SOURCE_URLS['Army xTech Competition Database']
+    });
+    sources.push({
+      name: 'Army Innovation Programs - Active Opportunities',
+      url: SOURCE_URLS['Army Innovation Programs']
+    });
   }
   
   if (content.includes('MANTECH') || content.includes('manufacturing')) {
-    sources.push('MANTECH Projects Database - Manufacturing Technology Transitions');
-    sources.push('MANTECH SBIR Transitions - Technology Pipeline');
+    sources.push({
+      name: 'MANTECH Projects Database - Manufacturing Technology Transitions',
+      url: SOURCE_URLS['MANTECH Projects Database']
+    });
+    sources.push({
+      name: 'MANTECH SBIR Transitions - Technology Pipeline',
+      url: SOURCE_URLS['MANTECH SBIR Transitions']
+    });
   }
   
   if (content.includes('SBIR') || content.includes('STTR')) {
-    sources.push('DSIP - Defense SBIR/STTR Awards FY2020-2024');
-    sources.push('Small Business Innovation Research Program Database');
+    sources.push({
+      name: 'DSIP - Defense SBIR/STTR Awards FY2020-2024',
+      url: SOURCE_URLS['DSIP']
+    });
+    sources.push({
+      name: 'Small Business Innovation Research Program Database',
+      url: SOURCE_URLS['Small Business Innovation Research Program']
+    });
   }
   
   if (content.includes('FUZE') || content.includes('innovation')) {
-    sources.push('FUZE Innovation Platform - Active Challenges');
+    sources.push({
+      name: 'FUZE Innovation Platform - Active Challenges',
+      url: SOURCE_URLS['FUZE Innovation Platform']
+    });
   }
   
   if (content.includes('Navy') || content.includes('Naval')) {
-    sources.push('Navy SBIR/STTR Topics and Awards Database');
+    sources.push({
+      name: 'Navy SBIR/STTR Topics and Awards Database',
+      url: SOURCE_URLS['Navy SBIR/STTR']
+    });
   }
   
   if (content.includes('Air Force') || content.includes('AFWERX')) {
-    sources.push('Air Force Innovation Database - AFWERX Programs');
+    sources.push({
+      name: 'Air Force Innovation Database - AFWERX Programs',
+      url: SOURCE_URLS['AFWERX Programs']
+    });
   }
   
   // Add generic sources if not enough specific ones
   if (sources.length < 5) {
-    sources.push('Federal Procurement Data System (FPDS) - Contract Awards');
-    sources.push('USA Spending Database - Federal Contracts and Grants');
-    sources.push('DOD Budget Documents - RDT&E Funding Lines');
+    sources.push({
+      name: 'Federal Procurement Data System (FPDS) - Contract Awards',
+      url: SOURCE_URLS['Federal Procurement Data System']
+    });
+    sources.push({
+      name: 'USA Spending Database - Federal Contracts and Grants',
+      url: SOURCE_URLS['USA Spending Database']
+    });
+    sources.push({
+      name: 'DOD Budget Documents - RDT&E Funding Lines',
+      url: SOURCE_URLS['DOD Budget Documents']
+    });
   }
   
   return sources;
