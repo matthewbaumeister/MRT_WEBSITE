@@ -128,7 +128,7 @@ export default function PlatformsPage() {
           <line x1="22" y1="42" x2="28" y2="36" stroke="#D4AF37" strokeWidth="2" />
         </svg>
       ),
-      href: "https://matrix.makereadytech.com",
+      href: "/matrix",
       color: "from-accent-600 to-accent-800",
       available: true,
     },
