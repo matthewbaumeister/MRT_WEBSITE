@@ -3,10 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL and key must be set in environment variables");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // GET - List all projects for user
 export async function GET(request: NextRequest) {

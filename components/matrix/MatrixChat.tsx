@@ -153,7 +153,7 @@ export default function MatrixChat({
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                How can I help you today?
+                What do you want to start research on?
               </h1>
               <p className="text-gray-400 text-lg">
                 {session?.user?.name && `Welcome back, ${session.user.name.split(' ')[0]}`}
@@ -403,7 +403,7 @@ export default function MatrixChat({
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="How can I help you today?"
+                    placeholder="What do you want to start research on?"
                     className="flex-1 bg-transparent text-white placeholder-gray-500 py-4 px-2 focus:outline-none"
                     disabled={isLoading}
                   />
