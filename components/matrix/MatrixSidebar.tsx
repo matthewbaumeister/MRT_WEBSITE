@@ -8,7 +8,7 @@ interface MatrixSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentChatId: string | null;
-  onSelectChat: (chatId: string) => void;
+  onSelectChat: (chatId: string | null) => void;
 }
 
 export default function MatrixSidebar({
