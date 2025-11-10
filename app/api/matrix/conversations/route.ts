@@ -179,6 +179,9 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// PATCH - Update a conversation (alias for PUT)
+export const PATCH = PUT;
+
 // DELETE - Delete a conversation
 export async function DELETE(request: NextRequest) {
   try {

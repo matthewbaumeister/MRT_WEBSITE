@@ -15,6 +15,8 @@ interface ReportSection {
   expanded: boolean;
   sources?: DataSource[];
   isEnriching?: boolean; // Visual indicator for enrichment in progress
+  isGenerating?: boolean; // Visual indicator for section generation
+  generationStatus?: string; // Status text for this section
 }
 
 interface ResearchReportProps {
@@ -161,6 +163,18 @@ export default function ResearchReport({
                 <h2 className="text-xl font-semibold text-white">
                   {section.title}
                 </h2>
+                {section.isGenerating && section.generationStatus && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="animate-pulse flex space-x-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <span className="text-blue-400 text-xs font-semibold animate-pulse">
+                      {section.generationStatus}
+                    </span>
+                  </div>
+                )}
                 {section.isEnriching && (
                   <div className="flex items-center gap-2 ml-4">
                     <div className="animate-pulse flex space-x-1">

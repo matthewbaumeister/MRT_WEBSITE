@@ -8,7 +8,7 @@ import AdvancedQueryPanel from "./AdvancedQueryPanel";
 import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
 // Supabase search now happens server-side via API
 import { searchDoDWeb, searchRecentNews, formatWebSearchContext, extractWebSourceURLs } from "@/lib/web-search";
-import { enhanceReportWithPublicData, applyEnhancements } from "@/lib/research-enhancer";
+// Enrichment is now server-side via /api/matrix/enrich
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -65,11 +65,39 @@ export default function MatrixChat({
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(chatId);
   const [researchTopic, setResearchTopic] = useState<string>("");
+  const [reportTitle, setReportTitle] = useState<string>("Market Research Report");
+  const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       setUploadedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  // Update report title
+  const updateReportTitle = async (newTitle: string) => {
+    setReportTitle(newTitle);
+    
+    // Update conversation title in database
+    if (currentConversationId) {
+      try {
+        await fetch(`/api/matrix/conversations`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: currentConversationId,
+            title: newTitle,
+          }),
+        });
+        
+        // Notify parent to refresh sidebar
+        if (onConversationCreated) {
+          onConversationCreated();
+        }
+      } catch (error) {
+        console.error("Error updating conversation title:", error);
+      }
     }
   };
 
@@ -164,19 +192,24 @@ export default function MatrixChat({
     }));
     setReportSections(initialSections);
     setReportMode(true);
+    setReportTitle(`Research: ${topic}`);
 
     // Collect all section contents for the final conclusion
     const sectionContents: Record<string, string> = {};
 
     // Generate each section
     for (const section of REPORT_SECTIONS) {
+      // Mark this section as generating with status
+      setReportSections(prev => prev.map(s => ({
+        ...s,
+        isGenerating: s.id === section.id,
+        generationStatus: s.id === section.id ? "Searching MATRIX proprietary database..." : undefined
+      })));
+      
       setLiveStatus(`Generating ${section.title}...`);
       setSearchStatus([`Searching databases for ${section.title}...`]);
       
       try {
-        // Show database searching status
-        setLiveStatus(`Searching DSIP, SBIR, xTech, MANTECH data...`);
-        
         // Search Supabase tables for relevant data (server-side)
         const searchResponse = await fetch("/api/matrix/search", {
           method: "POST",
@@ -214,6 +247,12 @@ export default function MatrixChat({
         
         // Search the web if enabled
         if (webSearch || research) {
+          // Update section status
+          setReportSections(prev => prev.map(s => ({
+            ...s,
+            generationStatus: s.id === section.id ? "Searching public web sources..." : s.generationStatus
+          })));
+          
           setLiveStatus(`Searching public web sources...`);
           setSearchStatus([`Searching web for ${section.title}...`]);
           
@@ -237,6 +276,12 @@ export default function MatrixChat({
             webSources.push(...newsURLs);
           }
         }
+        
+        // Update section status
+        setReportSections(prev => prev.map(s => ({
+          ...s,
+          generationStatus: s.id === section.id ? "Compiling results..." : s.generationStatus
+        })));
         
         setSearchStatus([`Generating ${section.title}...`]);
         
@@ -277,7 +322,7 @@ export default function MatrixChat({
           
           setReportSections(prev => prev.map(s => 
             s.id === section.id 
-              ? { ...s, content, sources: allSources }
+              ? { ...s, content, sources: allSources, isGenerating: false, generationStatus: undefined }
               : s
           ));
         }
@@ -297,14 +342,6 @@ export default function MatrixChat({
     setSearchStatus(["🔍 Final Step: Enhancing report with live public data..."]);
     
     try {
-      const openAIApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-      if (!openAIApiKey) {
-        console.warn("OpenAI API key not found, skipping final enrichment");
-        setSearchStatus([]);
-        setLiveStatus("");
-        return;
-      }
-      
       // Extract companies and people from the report
       setLiveStatus("Identifying companies and key executives...");
       setSearchStatus(["🔍 Identifying companies and key personnel..."]);
@@ -316,12 +353,25 @@ export default function MatrixChat({
         content: sectionContents[s.id] || "",
       }));
       
-      // Enhance report with public data (company websites, LinkedIn, executives, etc.)
-      const enhancements = await enhanceReportWithPublicData(
-        sectionsToEnhance,
-        topic,
-        openAIApiKey
-      );
+      // Call server-side enrichment API
+      const enrichResponse = await fetch("/api/matrix/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sections: sectionsToEnhance,
+          topic,
+        }),
+      });
+
+      if (!enrichResponse.ok) {
+        console.warn("Enrichment failed, skipping");
+        setSearchStatus([]);
+        setLiveStatus("");
+        return;
+      }
+
+      const enrichData = await enrichResponse.json();
+      const enhancements = enrichData.enhancements;
       
       // Apply enhancements section by section with live updates
       for (const sectionId of Object.keys(enhancements.enhancedSections)) {
@@ -645,13 +695,44 @@ export default function MatrixChat({
           </svg>
         </button>
 
-          {/* Center - Report Mode Indicator */}
+          {/* Center - Report Title (Editable) */}
           {reportMode && (
-            <div className="flex items-center space-x-2 text-gray-400 text-sm">
+            <div className="flex items-center space-x-2 text-gray-400 text-sm group">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>Market Research Report</span>
+              {isEditingTitle ? (
+                <input
+                  type="text"
+                  value={reportTitle}
+                  onChange={(e) => setReportTitle(e.target.value)}
+                  onBlur={() => {
+                    setIsEditingTitle(false);
+                    updateReportTitle(reportTitle);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setIsEditingTitle(false);
+                      updateReportTitle(reportTitle);
+                    }
+                  }}
+                  autoFocus
+                  className="bg-gray-800 text-white px-2 py-1 rounded border border-gray-600 focus:border-primary-500 outline-none"
+                />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <span>{reportTitle}</span>
+                  <button
+                    onClick={() => setIsEditingTitle(true)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-opacity"
+                    title="Edit report title"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
