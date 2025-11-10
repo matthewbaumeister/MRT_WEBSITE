@@ -115,15 +115,20 @@ export default function MatrixChat({
       setCurrentConversationId(conversationId);
       
       // Check if this is a report
+      console.log("Checking if report - metadata.isReport:", conversation.metadata?.isReport);
+      console.log("Metadata keys:", Object.keys(conversation.metadata || {}));
+      
       if (conversation.metadata?.isReport) {
         const reportStatus = conversation.metadata.reportStatus;
         const reportSections = conversation.metadata.reportSections || [];
         const partialSections = conversation.metadata.partialSections || [];
         
-        console.log(`📊 Loading ${reportStatus} report with ${reportSections.length} sections`);
+        console.log(`📊 Loading ${reportStatus || 'unknown'} report`);
+        console.log(`   reportSections: ${reportSections.length}`);
+        console.log(`   partialSections: ${partialSections.length}`);
         
         // Check if report is incomplete (in_progress)
-        if (reportStatus === "in_progress" && partialSections.length > 0) {
+        if (reportStatus === "in_progress" || (reportSections.length === 0 && partialSections.length > 0)) {
           console.log(`⏸️  INCOMPLETE REPORT: ${partialSections.length}/10 sections complete`);
           console.log("✨ Resume capability available!");
           
@@ -131,7 +136,6 @@ export default function MatrixChat({
           setReportMode(true);
           setReportTitle(conversation.title || "Market Research Report (In Progress)");
           setResearchTopic(conversation.metadata.reportTopic || "");
-          setLiveStatus(`Report incomplete: ${partialSections.length}/10 sections done`);
           
           // Show partial sections
           const incompleteSections = REPORT_SECTIONS.map((s, idx) => {
@@ -150,15 +154,19 @@ export default function MatrixChat({
           });
           
           setReportSections(incompleteSections);
-          setSearchStatus([
-            `⏸️  Report generation was interrupted`,
-            `✅ Completed: ${partialSections.length}/10 sections`,
-            `🔄 Click "Resume Generation" to continue where you left off`
-          ]);
+          
+          // Show resume message
+          if (partialSections.length > 0) {
+            setSearchStatus([
+              `⏸️  Report generation was interrupted`,
+              `✅ Completed: ${partialSections.length}/10 sections (enriched)`,
+              `🔄 Click "Continue Report" button below to resume`
+            ]);
+          }
           
         } else if (reportSections.length > 0) {
           // Load complete report
-          console.log("✅ Loading saved report with", reportSections.length, "sections");
+          console.log("✅ Loading complete report with", reportSections.length, "sections");
           
           setReportMode(true);
           setReportTitle(conversation.title || "Market Research Report");
@@ -178,6 +186,11 @@ export default function MatrixChat({
           if (conversation.metadata.settings) {
             console.log("Saved settings:", conversation.metadata.settings);
           }
+        } else {
+          // isReport is true but no sections - treat as new report
+          console.log("⚠️  Report flag set but no sections found - showing home screen");
+          setReportMode(false);
+          setMessages([]);
         }
       } else {
         console.log("Loading regular chat messages");
