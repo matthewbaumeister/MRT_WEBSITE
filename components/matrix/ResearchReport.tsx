@@ -14,6 +14,7 @@ interface ReportSection {
   content: string;
   expanded: boolean;
   sources?: DataSource[];
+  isEnriching?: boolean; // Visual indicator for enrichment in progress
 }
 
 interface ResearchReportProps {
@@ -23,6 +24,40 @@ interface ResearchReportProps {
   onExpandedChange?: (expandedSections: Set<string>) => void;
   liveStatus?: string; // Live generation status
   isGenerating?: boolean; // Whether report is still generating
+}
+
+// Helper function to parse markdown tables
+function parseMarkdownTables(content: string): string {
+  const tableRegex = /\|(.+)\|\n\|([-:\s|]+)\|\n((?:\|.+\|\n?)+)/g;
+  
+  return content.replace(tableRegex, (match, headerRow, separatorRow, bodyRows) => {
+    const headers = headerRow.split('|').map((h: string) => h.trim()).filter(Boolean);
+    const rows = bodyRows.trim().split('\n').map((row: string) => 
+      row.split('|').map((cell: string) => cell.trim()).filter(Boolean)
+    );
+    
+    let tableHTML = '<div class="overflow-x-auto my-4"><table class="min-w-full border border-gray-600">';
+    
+    // Header
+    tableHTML += '<thead class="bg-gray-700"><tr>';
+    headers.forEach((header: string) => {
+      tableHTML += `<th class="px-4 py-2 border border-gray-600 text-left font-semibold text-white">${header}</th>`;
+    });
+    tableHTML += '</tr></thead>';
+    
+    // Body
+    tableHTML += '<tbody>';
+    rows.forEach((row: string[], idx: number) => {
+      tableHTML += `<tr class="${idx % 2 === 0 ? 'bg-gray-800' : 'bg-gray-850'}">`;
+      row.forEach((cell: string) => {
+        tableHTML += `<td class="px-4 py-2 border border-gray-600 text-gray-300">${cell}</td>`;
+      });
+      tableHTML += '</tr>';
+    });
+    tableHTML += '</tbody></table></div>';
+    
+    return tableHTML;
+  });
 }
 
 export default function ResearchReport({
@@ -126,6 +161,18 @@ export default function ResearchReport({
                 <h2 className="text-xl font-semibold text-white">
                   {section.title}
                 </h2>
+                {section.isEnriching && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="animate-pulse flex space-x-1">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    </div>
+                    <span className="text-green-400 text-xs font-semibold animate-pulse">
+                      Enriching...
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center space-x-3">
                 {section.sources && section.sources.length > 0 && (
@@ -160,7 +207,7 @@ export default function ResearchReport({
                       <div 
                         className="markdown-content"
                         dangerouslySetInnerHTML={{ 
-                          __html: section.content
+                          __html: parseMarkdownTables(section.content)
                             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                             .replace(/\*(.*?)\*/g, '<em>$1</em>')
                             .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')

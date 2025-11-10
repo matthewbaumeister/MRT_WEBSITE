@@ -319,6 +319,12 @@ export default function MatrixChat({
       for (const sectionId of Object.keys(enhancements.enhancedSections)) {
         const section = REPORT_SECTIONS.find(s => s.id === sectionId);
         if (section) {
+          // Mark section as enriching
+          setReportSections(prev => prev.map(s => ({
+            ...s,
+            isEnriching: s.id === sectionId
+          })));
+          
           setLiveStatus(`Enriching ${section.title} with company data...`);
           setSearchStatus([`✨ Enriching ${section.title} with verified public data...`]);
           
@@ -364,13 +370,14 @@ export default function MatrixChat({
                 ...s,
                 content: sectionContents[sectionId] + '\n\n' + enhancement,
                 sources: combinedSources,
+                isEnriching: false, // Clear enriching status
               };
             }
-            return s;
+            return { ...s, isEnriching: false }; // Clear all enriching flags
           }));
           
           // Small delay to show progress
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
       }
       
