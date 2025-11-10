@@ -29,7 +29,17 @@ interface EnhancedData {
     name: string;
     website?: string;
     linkedin?: string;
+    employees?: string;
+    revenue?: string;
+    headquarters?: string;
+    founded?: string;
     executives?: string[];
+    ownership?: string;
+    funding?: string;
+    govContractor?: string;
+    smallBusiness?: string;
+    recentContracts?: string;
+    certifications?: string;
     recentNews?: string[];
     additionalInfo?: string;
   }>;
@@ -111,17 +121,37 @@ function extractPeople(sections: Array<{ id: string; content: string }>): Person
 }
 
 /**
- * Search for company information online
+ * Search for comprehensive company information online
+ * Gathers: size, employees, location, leadership, funding, certifications, etc.
  */
 async function searchCompanyInfo(company: string): Promise<any> {
   try {
-    // Search for company website, LinkedIn, news
+    // Comprehensive search queries for market research
     const queries = [
+      // Basic info
       `${company} official website`,
       `${company} LinkedIn company page`,
-      `${company} CEO founder executives`,
+      
+      // Size and scale
+      `${company} number of employees headcount`,
+      `${company} annual revenue company size`,
+      `${company} headquarters location address`,
+      
+      // Leadership
+      `${company} CEO founder executives leadership team`,
+      
+      // Business info
       `${company} defense contractor government`,
+      `${company} GSA schedule CAGE code`,
+      `${company} small business certification 8a HUBZone SDVOSB`,
+      
+      // Financial & growth
+      `${company} funding rounds investors series`,
+      `${company} recent contracts awards 2024`,
+      
+      // Recent activity
       `${company} recent news 2024`,
+      `${company} press releases announcements`,
     ];
 
     const results: any = {
@@ -143,12 +173,12 @@ async function searchCompanyInfo(company: string): Promise<any> {
             'X-API-KEY': SERPER_API_KEY,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ q: query, num: 3 }),
+          body: JSON.stringify({ q: query, num: 2 }),
         });
 
         const data = await response.json();
         if (data.organic) {
-          results.sources.push(...data.organic.slice(0, 2));
+          results.sources.push(...data.organic.slice(0, 1));
         }
       } catch (err) {
         console.error(`Error searching for ${company}:`, err);
@@ -265,13 +295,36 @@ export async function enhanceReportWithPublicData(
 TASK:
 1. Review the additional public information below
 2. For each report section, identify where this new information should be added
-3. Add specific details like:
-   - Company websites and LinkedIn pages
-   - Executive names and titles
-   - Recent company news or developments
-   - Contact information if available
+3. Extract and add comprehensive company intelligence:
+   
+   COMPANY DATA TO EXTRACT:
+   - Website and LinkedIn URLs
+   - Company size (number of employees, headcount)
+   - Annual revenue / company valuation
+   - Headquarters location and office locations
+   - Year founded / years in business
+   - Leadership team (CEO, CTO, CFO, founders)
+   - Ownership (public/private, parent company)
+   - Recent funding rounds and investors (if startup)
+   - Government contractor status (GSA Schedule, CAGE code, UEI)
+   - Small business certifications (8(a), HUBZone, SDVOSB, WOSB)
+   - NAICS codes and industry classifications
+   - Recent contracts and awards (especially DOD/government)
+   - Key products and services
+   - Notable partnerships or collaborations
+   - Security clearances or certifications (CMMI, ISO)
+   - Recent news and press releases
+   
+   PEOPLE DATA TO EXTRACT:
+   - Full name and current title
+   - Company affiliation
+   - LinkedIn profile
+   - Professional background (if notable)
+   - Previous roles or companies (if relevant)
+
 4. Verify facts mentioned in the report against public sources
 5. Note any discrepancies or additional context
+6. Format information clearly and professionally
 
 ORIGINAL RESEARCH TOPIC: ${researchTopic}
 
@@ -280,18 +333,35 @@ ${sections.map(s => `\n### ${s.title}\n${s.content.substring(0, 500)}...`).join(
 
 ${enhancementContext}
 
-Please provide:
-1. A list of key enhancements to make (company websites, LinkedIn, executives found)
-2. Specific additions for each relevant section
-3. Any verification notes or corrections
-
-Format as JSON:
+Please provide comprehensive enhancements formatted as JSON:
 {
-  "companies": [{"name": "...", "website": "...", "linkedin": "...", "executives": [...], "additionalInfo": "..."}],
-  "keyPeople": [{"name": "...", "title": "...", "company": "...", "linkedin": "...", "additionalInfo": "..."}],
-  "verificationNotes": ["..."],
+  "companies": [{
+    "name": "Company Name",
+    "website": "https://...",
+    "linkedin": "https://linkedin.com/company/...",
+    "employees": "500-1000" or "1,250",
+    "revenue": "$50M annually" or "$2.5B",
+    "headquarters": "City, State",
+    "founded": "2015" or "35 years in business",
+    "executives": ["Jane Doe (CEO)", "John Smith (CTO)"],
+    "ownership": "Private" or "Public (NASDAQ: TICK)" or "Subsidiary of Parent Corp",
+    "funding": "Series B, $25M from Investors" or "Bootstrapped",
+    "govContractor": "GSA Schedule 70, CAGE: 12345",
+    "smallBusiness": "8(a) certified, SDVOSB",
+    "recentContracts": "DOD $2.5M contract (Sept 2024)",
+    "certifications": "CMMI Level 3, ISO 9001",
+    "additionalInfo": "Other relevant details..."
+  }],
+  "keyPeople": [{
+    "name": "Person Name",
+    "title": "CEO & Co-Founder",
+    "company": "Company Name",
+    "linkedin": "https://linkedin.com/in/...",
+    "additionalInfo": "15 years experience in defense tech, former DARPA..."
+  }],
+  "verificationNotes": ["Verified company revenue matches public filings", "Updated employee count from LinkedIn"],
   "sectionEnhancements": {
-    "section_id": "Additional content to add..."
+    "section_id": "Enhanced content with company details, employee counts, headquarters locations, leadership team, recent funding, government contractor status, and relevant certifications. [Add natural, flowing text that incorporates the intelligence gathered]"
   }
 }`;
 
@@ -355,8 +425,15 @@ Format as JSON:
     console.log(`- Enhanced ${Object.keys(enhancedData.enhancedSections).length} sections`);
     console.log(`- Found info on ${enhancedData.companies.length} companies`);
     console.log(`- Found info on ${enhancedData.keyPeople.length} people`);
-    console.log(`- Extracted ${enhancedData.companies.filter(c => c.website).length} company websites`);
-    console.log(`- Extracted ${enhancedData.companies.filter(c => c.linkedin).length} company LinkedIn pages`);
+    console.log(`\nCompany Intelligence Gathered:`);
+    console.log(`  ✓ Websites: ${enhancedData.companies.filter(c => c.website).length}`);
+    console.log(`  ✓ LinkedIn pages: ${enhancedData.companies.filter(c => c.linkedin).length}`);
+    console.log(`  ✓ Employee counts: ${enhancedData.companies.filter(c => c.employees).length}`);
+    console.log(`  ✓ Revenue data: ${enhancedData.companies.filter(c => c.revenue).length}`);
+    console.log(`  ✓ Headquarters: ${enhancedData.companies.filter(c => c.headquarters).length}`);
+    console.log(`  ✓ Leadership teams: ${enhancedData.companies.filter(c => c.executives && c.executives.length > 0).length}`);
+    console.log(`  ✓ Government contractor info: ${enhancedData.companies.filter(c => c.govContractor).length}`);
+    console.log(`  ✓ Small business certs: ${enhancedData.companies.filter(c => c.smallBusiness).length}`);
 
     return enhancedData;
   } catch (error) {
