@@ -54,10 +54,13 @@ export default function MatrixSidebar({
 
   // Load conversations and projects
   useEffect(() => {
-    console.log("Sidebar useEffect triggered - session:", !!session, "project:", currentProjectId, "refreshKey:", refreshKey);
+    console.log("🔄 [SIDEBAR] useEffect triggered - session:", !!session, "project:", currentProjectId, "refreshKey:", refreshKey);
     if (session) {
+      console.log("   → Loading conversations and projects...");
       loadConversations();
       loadProjects();
+    } else {
+      console.log("   ⚠️  No session, skipping load");
     }
   }, [session, currentProjectId, refreshKey]);
 

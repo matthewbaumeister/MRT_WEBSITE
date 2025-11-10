@@ -240,6 +240,9 @@ export default function MatrixChat({
   // Create or update conversation
   const createConversation = async (topic: string): Promise<string | null> => {
     try {
+      console.log(`🆕 Creating new conversation: "Research: ${topic}"`);
+      console.log(`   Project: ${projectId || 'none'}`);
+      
       const response = await fetch("/api/matrix/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -254,15 +257,29 @@ export default function MatrixChat({
 
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ Conversation created:", data.conversation.id);
+        const conversationId = data.conversation.id;
+        console.log("✅ Conversation created:", conversationId);
+        console.log("📢 Triggering sidebar refresh...");
+        
         // Notify parent to refresh sidebar
         if (onConversationCreated) {
           onConversationCreated();
+          console.log("✅ Sidebar refresh callback executed");
+        } else {
+          console.warn("⚠️  No onConversationCreated callback!");
         }
-        return data.conversation.id;
+        
+        // Small delay to ensure database has persisted
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        return conversationId;
+      } else {
+        console.error("❌ Failed to create conversation:", response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error details:", errorData);
       }
     } catch (error) {
-      console.error("Error creating conversation:", error);
+      console.error("❌ Error creating conversation:", error);
     }
     return null;
   };

@@ -17,8 +17,12 @@ export default function MatrixPage() {
 
   // Callback to refresh sidebar when conversations/projects change
   const refreshSidebar = () => {
-    console.log("Refreshing sidebar...");
-    setSidebarRefreshKey(prev => prev + 1);
+    console.log("🔄 [PAGE] refreshSidebar() called!");
+    setSidebarRefreshKey(prev => {
+      const newKey = prev + 1;
+      console.log(`   → Incrementing refreshKey: ${prev} → ${newKey}`);
+      return newKey;
+    });
   };
 
   // Reset chat to home screen
