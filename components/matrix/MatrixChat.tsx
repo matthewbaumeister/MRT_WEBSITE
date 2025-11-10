@@ -213,28 +213,6 @@ export default function MatrixChat({
     }
   };
 
-  // Load conversation when chatId changes
-  useEffect(() => {
-    if (chatId && chatId !== currentConversationId) {
-      loadConversation(chatId);
-    }
-  }, [chatId]);
-
-  const loadConversation = async (conversationId: string) => {
-    try {
-      const response = await fetch(`/api/matrix/messages?conversation_id=${conversationId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-        setCurrentConversationId(conversationId);
-        // Check if it's a report (look for report content in metadata)
-        // This is a simplified version - you might want more sophisticated loading
-      }
-    } catch (error) {
-      console.error("Error loading conversation:", error);
-    }
-  };
-
   const generateReport = async (topic: string) => {
     // Create conversation and save initial query
     let conversationId = currentConversationId;
