@@ -27,6 +27,7 @@ export default function MatrixChat({
   const [webSearch, setWebSearch] = useState(true);
   const [research, setResearch] = useState(false);
   const [smallBusinessFocus, setSmallBusinessFocus] = useState(false);
+  const [searchStatus, setSearchStatus] = useState<string[]>([]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -48,8 +49,38 @@ export default function MatrixChat({
     const filesToProcess = uploadedFiles;
     setUploadedFiles([]);
     setIsLoading(true);
+    setSearchStatus([]);
 
     try {
+      // Show initial search status
+      const dataSources = [
+        "Initializing research...",
+      ];
+      
+      if (smallBusinessFocus) {
+        dataSources.push(
+          "Searching xTech (Army Innovation) historical data...",
+          "Analyzing MANTECH manufacturing projects...",
+          "Checking DSIP opportunities...",
+          "Reviewing FUZE innovation platform..."
+        );
+      } else {
+        dataSources.push(
+          "Searching all available data sources...",
+          "Analyzing SBIR/STTR programs...",
+          "Reviewing government contracts...",
+          "Checking innovation opportunities..."
+        );
+      }
+      
+      // Simulate progressive search updates
+      for (let i = 0; i < dataSources.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setSearchStatus(prev => [...prev, dataSources[i]]);
+      }
+      
+      setSearchStatus(prev => [...prev, "Compiling results..."]);
+      
       // Process files if any
       let fileContext = "";
       if (filesToProcess.length > 0) {
@@ -85,6 +116,8 @@ export default function MatrixChat({
 
       const data = await response.json();
       
+      setSearchStatus(prev => [...prev, "Generating response..."]);
+      
       setMessages(prev => [
         ...prev,
         {
@@ -103,6 +136,7 @@ export default function MatrixChat({
       ]);
     } finally {
       setIsLoading(false);
+      setSearchStatus([]);
     }
   };
 
@@ -198,11 +232,29 @@ export default function MatrixChat({
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-800 text-gray-100 rounded-2xl px-4 py-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                <div className="bg-gray-800 text-gray-100 rounded-2xl px-4 py-3 max-w-[80%]">
+                  <div className="space-y-2">
+                    {/* Animated dots */}
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      <span className="text-sm text-gray-400 ml-2">Researching...</span>
+                    </div>
+                    
+                    {/* Search status updates */}
+                    {searchStatus.length > 0 && (
+                      <div className="mt-3 space-y-1 text-xs">
+                        {searchStatus.map((status, idx) => (
+                          <div key={idx} className="flex items-start space-x-2 text-gray-400">
+                            <svg className="w-3 h-3 mt-0.5 flex-shrink-0 text-accent-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <span className={idx === searchStatus.length - 1 ? 'text-gray-300' : ''}>{status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
