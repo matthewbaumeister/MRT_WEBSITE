@@ -82,25 +82,40 @@ export default function MatrixChat({
 
   // Load conversation when chatId changes
   useEffect(() => {
-    if (chatId) {
+    if (chatId && chatId !== currentConversationId) {
+      console.log(`Loading conversation: ${chatId}`);
       loadConversation(chatId);
     }
-  }, [chatId]);
+  }, [chatId, currentConversationId]);
 
   const loadConversation = async (conversationId: string) => {
     try {
+      console.log(`Fetching conversation metadata for: ${conversationId}`);
+      
       // Load conversation metadata
       const convResponse = await fetch(`/api/matrix/conversations?id=${conversationId}`);
-      if (!convResponse.ok) return;
+      if (!convResponse.ok) {
+        console.error("Failed to load conversation:", convResponse.status);
+        return;
+      }
       
       const convData = await convResponse.json();
       const conversation = convData.conversations?.[0];
       
-      if (!conversation) return;
+      console.log("Conversation data:", conversation);
+      console.log("Metadata:", conversation?.metadata);
+      
+      if (!conversation) {
+        console.error("No conversation found");
+        return;
+      }
+      
+      // Set as current conversation
+      setCurrentConversationId(conversationId);
       
       // Check if this is a report
       if (conversation.metadata?.isReport && conversation.metadata?.reportSections) {
-        console.log("Loading saved report...");
+        console.log("✅ Loading saved report with", conversation.metadata.reportSections.length, "sections");
         
         // Restore report mode and sections
         setReportMode(true);
@@ -114,14 +129,15 @@ export default function MatrixChat({
           expanded: false, // Start collapsed
         }));
         
+        console.log("Restored sections:", savedSections);
         setReportSections(savedSections);
         
         // Restore settings
         if (conversation.metadata.settings) {
-          // Note: You'll need to add state setters if you want to restore settings
           console.log("Saved settings:", conversation.metadata.settings);
         }
       } else {
+        console.log("Loading regular chat messages");
         // Load regular chat messages
         const messagesResponse = await fetch(`/api/matrix/messages?conversation_id=${conversationId}`);
         if (messagesResponse.ok) {
@@ -408,24 +424,43 @@ export default function MatrixChat({
       await saveMessage(conversationId, "assistant", reportSummary);
       
       // Update conversation metadata with report structure
+      // Use state directly to get the most up-to-date sections with content
       try {
-        await fetch("/api/matrix/conversations", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: conversationId,
-            metadata: {
-              settings: { extendedThinking, webSearch, research, smallBusinessFocus },
-              isReport: true,
-              reportTopic: topic,
-              reportSections: reportSections.map(s => ({
-                id: s.id,
-                title: s.title,
-                content: sectionContents[s.id] || "",
-                sources: s.sources || [],
-              })),
+        // Wait a bit to ensure state is fully updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Get current sections from state
+        setReportSections(currentSections => {
+          // Save the current state to metadata
+          fetch("/api/matrix/conversations", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: conversationId,
+              metadata: {
+                settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+                isReport: true,
+                reportTopic: topic,
+                reportSections: currentSections.map(s => ({
+                  id: s.id,
+                  title: s.title,
+                  content: s.content || "",
+                  sources: s.sources || [],
+                })),
+              }
+            }),
+          }).then(res => {
+            if (res.ok) {
+              console.log("✅ Report metadata saved successfully");
+            } else {
+              console.error("❌ Failed to save report metadata");
             }
-          }),
+          }).catch(error => {
+            console.error("Error saving report structure:", error);
+          });
+          
+          // Return unchanged state
+          return currentSections;
         });
       } catch (error) {
         console.error("Error saving report structure:", error);
@@ -532,6 +567,38 @@ export default function MatrixChat({
           // Small delay to show progress
           await new Promise(resolve => setTimeout(resolve, 800));
         }
+      }
+      
+      // Save enriched report to metadata
+      if (conversationId) {
+        setReportSections(currentSections => {
+          fetch("/api/matrix/conversations", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: conversationId,
+              metadata: {
+                settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+                isReport: true,
+                reportTopic: researchTopic,
+                reportSections: currentSections.map(s => ({
+                  id: s.id,
+                  title: s.title,
+                  content: s.content || "",
+                  sources: s.sources || [],
+                })),
+              }
+            }),
+          }).then(res => {
+            if (res.ok) {
+              console.log("✅ Enriched report metadata saved");
+            }
+          }).catch(error => {
+            console.error("Error saving enriched report:", error);
+          });
+          
+          return currentSections;
+        });
       }
       
       setLiveStatus("Report complete!");
