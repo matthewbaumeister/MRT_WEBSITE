@@ -58,6 +58,7 @@ export default function MatrixChat({
   const [research, setResearch] = useState(false);
   const [smallBusinessFocus, setSmallBusinessFocus] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string[]>([]);
+  const [liveStatus, setLiveStatus] = useState<string>(""); // Live status for report header
   const [reportMode, setReportMode] = useState(false);
   const [reportSections, setReportSections] = useState<ReportSection[]>([]);
   const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
@@ -169,9 +170,13 @@ export default function MatrixChat({
 
     // Generate each section
     for (const section of REPORT_SECTIONS) {
+      setLiveStatus(`Generating ${section.title}...`);
       setSearchStatus([`Searching databases for ${section.title}...`]);
       
       try {
+        // Show database searching status
+        setLiveStatus(`Searching DSIP, SBIR, xTech, MANTECH data...`);
+        
         // Search Supabase tables for relevant data (server-side)
         const searchResponse = await fetch("/api/matrix/search", {
           method: "POST",
@@ -184,9 +189,16 @@ export default function MatrixChat({
         });
         
         let contextData = "";
+        let sourcesFound: string[] = [];
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
           contextData = searchData.context || "";
+          sourcesFound = searchData.sources || [];
+          
+          // Update status with sources found
+          if (sourcesFound.length > 0) {
+            setLiveStatus(`Found data in: ${sourcesFound.slice(0, 3).join(", ")}...`);
+          }
         } else {
           console.error("Supabase search failed:", await searchResponse.text());
         }
@@ -196,6 +208,7 @@ export default function MatrixChat({
         
         // Search the web if enabled
         if (webSearch || research) {
+          setLiveStatus(`Searching public web sources...`);
           setSearchStatus([`Searching web for ${section.title}...`]);
           
           // Search DOD-specific web sources
@@ -272,6 +285,7 @@ export default function MatrixChat({
     }
     
     // FINAL ENRICHMENT STEP: Enhance with live public data
+    setLiveStatus("Final enrichment: Adding company intelligence...");
     setSearchStatus(["🔍 Final Step: Enhancing report with live public data..."]);
     
     try {
@@ -279,10 +293,12 @@ export default function MatrixChat({
       if (!openAIApiKey) {
         console.warn("OpenAI API key not found, skipping final enrichment");
         setSearchStatus([]);
+        setLiveStatus("");
         return;
       }
       
       // Extract companies and people from the report
+      setLiveStatus("Identifying companies and key executives...");
       setSearchStatus(["🔍 Identifying companies and key personnel..."]);
       
       // Get current sections with content
@@ -303,6 +319,7 @@ export default function MatrixChat({
       for (const sectionId of Object.keys(enhancements.enhancedSections)) {
         const section = REPORT_SECTIONS.find(s => s.id === sectionId);
         if (section) {
+          setLiveStatus(`Enriching ${section.title} with company data...`);
           setSearchStatus([`✨ Enriching ${section.title} with verified public data...`]);
           
           // Get enhancement content
@@ -357,13 +374,18 @@ export default function MatrixChat({
         }
       }
       
+      setLiveStatus("Report complete!");
       setSearchStatus(["✅ Report enhancement complete! Added company websites, LinkedIn profiles, and executive information."]);
       
       // Clear status after 3 seconds
-      setTimeout(() => setSearchStatus([]), 3000);
+      setTimeout(() => {
+        setSearchStatus([]);
+        setLiveStatus("");
+      }, 3000);
       
     } catch (error) {
       console.error("Error in final enrichment:", error);
+      setLiveStatus("");
       setSearchStatus(["⚠️ Enhancement completed with some errors. Report is still valid."]);
       setTimeout(() => setSearchStatus([]), 3000);
     }
@@ -528,21 +550,21 @@ export default function MatrixChat({
     <div className="flex h-full">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <button
-            onClick={onToggleSidebar}
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        <button
+          onClick={onToggleSidebar}
             className="text-gray-400 hover:text-white transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
 
           {/* Center - Report Mode Indicator */}
           {reportMode && (
@@ -561,7 +583,7 @@ export default function MatrixChat({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span>Project Active</span>
-            </div>
+          </div>
           )}
 
           {/* Right - Advanced Panel Toggle */}
@@ -581,10 +603,10 @@ export default function MatrixChat({
               </svg>
             </button>
           )}
-        </div>
+      </div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto">
           {reportMode ? (
             /* Report Mode */
             <ResearchReport
@@ -604,10 +626,12 @@ export default function MatrixChat({
                   setSelectedSection(null);
                 }
               }}
+              liveStatus={liveStatus}
+              isGenerating={isLoading}
             />
           ) : messages.length === 0 ? (
-            /* Welcome Screen */
-            <div className="h-full flex flex-col items-center justify-center p-8">
+          /* Welcome Screen */
+          <div className="h-full flex flex-col items-center justify-center p-8">
             <div className="text-center max-w-2xl">
               {/* MRT Logo */}
               <div className="mb-8">
@@ -693,13 +717,13 @@ export default function MatrixChat({
                 </div>
               </div>
             )}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
         {/* Input Area - Only show in non-report mode */}
         {!reportMode && (
-          <div className="border-t border-gray-800 p-4">
+      <div className="border-t border-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit}>
             <div className="relative">
@@ -852,7 +876,7 @@ export default function MatrixChat({
                               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                                 Coming soon: SBA Awards, FPDS Small Business data
                               </p>
-                            </div>
+                          </div>
                           )}
                         </div>
                       </div>
@@ -886,14 +910,14 @@ export default function MatrixChat({
                       ))}
                     </div>
                   )}
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                     placeholder="What do you want to start research on?"
-                    className="flex-1 bg-transparent text-white placeholder-gray-500 py-4 px-2 focus:outline-none"
+                  className="flex-1 bg-transparent text-white placeholder-gray-500 py-4 px-2 focus:outline-none"
                     disabled={isLoading}
-                  />
+                />
                 </div>
 
                 {/* Model Selector & Submit - Right Side */}
@@ -930,19 +954,19 @@ export default function MatrixChat({
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 10l7-7m0 0l7 7m-7-7v18"
-                        />
-                      </svg>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
                     )}
                   </button>
                 </div>
@@ -950,12 +974,12 @@ export default function MatrixChat({
             </div>
           </form>
 
-            {/* Footer Text */}
-            <p className="text-xs text-gray-500 text-center mt-3">
-              MATRIX can make mistakes. Consider checking important information.
-            </p>
-          </div>
-          </div>
+          {/* Footer Text */}
+          <p className="text-xs text-gray-500 text-center mt-3">
+            MATRIX can make mistakes. Consider checking important information.
+          </p>
+        </div>
+      </div>
         )}
       </div>
 
