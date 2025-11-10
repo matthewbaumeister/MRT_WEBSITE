@@ -73,6 +73,9 @@ export default function MatrixChat({
   const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [isMerging, setIsMerging] = useState<boolean>(false);
+  
+  // Abort controller for cancelling ongoing API calls
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -81,8 +84,29 @@ export default function MatrixChat({
     }
   };
 
-  // Load conversation when chatId changes
+  // Cleanup: Cancel ongoing API calls when navigating away or unmounting
   useEffect(() => {
+    return () => {
+      if (abortController) {
+        console.log("🛑 [CLEANUP] Cancelling ongoing API calls...");
+        abortController.abort();
+        setAbortController(null);
+      }
+    };
+  }, [abortController]);
+
+  // Load conversation when chatId changes (and cancel ongoing generation)
+  useEffect(() => {
+    // Cancel any ongoing generation when switching chats
+    if (abortController) {
+      console.log("🛑 Switching chats - cancelling ongoing generation");
+      abortController.abort();
+      setAbortController(null);
+      setIsLoading(false);
+      setSearchStatus([]);
+      setLiveStatus("");
+    }
+    
     if (chatId && chatId !== currentConversationId) {
       console.log(`Loading conversation: ${chatId}`);
       loadConversation(chatId);
@@ -303,6 +327,11 @@ export default function MatrixChat({
   };
 
   const generateReport = async (topic: string, resumeFromSection?: string) => {
+    // Create new AbortController for this generation
+    const controller = new AbortController();
+    setAbortController(controller);
+    console.log("🎬 [GENERATION] Starting report generation (AbortController created)");
+    
     // Create conversation and save initial query
     let conversationId = currentConversationId;
     if (!conversationId) {
@@ -347,6 +376,15 @@ export default function MatrixChat({
 
     // Generate each section
     for (const section of REPORT_SECTIONS) {
+      // Check if generation was cancelled
+      if (controller.signal.aborted) {
+        console.log("🛑 [GENERATION] Aborted - stopping generation");
+        setSearchStatus(["⏸️ Report generation paused - progress saved"]);
+        setLiveStatus("");
+        setIsLoading(false);
+        return; // Stop generation
+      }
+      
       // Mark this section as generating with status
       setReportSections(prev => prev.map(s => ({
         ...s,
@@ -771,6 +809,11 @@ export default function MatrixChat({
       setSearchStatus(["⚠️ Enhancement completed with some errors. Report is still valid."]);
       setTimeout(() => setSearchStatus([]), 3000);
     }
+    
+    // Cleanup: Clear abort controller after generation completes
+    setAbortController(null);
+    setIsLoading(false);
+    console.log("✅ [GENERATION] Complete - AbortController cleared");
   };
 
   const handleAdvancedQuery = async (query: string, mergeInstructions?: string): Promise<string> => {
