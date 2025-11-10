@@ -1,83 +1,79 @@
 -- ============================================
--- CHECK IF SUPABASE TABLES HAVE DATA
+-- FIRST: CHECK WHICH TABLES ACTUALLY EXIST
 -- ============================================
--- Run this in Supabase SQL Editor to see if your tables are empty or have data
+-- This shows all your tables with row counts
+-- Run this FIRST to see what you have
 
--- Check xTech tables
-SELECT 'army_innovation_programs' as table_name, COUNT(*) as row_count FROM army_innovation_programs
-UNION ALL
-SELECT 'army_innovation_winners_with_details', COUNT(*) FROM army_innovation_winners_with_details
-UNION ALL  
-SELECT 'xtech_db', COUNT(*) FROM xtech_db
-
--- Check MANTECH tables
-UNION ALL
-SELECT 'mantech_competitive_awards', COUNT(*) FROM mantech_competitive_awards
-UNION ALL
-SELECT 'mantech_projects', COUNT(*) FROM mantech_projects
-UNION ALL
-SELECT 'mantech_sbir_transitions', COUNT(*) FROM mantech_sbir_transitions
-UNION ALL
-SELECT 'mantech_top_companies', COUNT(*) FROM mantech_top_companies
-
--- Check DOD Contract News
-UNION ALL
-SELECT 'dod_contract_news', COUNT(*) FROM dod_contract_news
-
--- Check SBIR
-UNION ALL
-SELECT 'sbir_final', COUNT(*) FROM sbir_final
-
--- Check DSIP
-UNION ALL
-SELECT 'dsip', COUNT(*) FROM dsip
-
--- Check GSA
-UNION ALL
-SELECT 'gsa_schedule_holders', COUNT(*) FROM gsa_schedule_holders
-
-ORDER BY row_count DESC;
+SELECT 
+  schemaname,
+  tablename,
+  n_live_tup as estimated_rows
+FROM pg_stat_user_tables
+WHERE schemaname = 'public'
+ORDER BY n_live_tup DESC;
 
 -- ============================================
--- CHECK IF TABLES HAVE SEARCHABLE TEXT COLUMNS
+-- SECOND: FIND TEXT COLUMNS IN YOUR TABLES
 -- ============================================
+-- This shows which columns can be searched for each table
+-- Replace 'YOUR_TABLE_NAME' with an actual table from the list above
 
--- Check what columns exist in mantech_projects (example table)
-SELECT column_name, data_type
+SELECT 
+  table_name,
+  column_name,
+  data_type
 FROM information_schema.columns
-WHERE table_schema = 'public' 
-  AND table_name = 'mantech_projects'
-  AND data_type IN ('text', 'character varying');
-
--- Check what columns exist in army_innovation_winners_with_details
-SELECT column_name, data_type
-FROM information_schema.columns
-WHERE table_schema = 'public' 
-  AND table_name = 'army_innovation_winners_with_details'
-  AND data_type IN ('text', 'character varying');
+WHERE table_schema = 'public'
+  AND data_type IN ('text', 'character varying', 'varchar')
+  AND table_name IN (
+    SELECT tablename 
+    FROM pg_stat_user_tables 
+    WHERE schemaname = 'public'
+  )
+ORDER BY table_name, column_name;
 
 -- ============================================
--- SAMPLE DATA FROM MANTECH (to see what's actually in there)
+-- THIRD: CHECK A SPECIFIC TABLE
 -- ============================================
-SELECT *
+-- Uncomment and replace 'mantech_projects' with your table name:
+
+-- SELECT column_name, data_type
+-- FROM information_schema.columns
+-- WHERE table_schema = 'public' 
+--   AND table_name = 'mantech_projects'
+--   AND data_type IN ('text', 'character varying');
+
+-- See sample data:
+-- SELECT * FROM mantech_projects LIMIT 5;
+
+-- ============================================
+-- FOURTH: SEARCH FOR A TERM (EXAMPLE)
+-- ============================================
+-- This searches for "body armor" in a specific table
+-- Uncomment and modify for your tables:
+
+/*
+SELECT COUNT(*) as matches
 FROM mantech_projects
-LIMIT 5;
+WHERE 
+  LOWER(project_title) LIKE '%body%armor%' OR
+  LOWER(description) LIKE '%body%armor%';
+*/
 
 -- ============================================
--- CHECK IF "BODY ARMOR" EXISTS IN ANY TABLE
+-- DIAGNOSTIC: WHY ARE SEARCHES RETURNING 0?
 -- ============================================
-SELECT 'mantech_projects' as table_name, COUNT(*) as matches
-FROM mantech_projects
-WHERE to_tsvector('english', COALESCE(project_title, '') || ' ' || COALESCE(description, '')) 
-      @@ to_tsquery('english', 'body | armor')
-UNION ALL
-SELECT 'army_innovation_winners_with_details', COUNT(*)
-FROM army_innovation_winners_with_details
-WHERE to_tsvector('english', COALESCE(solution_title, '') || ' ' || COALESCE(problem_being_solved, '')) 
-      @@ to_tsquery('english', 'body | armor')
-UNION ALL
-SELECT 'sbir_final', COUNT(*)
-FROM sbir_final
-WHERE to_tsvector('english', COALESCE(title, '') || ' ' || COALESCE(abstract, '')) 
-      @@ to_tsquery('english', 'body | armor');
+-- Run these to diagnose the issue:
+
+-- 1. Do you have ANY data at all?
+SELECT COUNT(*) as total_tables_with_data
+FROM pg_stat_user_tables
+WHERE schemaname = 'public' AND n_live_tup > 0;
+
+-- 2. Which tables have the most data?
+SELECT tablename, n_live_tup as rows
+FROM pg_stat_user_tables
+WHERE schemaname = 'public' AND n_live_tup > 0
+ORDER BY n_live_tup DESC
+LIMIT 10;
 
