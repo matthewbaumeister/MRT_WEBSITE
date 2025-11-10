@@ -11,7 +11,7 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: "admin" | "employee" | "client";
+  role: "admin" | "employee" | "general";
   subscription_tier?: "free" | "pro" | "enterprise" | "none";
   two_factor_enabled: boolean;
   is_active: boolean;
@@ -70,7 +70,7 @@ export default function SettingsPage() {
     const user = users.find((u) => u.id === selectedUser);
     if (!user) return;
 
-    const confirmMessage = selectedRole === "client" 
+    const confirmMessage = selectedRole === "general" 
       ? `Promote ${user.first_name} ${user.last_name} to ${selectedRole.toUpperCase()} (${selectedTier.toUpperCase()} tier)?\n\nThey will receive an email notification.`
       : `Promote ${user.first_name} ${user.last_name} to ${selectedRole.toUpperCase()}?\n\nThey will receive an email notification.`;
 
@@ -92,8 +92,8 @@ export default function SettingsPage() {
         throw new Error(error.error || "Failed to update role");
       }
 
-      // If client role, update subscription tier
-      if (selectedRole === "client") {
+      // If general role, update subscription tier
+      if (selectedRole === "general") {
         const tierResponse = await fetch("/api/users/update-tier", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -107,7 +107,7 @@ export default function SettingsPage() {
       }
 
       await fetchUsers();
-      alert(`✓ User successfully promoted to ${selectedRole}${selectedRole === "client" ? ` (${selectedTier} tier)` : ""}!\n\nNotification emails have been sent.`);
+      alert(`✓ User successfully promoted to ${selectedRole}${selectedRole === "general" ? ` (${selectedTier} tier)` : ""}!\n\nNotification emails have been sent.`);
       setSelectedUser("");
       setSelectedRole("");
       setSelectedTier("free");
@@ -287,11 +287,11 @@ export default function SettingsPage() {
                       <option value="">Select role...</option>
                       <option value="admin">Admin - Full Access</option>
                       <option value="employee">Employee - Tools Access</option>
-                      <option value="client">Client - Limited Access</option>
+                      <option value="general">General - Limited Access</option>
                     </select>
                   </div>
 
-                  {selectedRole === "client" && (
+                  {selectedRole === "general" && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Subscription Tier
@@ -306,7 +306,7 @@ export default function SettingsPage() {
                         <option value="pro">Pro - Premium Features</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        Select the subscription tier for this client account
+                        Select the subscription tier for this general user account
                       </p>
                     </div>
                   )}

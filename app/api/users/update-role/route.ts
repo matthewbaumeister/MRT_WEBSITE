@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["admin", "employee", "client"].includes(newRole)) {
+    if (!["admin", "employee", "general"].includes(newRole)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, employee, or client" },
+        { error: "Invalid role. Must be admin, employee, or general" },
         { status: 400 }
       );
     }

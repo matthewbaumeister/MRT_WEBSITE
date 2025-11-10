@@ -43,7 +43,7 @@ export const UserMenu = () => {
         return { href: "/admin/dashboard", label: "Admin Portal" };
       case "employee":
         return { href: "/employee/dashboard", label: "Employee Portal" };
-      case "client":
+      case "general":
         return { href: "/platforms", label: "My Platforms" };
       default:
         return { href: "/platforms", label: "Dashboard" };

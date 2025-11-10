@@ -28,8 +28,8 @@ export default function PlatformsPage() {
     return null;
   }
 
-  // Check if user is a free tier client - show upgrade message
-  if (session.user.role === "client" && session.user.subscriptionTier === "free") {
+  // Check if user is a free tier general user - show upgrade message
+  if (session.user.role === "general" && session.user.subscriptionTier === "free") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-primary-900 to-gray-900">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-20">

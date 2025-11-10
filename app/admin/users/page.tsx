@@ -10,7 +10,7 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: "admin" | "employee" | "client";
+  role: "admin" | "employee" | "general";
   subscription_tier?: "free" | "pro" | "enterprise" | "none";
   two_factor_enabled: boolean;
   is_active: boolean;
@@ -57,7 +57,7 @@ export default function UsersManagementPage() {
     }
   }
 
-  async function updateUserRole(userId: string, newRole: "admin" | "employee" | "client") {
+  async function updateUserRole(userId: string, newRole: "admin" | "employee" | "general") {
     if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
       return;
     }
@@ -181,7 +181,7 @@ export default function UsersManagementPage() {
         return "bg-red-100 text-red-800";
       case "employee":
         return "bg-blue-100 text-blue-800";
-      case "client":
+      case "general":
         return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -344,9 +344,9 @@ export default function UsersManagementPage() {
                             >
                               <option value="admin">Admin</option>
                               <option value="employee">Employee</option>
-                              <option value="client">Client</option>
+                              <option value="general">General</option>
                             </select>
-                            {user.role === "client" && (
+                            {user.role === "general" && (
                               <select
                                 value={user.subscription_tier || "free"}
                                 onChange={(e) =>
