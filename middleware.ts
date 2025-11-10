@@ -27,6 +27,13 @@ export default withAuth(
       }
     }
 
+    // Check for matrix route (any authenticated user)
+    if (path.startsWith("/matrix")) {
+      if (!token) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+
     return NextResponse.next();
   },
   {
@@ -43,7 +50,8 @@ export default withAuth(
         if (
           path.startsWith("/admin") ||
           path.startsWith("/employee") ||
-          path.startsWith("/platforms")
+          path.startsWith("/platforms") ||
+          path.startsWith("/matrix")
         ) {
           return !!token;
         }
@@ -60,6 +68,7 @@ export const config = {
     "/admin/:path*",
     "/employee/:path*",
     "/platforms/:path*",
+    "/matrix/:path*",
     "/login",
     "/signup",
   ],
