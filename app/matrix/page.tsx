@@ -11,6 +11,7 @@ export default function MatrixPage() {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   if (status === "loading") {
     return (
@@ -33,6 +34,8 @@ export default function MatrixPage() {
         onClose={() => setSidebarOpen(false)}
         currentChatId={currentChatId}
         onSelectChat={setCurrentChatId}
+        currentProjectId={currentProjectId}
+        onSelectProject={setCurrentProjectId}
       />
 
       {/* Main Chat Area */}
@@ -40,7 +43,10 @@ export default function MatrixPage() {
         <MatrixChat
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           chatId={currentChatId}
-          onNewChat={() => setCurrentChatId(null)}
+          onNewChat={() => {
+            setCurrentChatId(null);
+          }}
+          projectId={currentProjectId}
         />
       </div>
     </div>
