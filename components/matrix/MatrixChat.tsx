@@ -25,6 +25,9 @@ interface ReportSection {
   content: string;
   expanded: boolean;
   sources?: DataSource[];
+  isEnriching?: boolean; // Visual indicator for enrichment in progress
+  isGenerating?: boolean; // Visual indicator for section generation
+  generationStatus?: string; // Status text for this section
 }
 
 const REPORT_SECTIONS: Omit<ReportSection, "content" | "expanded">[] = [
