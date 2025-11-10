@@ -190,10 +190,16 @@ export default function MatrixChat({
         
         let contextData = "";
         let sourcesFound: string[] = [];
+        const supabaseSources: DataSource[] = []; // Real URLs from database
+        
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
           contextData = searchData.context || "";
           sourcesFound = searchData.sources || [];
+          
+          // Get real URLs from database records
+          const sourceURLs = searchData.sourceURLs || [];
+          supabaseSources.push(...sourceURLs);
           
           // Update status with sources found
           if (sourcesFound.length > 0) {
@@ -261,8 +267,10 @@ export default function MatrixChat({
           const content = data.message.content;
           sectionContents[section.id] = content;
           
-          // Generate realistic data sources based on content
-          const databaseSources = generateDataSources(section.id, content);
+          // Use real URLs from Supabase data (if available), otherwise fall back to generated sources
+          const databaseSources = supabaseSources.length > 0 
+            ? supabaseSources 
+            : generateDataSources(section.id, content);
           
           // Combine database sources with web sources
           const allSources = [...databaseSources, ...webSources];

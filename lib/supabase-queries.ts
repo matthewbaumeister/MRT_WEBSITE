@@ -397,6 +397,70 @@ export function formatSupabaseContext(results: any[]): string {
 }
 
 /**
+ * Extract actual URLs from Supabase data records
+ * Looks for common URL fields in the data and returns DataSource objects
+ */
+export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: string }> {
+  const urls: Array<{ name: string; url: string }> = [];
+  const seenUrls = new Set<string>(); // Prevent duplicates
+
+  // Common URL field names to check
+  const urlFields = [
+    'url', 'link', 'website', 'source_url', 'article_url', 
+    'source', 'reference_url', 'web_url', 'permalink'
+  ];
+
+  // Common title/name fields for display
+  const nameFields = [
+    'title', 'name', 'company', 'company_name', 'project_title',
+    'solution_title', 'article_title', 'headline', 'program_name'
+  ];
+
+  for (const result of results) {
+    for (const item of result.data) {
+      // Find URL in this record
+      let foundUrl: string | null = null;
+      for (const field of urlFields) {
+        if (item[field] && typeof item[field] === 'string' && item[field].startsWith('http')) {
+          foundUrl = item[field];
+          break;
+        }
+      }
+
+      if (foundUrl && !seenUrls.has(foundUrl)) {
+        seenUrls.add(foundUrl);
+
+        // Find a good name for this source
+        let sourceName = result.table; // Default to table name
+        for (const field of nameFields) {
+          if (item[field] && typeof item[field] === 'string') {
+            sourceName = item[field].substring(0, 100); // Limit length
+            break;
+          }
+        }
+
+        urls.push({
+          name: `${sourceName} - ${result.table}`,
+          url: foundUrl
+        });
+      }
+    }
+  }
+
+  // If no URLs found in data, return generic sources
+  if (urls.length === 0 && results.length > 0) {
+    // Return generic references to the tables
+    const uniqueTables = [...new Set(results.map(r => r.table))];
+    return uniqueTables.map(table => ({
+      name: `${table} database`,
+      url: `https://www.makereadytech.com/matrix?source=${table}`
+    }));
+  }
+
+  return urls;
+}
+
+/**
  * Get all available table names (for documentation/debugging)
  */
 export function getAllTableNames(): string[] {

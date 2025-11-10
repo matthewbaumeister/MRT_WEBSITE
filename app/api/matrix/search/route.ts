@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { searchSupabaseTables, formatSupabaseContext } from "@/lib/supabase-queries";
+import { searchSupabaseTables, formatSupabaseContext, extractSupabaseURLs } from "@/lib/supabase-queries";
 
 /**
  * POST /api/matrix/search
@@ -30,10 +30,14 @@ export async function POST(request: NextRequest) {
     // Format context for LLM
     const formattedContext = formatSupabaseContext(results);
 
+    // Extract real URLs from the data
+    const dataSourceURLs = extractSupabaseURLs(results);
+
     return NextResponse.json({
       success: true,
       context: formattedContext,
       sources,
+      sourceURLs: dataSourceURLs, // Actual URLs from database records
       resultCount: results.length,
     });
   } catch (error: any) {
