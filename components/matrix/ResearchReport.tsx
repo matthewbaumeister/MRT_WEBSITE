@@ -74,6 +74,10 @@ export default function ResearchReport({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
+  // Track which sections have sources expanded (default collapsed)
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(
+    new Set()
+  );
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
@@ -95,6 +99,17 @@ export default function ResearchReport({
     const allIds = new Set(sections.map(s => s.id));
     setExpandedSections(allIds);
     onExpandedChange?.(allIds);
+  };
+
+  const toggleSources = (sectionId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent section toggle
+    const newExpandedSources = new Set(expandedSources);
+    if (newExpandedSources.has(sectionId)) {
+      newExpandedSources.delete(sectionId);
+    } else {
+      newExpandedSources.add(sectionId);
+    }
+    setExpandedSources(newExpandedSources);
   };
 
   return (
@@ -259,30 +274,55 @@ export default function ResearchReport({
                   }
                 `}</style>
 
-                {/* Data Sources */}
+                {/* Data Sources - Collapsible */}
                 {section.sources && section.sources.length > 0 && (
                   <div className="mt-6 pt-4 border-t border-gray-700">
-                    <h4 className="text-sm font-semibold text-gray-400 mb-3">
-                      Data Sources ({section.sources.length}):
-                    </h4>
-                    <div className="space-y-1">
-                      {section.sources.map((source, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs flex items-start space-x-2"
+                    <button
+                      onClick={(e) => toggleSources(section.id, e)}
+                      className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors mb-3"
+                    >
+                      <span className="flex items-center space-x-2">
+                        <svg
+                          className={`w-4 h-4 transition-transform ${
+                            expandedSources.has(section.id) ? "rotate-90" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          <span className="text-accent-500">•</span>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-400 hover:text-primary-300 underline transition-colors"
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                        <span>Data Sources ({section.sources.length})</span>
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {expandedSources.has(section.id) ? "Click to collapse" : "Click to view all"}
+                      </span>
+                    </button>
+                    {expandedSources.has(section.id) && (
+                      <div className="space-y-1 max-h-96 overflow-y-auto">
+                        {section.sources.map((source, idx) => (
+                          <div
+                            key={idx}
+                            className="text-xs flex items-start space-x-2 py-1"
                           >
-                            {source.name}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
+                            <span className="text-accent-500 mt-0.5">•</span>
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-400 hover:text-primary-300 underline transition-colors flex-1"
+                            >
+                              {source.name}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

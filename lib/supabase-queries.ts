@@ -270,12 +270,14 @@ const MATRIX_TABLES: Record<string, string[]> = {
 /**
  * Search relevant Supabase tables based on topic and settings
  * Dynamically discovers and searches appropriate columns for each table
+ * Supports date range filtering (e.g., "last 3 months", "Q4 2024")
  */
 export async function searchSupabaseTables(
   topic: string,
   options: {
     smallBusinessFocus?: boolean;
     sectionId?: string;
+    dateRange?: { start: Date; end: Date } | null;
   } = {}
 ): Promise<{ results: any[]; sources: string[] }> {
   const supabase = getSupabaseClient();
@@ -328,11 +330,33 @@ export async function searchSupabaseTables(
         // Build OR query: column1 ILIKE '%topic%' OR column2 ILIKE '%topic%' ...
         const orConditions = columnsToSearch.map(col => `${col}.ilike.%${topic}%`).join(',');
         
-        const { data, error } = await supabase
+        // INCREASED LIMIT: Market research needs comprehensive data!
+        // For "army" searches with 290K rows, we want LOTS of results
+        let query = supabase
           .from(tableName)
           .select('*')
-          .or(orConditions)
-          .limit(10); // Limit per table to keep context manageable
+          .or(orConditions);
+
+        // Apply date range filter if provided
+        // Check common date column names
+        if (options.dateRange) {
+          const dateColumns = ['created_at', 'updated_at', 'date', 'published_date', 'award_date', 'submission_date'];
+          // Try to apply date filter (will silently fail if column doesn't exist)
+          for (const dateCol of dateColumns) {
+            try {
+              query = query
+                .gte(dateCol, options.dateRange.start.toISOString())
+                .lte(dateCol, options.dateRange.end.toISOString());
+              console.log(`  📅 Applied date filter on ${tableName}.${dateCol}`);
+              break; // Only apply to first matching column
+            } catch (e) {
+              // Column doesn't exist, try next one
+              continue;
+            }
+          }
+        }
+
+        const { data, error } = await query.limit(1000); // Get up to 1000 results per table
 
         if (error) {
           console.log(`❌ Error searching ${tableName}:`, error.message);

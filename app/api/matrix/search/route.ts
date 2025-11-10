@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { searchSupabaseTables, formatSupabaseContext, extractSupabaseURLs } from "@/lib/supabase-queries";
+import { parseDateRange, stripDateRange, formatDateRange } from "@/lib/date-parser";
 
 /**
  * POST /api/matrix/search
@@ -19,6 +20,15 @@ export async function POST(request: NextRequest) {
 
     if (!topic) {
       return NextResponse.json({ error: "Topic is required" }, { status: 400 });
+    }
+
+    // Parse date range from query (e.g., "army contracts last 3 months")
+    const dateRange = parseDateRange(topic);
+    const searchTopic = dateRange ? stripDateRange(topic, dateRange) : topic;
+
+    if (dateRange) {
+      console.log(`📅 Parsed date range: ${formatDateRange(dateRange)} from query: "${topic}"`);
+      console.log(`📝 Clean search topic: "${searchTopic}"`);
     }
 
     let results: any[] = [];
@@ -61,10 +71,11 @@ export async function POST(request: NextRequest) {
 
     // Fall back to keyword search if semantic didn't work or was disabled
     if (results.length === 0) {
-      console.log(`[SEARCH] Using keyword search for: "${topic}"`);
-      const keywordResults = await searchSupabaseTables(topic, {
+      console.log(`[SEARCH] Using keyword search for: "${searchTopic}"${dateRange ? ' (with date filter)' : ''}`);
+      const keywordResults = await searchSupabaseTables(searchTopic, {
         smallBusinessFocus: smallBusinessFocus || false,
         sectionId: sectionId || undefined,
+        dateRange: dateRange || undefined,
       });
       results = keywordResults.results;
       sources = keywordResults.sources;
@@ -99,12 +110,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       searchMethod, // "semantic" or "keyword"
+      dateRange: dateRange ? {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString(),
+        formatted: formatDateRange(dateRange),
+        originalPhrase: dateRange.originalPhrase,
+      } : null,
       context: formattedContext,
       sources,
       sourceURLs: dataSourceURLs, // Actual URLs from database records
       resultCount: results.length,
       debug: {
         searchMethod,
+        dateRangeApplied: !!dateRange,
         tablesSearched: sources,
         totalResults: results.length,
         urlsExtracted: dataSourceURLs.length,
