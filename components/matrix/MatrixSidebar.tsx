@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import ProjectModal from "./ProjectModal";
 
+interface Conversation {
+  id: string;
+  title: string;
+  project_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -32,17 +40,35 @@ export default function MatrixSidebar({
   onSelectProject,
 }: MatrixSidebarProps) {
   const { data: session } = useSession();
-  const [chats] = useState<any[]>([]); // Will be populated from Supabase later
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectsSection, setShowProjectsSection] = useState(false);
 
-  // Load projects
+  // Load conversations and projects
   useEffect(() => {
     if (session) {
+      loadConversations();
       loadProjects();
     }
-  }, [session]);
+  }, [session, currentProjectId]);
+
+  const loadConversations = async () => {
+    try {
+      let url = "/api/matrix/conversations";
+      if (currentProjectId) {
+        url += `?project_id=${currentProjectId}`;
+      }
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+      }
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+  };
 
   const loadProjects = async () => {
     try {
@@ -147,28 +173,28 @@ export default function MatrixSidebar({
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Recents
               </h3>
-              {chats.length === 0 ? (
+              {conversations.length === 0 ? (
                 <p className="text-sm text-gray-500 py-4 text-center">
                   No previous chats
                 </p>
               ) : (
                 <div className="space-y-1">
-                  {chats.map((chat) => (
+                  {conversations.map((conversation) => (
                     <button
-                      key={chat.id}
+                      key={conversation.id}
                       onClick={() => {
-                        onSelectChat(chat.id);
+                        onSelectChat(conversation.id);
                         onClose();
                       }}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        currentChatId === chat.id
+                        currentChatId === conversation.id
                           ? "bg-gray-800 text-white"
                           : "text-gray-400 hover:bg-gray-800 hover:text-white"
                       }`}
                     >
-                      <div className="truncate">{chat.title || "New Chat"}</div>
+                      <div className="truncate">{conversation.title || "New Research"}</div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {new Date(chat.created_at).toLocaleDateString()}
+                        {new Date(conversation.updated_at).toLocaleDateString()}
                       </div>
                     </button>
                   ))}
