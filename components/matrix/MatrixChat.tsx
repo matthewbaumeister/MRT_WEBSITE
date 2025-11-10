@@ -599,28 +599,34 @@ export default function MatrixChat({
 
   const handleAdvancedQuery = async (query: string, mergeInstructions?: string): Promise<string> => {
     try {
-      const context = selectedSection 
-        ? `Context: You are analyzing the ${reportSections.find(s => s.id === selectedSection)?.title} section of a market research report.`
-        : "Context: You are analyzing the entire market research report.";
+      // Get current section content if a section is selected
+      const contextSection = selectedSection 
+        ? reportSections.find(s => s.id === selectedSection)?.content || null
+        : null;
 
-      const response = await fetch("/api/matrix/chat", {
+      console.log(`[ADVANCED QUERY] Querying: "${query}"`);
+      console.log(`[ADVANCED QUERY] Section: ${selectedSection || "whole report"}`);
+      console.log(`[ADVANCED QUERY] Research topic: ${researchTopic}`);
+      console.log(`[ADVANCED QUERY] Merge mode: ${!!mergeInstructions}`);
+
+      // Use new advanced query API that fetches fresh data
+      const response = await fetch("/api/matrix/advanced-query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{
-            role: "user",
-            content: `${context}\n\nQuery: ${query}${mergeInstructions ? `\n\nMerge Instructions: ${mergeInstructions}` : ""}`
-          }],
-          model: "gpt-4o-mini",
-          extendedThinking,
-          webSearch,
-          research,
-          smallBusinessFocus,
+          query: query, // Always use the original query
+          contextSection,
+          researchTopic,
+          sectionId: selectedSection,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log(`[ADVANCED QUERY] ✅ Response received`);
+        console.log(`[ADVANCED QUERY] Data sources: ${data.dataSources.supabaseTables} tables${data.dataSources.webResults ? ' + web' : ''}`);
+        
+        const answer = data.answer;
         
         // If merge instructions provided, update the section
         if (mergeInstructions && selectedSection) {
@@ -634,15 +640,47 @@ export default function MatrixChat({
           // Wait a bit for visual feedback
           await new Promise(resolve => setTimeout(resolve, 800));
           
-          // Update the section content
+          // Update the section content with merged data
           setReportSections(prev => prev.map(s => 
             s.id === selectedSection 
-              ? { ...s, content: s.content + "\n\n" + data.message.content, isGenerating: false, generationStatus: undefined }
+              ? { 
+                  ...s, 
+                  content: s.content + "\n\n### Advanced Query Results\n\n" + answer, 
+                  isGenerating: false, 
+                  generationStatus: undefined 
+                }
               : s
           ));
+          
+          // Save updated report to database
+          if (currentConversationId) {
+            setReportSections(currentSections => {
+              fetch("/api/matrix/conversations", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: currentConversationId,
+                  metadata: {
+                    isReport: true,
+                    reportTopic: researchTopic,
+                    reportSections: currentSections.map(s => ({
+                      id: s.id,
+                      title: s.title,
+                      content: s.content || "",
+                      sources: s.sources || [],
+                    })),
+                  }
+                }),
+              }).catch(error => {
+                console.error("Error saving merged report:", error);
+              });
+              
+              return currentSections;
+            });
+          }
         }
         
-        return data.message.content;
+        return answer;
       }
       
       return "Error: Failed to process query";

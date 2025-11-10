@@ -39,6 +39,8 @@ export default function AdvancedQueryPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [mergeInstructions, setMergeInstructions] = useState("");
+  const [dataSources, setDataSources] = useState<{supabaseTables: number; webResults: boolean} | null>(null);
+  const [mergeSuccess, setMergeSuccess] = useState(false);
 
   const handleQuery = async () => {
     if (!query.trim()) return;
@@ -68,13 +70,26 @@ export default function AdvancedQueryPanel({
     }
     
     try {
-      await onQuery(query, mergeInstructions);
-      setShowMerge(false);
+      console.log("[MERGE] Starting merge with instructions:", mergeInstructions || "(using query as is)");
+      await onQuery(query, mergeInstructions || query); // Pass query if no specific instructions
+      console.log("[MERGE] ✅ Merge complete - section should be updating now");
+      
+      // Show success state
+      setMergeSuccess(true);
       setMergeInstructions("");
-      setQuery("");
-      setResult("");
+      
+      // Clear everything after 2 seconds (gives user time to see success)
+      setTimeout(() => {
+        setShowMerge(false);
+        setQuery("");
+        setResult("");
+        setDataSources(null);
+        setMergeSuccess(false);
+      }, 2000);
     } catch (error) {
-      console.error("Merge error:", error);
+      console.error("[MERGE] ❌ Merge error:", error);
+      setMergeSuccess(false);
+      alert("Merge failed. Please check the console for details.");
     } finally {
       setIsLoading(false);
       
@@ -239,10 +254,25 @@ export default function AdvancedQueryPanel({
 
                   <button
                     onClick={handleMerge}
-                    disabled={isLoading}
-                    className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+                    disabled={isLoading || mergeSuccess}
+                    className={`w-full px-4 py-2 ${
+                      mergeSuccess 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-primary-600 hover:bg-primary-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center space-x-2`}
                   >
-                    {isLoading ? "Merging..." : "Apply Merge"}
+                    {mergeSuccess ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Merged Successfully! Check report section →</span>
+                      </>
+                    ) : isLoading ? (
+                      <span>Merging into report...</span>
+                    ) : (
+                      <span>Apply Merge to Report</span>
+                    )}
                   </button>
                 </div>
               )}
