@@ -7,6 +7,7 @@ import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
 import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
 import { searchSupabaseTables, formatSupabaseContext } from "@/lib/supabase-queries";
+import { searchDoDWeb, searchRecentNews, formatWebSearchContext } from "@/lib/web-search";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -170,7 +171,24 @@ export default function MatrixChat({
         });
         
         // Format Supabase results for context
-        const supabaseContext = formatSupabaseContext(results);
+        let contextData = formatSupabaseContext(results);
+        
+        // Search the web if enabled
+        if (webSearch || research) {
+          setSearchStatus([`Searching web for ${section.title}...`]);
+          
+          // Search DOD-specific web sources
+          const webResults = await searchDoDWeb(topic, section.id);
+          const webContext = formatWebSearchContext(webResults, 5);
+          contextData += webContext;
+          
+          // For funding/competition sections, also search recent news
+          if (section.id === 'funding' || section.id === 'competition') {
+            const newsResults = await searchRecentNews(topic);
+            const newsContext = formatWebSearchContext(newsResults, 3);
+            contextData += newsContext;
+          }
+        }
         
         setSearchStatus([`Generating ${section.title}...`]);
         
@@ -192,7 +210,7 @@ export default function MatrixChat({
             webSearch: webSearch || research,
             research: research || webSearch,
             smallBusinessFocus,
-            supabaseContext // Pass Supabase data to API
+            supabaseContext: contextData // Pass both Supabase + Web data to API
           }),
         });
 
