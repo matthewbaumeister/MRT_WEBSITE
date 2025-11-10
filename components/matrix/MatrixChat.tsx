@@ -21,6 +21,9 @@ export default function MatrixChat({
   const [showOptions, setShowOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [extendedThinking, setExtendedThinking] = useState(true);
+  const [webSearch, setWebSearch] = useState(true);
+  const [research, setResearch] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -33,24 +36,70 @@ export default function MatrixChat({
     e.preventDefault();
     if (!input.trim() && uploadedFiles.length === 0) return;
 
-    const userMessage = { role: "user", content: input, files: uploadedFiles };
-    setMessages([...messages, userMessage]);
+    const userContent = input.trim();
+    const userMessage = { role: "user", content: userContent, files: uploadedFiles };
+    const newMessages = [...messages, userMessage];
+    
+    setMessages(newMessages);
     setInput("");
+    const filesToProcess = uploadedFiles;
     setUploadedFiles([]);
     setIsLoading(true);
 
-    // TODO: Call OpenAI API and add assistant response
-    // For now, just simulate a response
-    setTimeout(() => {
+    try {
+      // Process files if any
+      let fileContext = "";
+      if (filesToProcess.length > 0) {
+        // For now, just list the files. In production, you'd parse them.
+        fileContext = `\n\n[User uploaded ${filesToProcess.length} file(s): ${filesToProcess.map(f => f.name).join(", ")}]`;
+      }
+
+      // Prepare messages for API
+      const apiMessages = newMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content + (msg.files?.length > 0 ? `\n[Attached ${msg.files.length} file(s)]` : "")
+      }));
+
+      // Call OpenAI API
+      const response = await fetch("/api/matrix/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: apiMessages,
+          model: "gpt-4o-mini",
+          extendedThinking,
+          webSearch,
+          research,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response from AI");
+      }
+
+      const data = await response.json();
+      
       setMessages(prev => [
         ...prev,
-        { 
-          role: "assistant", 
-          content: "I'm MATRIX, your AI assistant. I'm currently in development and will be able to help you with various tasks soon!" 
+        {
+          role: "assistant",
+          content: data.message.content,
         }
       ]);
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "I apologize, but I encountered an error processing your request. Please try again.",
+        }
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -209,7 +258,7 @@ export default function MatrixChat({
 
                     {/* Options Dropdown */}
                     {showOptions && (
-                      <div className="absolute bottom-full left-0 mb-2 w-72 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                      <div className="absolute bottom-full left-0 mb-2 w-72 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-50">
                         <div className="p-3 border-b border-gray-800">
                           <input
                             type="text"
@@ -220,68 +269,59 @@ export default function MatrixChat({
 
                         <div className="p-2">
                           {/* Extended Thinking */}
-                          <div className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg">
+                          <button
+                            type="button"
+                            onClick={() => setExtendedThinking(!extendedThinking)}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg"
+                          >
                             <div className="flex items-center space-x-3">
                               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                               </svg>
                               <span className="text-sm text-gray-300">Extended thinking</span>
                             </div>
-                            <div className="w-10 h-5 bg-primary-600 rounded-full relative">
-                              <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors ${extendedThinking ? 'bg-primary-600' : 'bg-gray-700'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${extendedThinking ? 'right-0.5' : 'left-0.5'}`}></div>
                             </div>
-                          </div>
+                          </button>
 
                           {/* Web Search */}
-                          <div className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg">
+                          <button
+                            type="button"
+                            onClick={() => setWebSearch(!webSearch)}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg"
+                          >
                             <div className="flex items-center space-x-3">
                               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                               </svg>
                               <span className="text-sm text-gray-300">Web search</span>
                             </div>
-                            <div className="w-10 h-5 bg-primary-600 rounded-full relative">
-                              <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors ${webSearch ? 'bg-primary-600' : 'bg-gray-700'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${webSearch ? 'right-0.5' : 'left-0.5'}`}></div>
                             </div>
-                          </div>
+                          </button>
 
                           {/* Research */}
-                          <div className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg">
+                          <button
+                            type="button"
+                            onClick={() => setResearch(!research)}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg"
+                          >
                             <div className="flex items-center space-x-3">
                               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
                               <span className="text-sm text-gray-300">Research</span>
                             </div>
-                            <div className="w-10 h-5 bg-gray-700 rounded-full relative">
-                              <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors ${research ? 'bg-primary-600' : 'bg-gray-700'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${research ? 'right-0.5' : 'left-0.5'}`}></div>
                             </div>
-                          </div>
+                          </button>
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {/* Reload/Refresh Button */}
-                  <button
-                    type="button"
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                    title="Refresh"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                  </button>
                 </div>
 
                 {/* Text Input */}

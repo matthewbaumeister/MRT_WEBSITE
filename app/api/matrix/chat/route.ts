@@ -18,7 +18,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, model = "gpt-4-mini" } = await request.json();
+    const { 
+      messages, 
+      model = "gpt-4o-mini",
+      extendedThinking = false,
+      webSearch = false,
+      research = false 
+    } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -27,13 +33,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
+    // Add system message with capabilities based on settings
+    const systemMessage = {
+      role: "system",
+      content: `You are MATRIX, an AI assistant for Make Ready Technologies. You are helpful, professional, and knowledgeable. 
+${extendedThinking ? "Take your time to think through complex problems step by step." : ""}
+${webSearch ? "You have access to current information through web search." : ""}
+${research ? "You can conduct in-depth research on topics." : ""}
+
+Current user: ${session.user.name} (${session.user.email})`
+    };
+
+    const fullMessages = [systemMessage, ...messages];
+
+    // Call OpenAI API with appropriate parameters
+    const completionParams: any = {
       model: model,
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
+      messages: fullMessages,
+      temperature: extendedThinking ? 0.8 : 0.7,
+      max_tokens: extendedThinking ? 4000 : 2000,
+    };
+
+    const completion = await openai.chat.completions.create(completionParams);
 
     const assistantMessage = completion.choices[0]?.message;
 
@@ -48,6 +69,7 @@ export async function POST(request: NextRequest) {
     // - Save conversation
     // - Save messages
     // - Link to user
+    // - Store settings (extendedThinking, webSearch, research)
 
     return NextResponse.json({
       message: assistantMessage,
