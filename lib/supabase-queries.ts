@@ -327,8 +327,18 @@ export async function searchSupabaseTables(
           continue;
         }
         
-        // Build OR query: column1 ILIKE '%topic%' OR column2 ILIKE '%topic%' ...
-        const orConditions = columnsToSearch.map(col => `${col}.ilike.%${topic}%`).join(',');
+        // Split topic into keywords for better matching
+        // "defense ai contracts" → ["defense", "ai", "contracts"]
+        const keywords = topic.toLowerCase().split(/\s+/).filter(k => k.length > 2); // Filter out 1-2 char words
+        
+        // Build smart OR query: 
+        // (column1 ILIKE '%defense%' OR column1 ILIKE '%ai%' OR column1 ILIKE '%contracts%')
+        // OR (column2 ILIKE '%defense%' OR column2 ILIKE '%ai%' OR column2 ILIKE '%contracts%')
+        const orConditions = columnsToSearch.flatMap(col => 
+          keywords.map(keyword => `${col}.ilike.%${keyword}%`)
+        ).join(',');
+        
+        console.log(`  🔍 Searching ${tableName} for keywords: [${keywords.join(', ')}]`);
         
         // INCREASED LIMIT: Market research needs comprehensive data!
         // For "army" searches with 290K rows, we want LOTS of results
