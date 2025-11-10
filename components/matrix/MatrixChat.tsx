@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import ResearchReport from "./ResearchReport";
+import AdvancedQueryPanel from "./AdvancedQueryPanel";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -10,6 +12,28 @@ interface MatrixChatProps {
   onNewChat: () => void;
   projectId: string | null;
 }
+
+interface ReportSection {
+  id: string;
+  number: number;
+  title: string;
+  content: string;
+  expanded: boolean;
+  sources?: string[];
+}
+
+const REPORT_SECTIONS: Omit<ReportSection, "content" | "expanded">[] = [
+  { id: "background", number: 1, title: "Background & Market Overview", sources: [] },
+  { id: "funding", number: 2, title: "Funding & Investment Landscape", sources: [] },
+  { id: "market-size", number: 3, title: "Market Size & Revenue Analysis", sources: [] },
+  { id: "tam", number: 4, title: "Total Addressable Market (TAM)", sources: [] },
+  { id: "competition", number: 5, title: "Competitive Analysis", sources: [] },
+  { id: "technology", number: 6, title: "Technology Trends & Innovation", sources: [] },
+  { id: "usg-alignment", number: 7, title: "USG Mission Alignment", sources: [] },
+  { id: "regulatory", number: 8, title: "Regulatory Environment", sources: [] },
+  { id: "barriers", number: 9, title: "Barriers to Entry & Risk Assessment", sources: [] },
+  { id: "conclusion", number: 10, title: "Conclusions & Recommendations", sources: [] },
+];
 
 export default function MatrixChat({
   onToggleSidebar,
@@ -28,11 +52,108 @@ export default function MatrixChat({
   const [research, setResearch] = useState(false);
   const [smallBusinessFocus, setSmallBusinessFocus] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string[]>([]);
+  const [reportMode, setReportMode] = useState(false);
+  const [reportSections, setReportSections] = useState<ReportSection[]>([]);
+  const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       setUploadedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const generateReport = async (topic: string) => {
+    // Initialize report sections
+    const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
+      ...s,
+      content: "",
+      expanded: true,
+    }));
+    setReportSections(initialSections);
+    setReportMode(true);
+
+    // Generate each section
+    for (const section of REPORT_SECTIONS) {
+      setSearchStatus([`Researching ${section.title}...`]);
+      
+      try {
+        const response = await fetch("/api/matrix/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{
+              role: "user",
+              content: `Generate the ${section.title} section for a market research report on: ${topic}. 
+              
+Focus on DOD/USG contracting context. Provide detailed, data-driven analysis.`
+            }],
+            model: "gpt-4o-mini",
+            extendedThinking,
+            webSearch,
+            research,
+            smallBusinessFocus,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setReportSections(prev => prev.map(s => 
+            s.id === section.id 
+              ? { ...s, content: data.message.content, sources: ["xTech", "MANTECH", "DSIP"] }
+              : s
+          ));
+        }
+      } catch (error) {
+        console.error(`Error generating section ${section.id}:`, error);
+      }
+    }
+    
+    setSearchStatus([]);
+  };
+
+  const handleAdvancedQuery = async (query: string, mergeInstructions?: string): Promise<string> => {
+    try {
+      const context = selectedSection 
+        ? `Context: You are analyzing the ${reportSections.find(s => s.id === selectedSection)?.title} section of a market research report.`
+        : "Context: You are analyzing the entire market research report.";
+
+      const response = await fetch("/api/matrix/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{
+            role: "user",
+            content: `${context}\n\nQuery: ${query}${mergeInstructions ? `\n\nMerge Instructions: ${mergeInstructions}` : ""}`
+          }],
+          model: "gpt-4o-mini",
+          extendedThinking,
+          webSearch,
+          research,
+          smallBusinessFocus,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // If merge instructions provided, update the section
+        if (mergeInstructions && selectedSection) {
+          setReportSections(prev => prev.map(s => 
+            s.id === selectedSection 
+              ? { ...s, content: s.content + "\n\n" + data.message.content }
+              : s
+          ));
+        }
+        
+        return data.message.content;
+      }
+      
+      return "Error: Failed to process query";
+    } catch (error) {
+      console.error("Advanced query error:", error);
+      return "Error: Failed to process query";
     }
   };
 
@@ -50,6 +171,13 @@ export default function MatrixChat({
     setUploadedFiles([]);
     setIsLoading(true);
     setSearchStatus([]);
+
+    // If first query, generate full report
+    if (!reportMode && messages.length === 0) {
+      await generateReport(userContent);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // Show initial search status
@@ -141,39 +269,83 @@ export default function MatrixChat({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <button
-          onClick={onToggleSidebar}
-          className="text-gray-400 hover:text-white transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-
-        {/* Project indicator */}
-        {projectId && (
-          <div className="flex items-center space-x-2 text-gray-400 text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    <div className="flex h-full">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+          <button
+            onClick={onToggleSidebar}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
-            <span>Project Active</span>
-          </div>
-        )}
-      </div>
+          </button>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 ? (
-          /* Welcome Screen */
-          <div className="h-full flex flex-col items-center justify-center p-8">
+          {/* Center - Report Mode Indicator */}
+          {reportMode && (
+            <div className="flex items-center space-x-2 text-gray-400 text-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Market Research Report</span>
+            </div>
+          )}
+
+          {/* Project indicator */}
+          {projectId && !reportMode && (
+            <div className="flex items-center space-x-2 text-gray-400 text-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Project Active</span>
+            </div>
+          )}
+
+          {/* Right - Advanced Panel Toggle */}
+          {reportMode && (
+            <button
+              onClick={() => setAdvancedPanelOpen(!advancedPanelOpen)}
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Advanced Query Panel"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto">
+          {reportMode ? (
+            /* Report Mode */
+            <ResearchReport
+              sections={reportSections}
+              onSectionClick={(sectionId) => {
+                setSelectedSection(sectionId);
+                setAdvancedPanelOpen(true);
+              }}
+              onUpdateSection={(sectionId, content) => {
+                setReportSections(prev => prev.map(s => 
+                  s.id === sectionId ? { ...s, content } : s
+                ));
+              }}
+            />
+          ) : messages.length === 0 ? (
+            /* Welcome Screen */
+            <div className="h-full flex flex-col items-center justify-center p-8">
             <div className="text-center max-w-2xl">
               {/* MRT Logo */}
               <div className="mb-8">
@@ -259,12 +431,13 @@ export default function MatrixChat({
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
 
-      {/* Input Area */}
-      <div className="border-t border-gray-800 p-4">
+        {/* Input Area - Only show in non-report mode */}
+        {!reportMode && (
+          <div className="border-t border-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit}>
             <div className="relative">
@@ -515,12 +688,24 @@ export default function MatrixChat({
             </div>
           </form>
 
-          {/* Footer Text */}
-          <p className="text-xs text-gray-500 text-center mt-3">
-            MATRIX can make mistakes. Consider checking important information.
-          </p>
-        </div>
+            {/* Footer Text */}
+            <p className="text-xs text-gray-500 text-center mt-3">
+              MATRIX can make mistakes. Consider checking important information.
+            </p>
+          </div>
+          </div>
+        )}
       </div>
+
+      {/* Advanced Query Panel */}
+      {reportMode && (
+        <AdvancedQueryPanel
+          isOpen={advancedPanelOpen}
+          onClose={() => setAdvancedPanelOpen(false)}
+          selectedSection={selectedSection ? reportSections.find(s => s.id === selectedSection)?.title || null : null}
+          onQuery={handleAdvancedQuery}
+        />
+      )}
     </div>
   );
 }
