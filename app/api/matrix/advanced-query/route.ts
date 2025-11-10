@@ -67,15 +67,15 @@ export async function POST(request: NextRequest) {
       console.log(`[ADVANCED QUERY] Searching web...`);
       try {
         // Search DoD-specific sites
-        const dodResults = await searchDoDWeb(searchTopic, 5);
+        const dodResults = await searchDoDWeb(searchTopic);
         if (dodResults) {
-          webContext += formatWebSearchContext(dodResults, "DoD Web Search");
+          webContext += formatWebSearchContext(dodResults, 5);
         }
 
         // Search recent news
-        const newsResults = await searchRecentNews(searchTopic, 5);
+        const newsResults = await searchRecentNews(searchTopic, 180);
         if (newsResults) {
-          webContext += "\n\n" + formatWebSearchContext(newsResults, "Recent News");
+          webContext += "\n\n" + formatWebSearchContext(newsResults, 5);
         }
 
         console.log(`[ADVANCED QUERY] ✅ Web search completed`);
