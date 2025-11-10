@@ -6,7 +6,7 @@
 
 SELECT 
   schemaname,
-  tablename,
+  relname as tablename,
   n_live_tup as estimated_rows
 FROM pg_stat_user_tables
 WHERE schemaname = 'public'
@@ -26,7 +26,7 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND data_type IN ('text', 'character varying', 'varchar')
   AND table_name IN (
-    SELECT tablename 
+    SELECT relname 
     FROM pg_stat_user_tables 
     WHERE schemaname = 'public'
   )
@@ -71,7 +71,7 @@ FROM pg_stat_user_tables
 WHERE schemaname = 'public' AND n_live_tup > 0;
 
 -- 2. Which tables have the most data?
-SELECT tablename, n_live_tup as rows
+SELECT relname as tablename, n_live_tup as rows
 FROM pg_stat_user_tables
 WHERE schemaname = 'public' AND n_live_tup > 0
 ORDER BY n_live_tup DESC
