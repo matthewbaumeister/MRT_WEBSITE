@@ -69,27 +69,40 @@ export default function MatrixSidebar({
       if (currentProjectId === "ALL") {
         // Fetch ALL conversations (no project filter)
         url += "?all=true";
-        console.log(`Loading ALL conversations (All Chats view)`);
+        console.log(`🔍 [SIDEBAR] Loading ALL conversations (All Chats view)`);
       } else if (currentProjectId === null) {
         // Show only conversations without a project ("Unsaved/Recents")
         url += "?project_id=null";
-        console.log(`Loading conversations without project`);
+        console.log(`🔍 [SIDEBAR] Loading conversations without project (Recents)`);
       } else if (currentProjectId) {
         // Show only conversations for this specific project
         url += `?project_id=${currentProjectId}`;
-        console.log(`Loading conversations for project: ${currentProjectId}`);
+        console.log(`🔍 [SIDEBAR] Loading conversations for project: ${currentProjectId}`);
       }
+      
+      console.log(`📡 [SIDEBAR] Fetching from: ${url}`);
       
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        console.log(`Loaded ${data.conversations?.length || 0} conversations`);
+        console.log(`✅ [SIDEBAR] Loaded ${data.conversations?.length || 0} conversations`);
+        
+        // Debug: Log details of each conversation
+        if (data.conversations && data.conversations.length > 0) {
+          console.log(`📋 [SIDEBAR] Conversation details:`);
+          data.conversations.forEach((conv: any, idx: number) => {
+            console.log(`  ${idx + 1}. "${conv.title}" | Project: ${conv.project_id || 'none'} | ID: ${conv.id.slice(0, 8)}...`);
+          });
+        } else {
+          console.warn(`⚠️  [SIDEBAR] No conversations found!`);
+        }
+        
         setConversations(data.conversations || []);
       } else {
-        console.error("Failed to load conversations:", response.status, response.statusText);
+        console.error("❌ [SIDEBAR] Failed to load conversations:", response.status, response.statusText);
       }
     } catch (error) {
-      console.error("Error loading conversations:", error);
+      console.error("❌ [SIDEBAR] Error loading conversations:", error);
     }
   };
 
