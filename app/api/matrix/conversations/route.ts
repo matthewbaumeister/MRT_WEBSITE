@@ -38,7 +38,25 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get("id");
     const projectId = searchParams.get("project_id");
+
+    // If requesting a specific conversation by ID
+    if (conversationId) {
+      const { data: conversation, error } = await supabase
+        .from("matrix_conversations")
+        .select("*")
+        .eq("id", conversationId)
+        .eq("user_id", userData.id)
+        .single();
+
+      if (error) {
+        console.error("Error loading conversation:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ conversations: conversation ? [conversation] : [] });
+    }
 
     let query = supabase
       .from("matrix_conversations")

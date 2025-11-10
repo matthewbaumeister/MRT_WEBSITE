@@ -30,6 +30,7 @@ interface MatrixSidebarProps {
   currentProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
   refreshKey?: number;
+  onNewChat: () => void;
 }
 
 export default function MatrixSidebar({
@@ -40,6 +41,7 @@ export default function MatrixSidebar({
   currentProjectId,
   onSelectProject,
   refreshKey,
+  onNewChat,
 }: MatrixSidebarProps) {
   const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -203,7 +205,7 @@ export default function MatrixSidebar({
           <div className="p-4 border-b border-gray-800">
             <button
               onClick={() => {
-                onSelectChat(null);
+                onNewChat(); // Reset to home screen
                 onClose();
               }}
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg transition-all duration-200"

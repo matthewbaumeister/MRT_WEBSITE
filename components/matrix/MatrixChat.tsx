@@ -80,6 +80,65 @@ export default function MatrixChat({
     }
   };
 
+  // Load conversation when chatId changes
+  useEffect(() => {
+    if (chatId) {
+      loadConversation(chatId);
+    }
+  }, [chatId]);
+
+  const loadConversation = async (conversationId: string) => {
+    try {
+      // Load conversation metadata
+      const convResponse = await fetch(`/api/matrix/conversations?id=${conversationId}`);
+      if (!convResponse.ok) return;
+      
+      const convData = await convResponse.json();
+      const conversation = convData.conversations?.[0];
+      
+      if (!conversation) return;
+      
+      // Check if this is a report
+      if (conversation.metadata?.isReport && conversation.metadata?.reportSections) {
+        console.log("Loading saved report...");
+        
+        // Restore report mode and sections
+        setReportMode(true);
+        setReportTitle(conversation.title || "Market Research Report");
+        setResearchTopic(conversation.metadata.reportTopic || "");
+        
+        // Restore sections with proper structure
+        const savedSections = conversation.metadata.reportSections.map((s: any, idx: number) => ({
+          ...s,
+          number: idx + 1,
+          expanded: false, // Start collapsed
+        }));
+        
+        setReportSections(savedSections);
+        
+        // Restore settings
+        if (conversation.metadata.settings) {
+          // Note: You'll need to add state setters if you want to restore settings
+          console.log("Saved settings:", conversation.metadata.settings);
+        }
+      } else {
+        // Load regular chat messages
+        const messagesResponse = await fetch(`/api/matrix/messages?conversation_id=${conversationId}`);
+        if (messagesResponse.ok) {
+          const messagesData = await messagesResponse.json();
+          // Convert to message format
+          const loadedMessages = messagesData.messages?.map((m: any) => ({
+            role: m.role,
+            content: m.content,
+          })) || [];
+          setMessages(loadedMessages);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+    }
+  };
+
   // Update report title
   const updateReportTitle = async (newTitle: string) => {
     setReportTitle(newTitle);
@@ -365,10 +424,34 @@ export default function MatrixChat({
       }
     }
     
-    // Save the complete report as an assistant message
+    // Save the complete report as an assistant message AND store sections in metadata
     if (conversationId) {
       const reportSummary = `Generated complete market research report with ${REPORT_SECTIONS.length} sections on: ${topic}`;
       await saveMessage(conversationId, "assistant", reportSummary);
+      
+      // Update conversation metadata with report structure
+      try {
+        await fetch("/api/matrix/conversations", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: conversationId,
+            metadata: {
+              settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+              isReport: true,
+              reportTopic: topic,
+              reportSections: reportSections.map(s => ({
+                id: s.id,
+                title: s.title,
+                content: sectionContents[s.id] || "",
+                sources: s.sources || [],
+              })),
+            }
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving report structure:", error);
+      }
     }
     
     // FINAL ENRICHMENT STEP: Enhance with live public data
