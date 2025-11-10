@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
 import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
-import { searchSupabaseTables, formatSupabaseContext } from "@/lib/supabase-queries";
+// Supabase search now happens server-side via API
 import { searchDoDWeb, searchRecentNews, formatWebSearchContext, extractWebSourceURLs } from "@/lib/web-search";
 import { enhanceReportWithPublicData, applyEnhancements } from "@/lib/research-enhancer";
 
@@ -172,14 +172,24 @@ export default function MatrixChat({
       setSearchStatus([`Searching databases for ${section.title}...`]);
       
       try {
-        // Search Supabase tables for relevant data
-        const { results } = await searchSupabaseTables(topic, {
-          smallBusinessFocus,
-          sectionId: section.id
+        // Search Supabase tables for relevant data (server-side)
+        const searchResponse = await fetch("/api/matrix/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic,
+            sectionId: section.id,
+            smallBusinessFocus,
+          }),
         });
         
-        // Format Supabase results for context
-        let contextData = formatSupabaseContext(results);
+        let contextData = "";
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          contextData = searchData.context || "";
+        } else {
+          console.error("Supabase search failed:", await searchResponse.text());
+        }
         
         // Track web sources for citation
         const webSources: DataSource[] = [];
