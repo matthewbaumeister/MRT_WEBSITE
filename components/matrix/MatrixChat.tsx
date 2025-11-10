@@ -452,7 +452,38 @@ export default function MatrixChat({
 
     // If first query, generate full report
     if (!reportMode && messages.length === 0) {
-      await generateReport(userContent);
+      let researchQuery = userContent;
+      
+      // Process uploaded documents if any
+      if (filesToProcess.length > 0) {
+        setSearchStatus(["🤖 Analyzing uploaded documents with AI..."]);
+        
+        try {
+          const formData = new FormData();
+          filesToProcess.forEach(file => {
+            formData.append("files", file);
+          });
+          
+          const docResponse = await fetch("/api/matrix/process-documents", {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (docResponse.ok) {
+            const docData = await docResponse.json();
+            
+            // Enhance the research query with document insights
+            researchQuery = `${userContent}\n\nBased on these uploaded documents:\n${docData.combinedPrompt}`;
+            
+            setSearchStatus([`✅ Analyzed ${docData.totalFiles} document(s) - integrating insights into research`]);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (docError) {
+          console.error("Error processing documents:", docError);
+        }
+      }
+      
+      await generateReport(researchQuery);
       setIsLoading(false);
       return;
     }
@@ -487,11 +518,44 @@ export default function MatrixChat({
       
       setSearchStatus(prev => [...prev, "Compiling results..."]);
       
-      // Process files if any
+      // Process files with LLM if any
       let fileContext = "";
+      let enhancedPrompt = userContent;
+      
       if (filesToProcess.length > 0) {
-        // For now, just list the files. In production, you'd parse them.
-        fileContext = `\n\n[User uploaded ${filesToProcess.length} file(s): ${filesToProcess.map(f => f.name).join(", ")}]`;
+        setSearchStatus(prev => [...prev, "🤖 Analyzing uploaded documents with AI..."]);
+        
+        try {
+          const formData = new FormData();
+          filesToProcess.forEach(file => {
+            formData.append("files", file);
+          });
+          
+          const docResponse = await fetch("/api/matrix/process-documents", {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (docResponse.ok) {
+            const docData = await docResponse.json();
+            
+            // Use the combined research prompt from document analysis
+            enhancedPrompt = `${userContent}\n\n--- Document Analysis ---\n${docData.combinedPrompt}`;
+            
+            fileContext = `\n\n📄 Analyzed ${docData.totalFiles} document(s):\n` +
+              docData.documents.map((doc: any) => 
+                `- ${doc.filename}: ${doc.summary}\n  Key Topics: ${doc.keyInformation.topics.slice(0, 5).join(", ")}`
+              ).join("\n");
+            
+            setSearchStatus(prev => [...prev, "✅ Documents analyzed and integrated into research"]);
+          } else {
+            // Fallback: just list files
+            fileContext = `\n\n[User uploaded ${filesToProcess.length} file(s): ${filesToProcess.map(f => f.name).join(", ")}]`;
+          }
+        } catch (docError) {
+          console.error("Error processing documents:", docError);
+          fileContext = `\n\n[User uploaded ${filesToProcess.length} file(s): ${filesToProcess.map(f => f.name).join(", ")}]`;
+        }
       }
 
       // Prepare messages for API
