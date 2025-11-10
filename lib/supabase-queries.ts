@@ -12,6 +12,152 @@ function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseKey);
 }
 
+// Cache for table column mappings (to avoid querying schema repeatedly)
+let tableColumnsCache: Record<string, string[]> | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+/**
+ * Dynamically discover searchable text columns for a table
+ * Uses smart detection by querying a sample row
+ */
+async function getSearchableColumns(tableName: string): Promise<string[]> {
+  const supabase = getSupabaseClient();
+  
+  try {
+    // Primary method: Get one row to see the column structure
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.log(`Could not query ${tableName}:`, error.message);
+      return ['title', 'description', 'name', 'company', 'content'];
+    }
+
+    if (!data || data.length === 0) {
+      // Table is empty, try to get schema via RPC (optional enhancement)
+      return await getSearchableColumnsViaRPC(tableName);
+    }
+
+    // Get all column names from the first row
+    const allColumns = Object.keys(data[0]);
+    
+    // Filter to likely text columns (heuristic approach)
+    const textColumns = allColumns.filter(col => {
+      const lowerCol = col.toLowerCase();
+      const value = data[0][col];
+      const isString = typeof value === 'string';
+      
+      // Prioritize columns with searchable names and string values
+      return isString && (
+        lowerCol.includes('title') ||
+        lowerCol.includes('name') ||
+        lowerCol.includes('description') ||
+        lowerCol.includes('content') ||
+        lowerCol.includes('text') ||
+        lowerCol.includes('company') ||
+        lowerCol.includes('contractor') ||
+        lowerCol.includes('abstract') ||
+        lowerCol.includes('summary') ||
+        lowerCol.includes('technology') ||
+        lowerCol.includes('category') ||
+        lowerCol.includes('project') ||
+        lowerCol.includes('program') ||
+        lowerCol.includes('solution') ||
+        lowerCol.includes('challenge')
+      );
+    });
+
+    // If no text columns found by name, use all string columns
+    if (textColumns.length === 0) {
+      const stringColumns = allColumns.filter(col => typeof data[0][col] === 'string');
+      return stringColumns.length > 0 ? stringColumns.slice(0, 5) : ['title', 'description', 'name'];
+    }
+
+    return textColumns;
+  } catch (error) {
+    console.error(`Error getting columns for ${tableName}:`, error);
+    return ['title', 'description', 'name', 'company', 'content'];
+  }
+}
+
+/**
+ * Optional: Try to get column info via RPC function (if it exists)
+ * This is a fallback if table is empty
+ */
+async function getSearchableColumnsViaRPC(tableName: string): Promise<string[]> {
+  const supabase = getSupabaseClient();
+  
+  try {
+    const { data, error } = await supabase.rpc('get_table_columns', {
+      table_name_param: tableName
+    });
+
+    if (error || !data || data.length === 0) {
+      return ['title', 'description', 'name'];
+    }
+
+    // Filter to text-based columns
+    const textColumns = data
+      .filter((col: any) => {
+        const dataType = col.data_type?.toLowerCase() || '';
+        return (
+          dataType.includes('text') ||
+          dataType.includes('varchar') ||
+          dataType.includes('character varying')
+        );
+      })
+      .map((col: any) => col.column_name);
+
+    return textColumns.length > 0 ? textColumns : ['title', 'description', 'name'];
+  } catch (error) {
+    return ['title', 'description', 'name'];
+  }
+}
+
+
+/**
+ * Get or build the table columns cache
+ * Discovers searchable columns for all tables automatically
+ */
+async function getTableColumnsCache(): Promise<Record<string, string[]>> {
+  const now = Date.now();
+  
+  // Return cache if valid
+  if (tableColumnsCache && (now - cacheTimestamp) < CACHE_DURATION) {
+    return tableColumnsCache;
+  }
+
+  console.log('Building table columns cache...');
+  const cache: Record<string, string[]> = {};
+
+  // Get all table names
+  const allTables = [
+    ...MATRIX_TABLES.xtech,
+    ...MATRIX_TABLES.mantech,
+    ...MATRIX_TABLES.dod_contracts,
+    ...MATRIX_TABLES.gsa,
+    ...MATRIX_TABLES.financial,
+    ...MATRIX_TABLES.small_business,
+    'sbir_final', // Always include SBIR
+  ];
+
+  // Discover columns for each table
+  for (const tableName of allTables) {
+    cache[tableName] = await getSearchableColumns(tableName);
+    console.log(`  ${tableName}: ${cache[tableName].join(', ')}`);
+  }
+
+  tableColumnsCache = cache;
+  cacheTimestamp = now;
+
+  console.log(`✅ Cached columns for ${Object.keys(cache).length} tables`);
+  
+  return cache;
+}
+
 // All MATRIX-related tables to query
 const MATRIX_TABLES: Record<string, string[]> = {
   // Army Innovation / xTech
@@ -73,44 +219,8 @@ const MATRIX_TABLES: Record<string, string[]> = {
 };
 
 /**
- * Column names to search for each table type
- * Maps table names to their searchable text columns
- */
-const TABLE_SEARCH_COLUMNS: Record<string, string[]> = {
-  // Army Innovation / xTech tables
-  army_innovation_documents: ['title', 'description', 'document_type', 'content'],
-  army_innovation_opportunities: ['title', 'description', 'opportunity_name'],
-  army_innovation_programs: ['program_name', 'description'],
-  army_innovation_submissions: ['company_name', 'technology_description', 'challenge_title', 'solution_title'],
-  
-  // MANTECH tables
-  mantech_projects: ['project_title', 'description', 'technology_area', 'company'],
-  mantech_company_mentions: ['company_name', 'project_title', 'context'],
-  
-  // DOD Contract News
-  dod_contract_news: ['title', 'description', 'contractor_name', 'content'],
-  dvids_military_news: ['title', 'description', 'content'],
-  
-  // GSA tables
-  gsa_schedule_holders: ['company_name', 'contractor_name', 'business_type'],
-  gsa_labor_categories: ['category_name', 'description'],
-  gsa_sin_catalog: ['sin_number', 'description', 'title'],
-  gsa_price_lists: ['vendor_name', 'product_description'],
-  
-  // Financial tables
-  congressional_stock_trades: ['ticker', 'company_name', 'member_name'],
-  defense_contractors_tickers: ['company_name', 'ticker', 'sector'],
-  
-  // SBIR
-  sbir_final: ['company', 'project_title', 'abstract', 'award_title', 'agency'],
-  
-  // Default columns to try if table not in map
-  _default: ['title', 'description', 'name', 'company', 'company_name', 'content'],
-};
-
-/**
  * Search relevant Supabase tables based on topic and settings
- * Intelligently searches across appropriate columns based on table structure
+ * Dynamically discovers and searches appropriate columns for each table
  */
 export async function searchSupabaseTables(
   topic: string,
@@ -124,6 +234,9 @@ export async function searchSupabaseTables(
   const sources: string[] = [];
 
   try {
+    // Build column cache (first time only, then cached for 1 hour)
+    const columnCache = await getTableColumnsCache();
+    
     // Determine which tables to search based on settings
     let tablesToSearch: string[] = [];
     
@@ -149,11 +262,13 @@ export async function searchSupabaseTables(
     // Remove duplicates
     tablesToSearch = [...new Set(tablesToSearch)];
 
+    console.log(`Searching ${tablesToSearch.length} tables for: "${topic}"`);
+
     // Search each table for relevant data
     for (const tableName of tablesToSearch) {
       try {
-        // Get columns to search for this specific table
-        const columnsToSearch = TABLE_SEARCH_COLUMNS[tableName] || TABLE_SEARCH_COLUMNS._default;
+        // Get dynamically discovered columns for this table
+        const columnsToSearch = columnCache[tableName] || ['title', 'description', 'name'];
         
         // Build OR query: column1 ILIKE '%topic%' OR column2 ILIKE '%topic%' ...
         const orConditions = columnsToSearch.map(col => `${col}.ilike.%${topic}%`).join(',');
@@ -165,7 +280,7 @@ export async function searchSupabaseTables(
           .limit(10); // Limit per table to keep context manageable
 
         if (error) {
-          console.log(`Error searching ${tableName}:`, error.message);
+          console.log(`❌ Error searching ${tableName}:`, error.message);
         } else if (data && data.length > 0) {
           results.push({
             table: tableName,
@@ -173,14 +288,18 @@ export async function searchSupabaseTables(
             data: data,
           });
           sources.push(tableName);
-          console.log(`Found ${data.length} results in ${tableName}`);
+          console.log(`✓ Found ${data.length} results in ${tableName} (searched: ${columnsToSearch.slice(0, 3).join(', ')}...)`);
+        } else {
+          console.log(`  No results in ${tableName}`);
         }
       } catch (tableError: any) {
         // Table might not exist or have different columns - skip gracefully
-        console.log(`Skipping table ${tableName}:`, tableError.message);
+        console.log(`⚠️  Skipping table ${tableName}:`, tableError.message);
       }
     }
 
+    console.log(`\n✅ Search complete: Found results in ${results.length} tables`);
+    
     return { results, sources };
   } catch (error) {
     console.error("Error searching Supabase tables:", error);
