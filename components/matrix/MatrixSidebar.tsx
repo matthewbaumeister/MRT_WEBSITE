@@ -302,8 +302,8 @@ export default function MatrixSidebar({
                         }`}
                       >
                         <div className="flex items-center space-x-2">
-                          {/* Show project color dot in "All Chats" view */}
-                          {currentProjectId === "ALL" && conversationProject && (
+                          {/* Show project color dot for any chat in a project */}
+                          {conversationProject && (
                             <div
                               className="w-2 h-2 rounded-full flex-shrink-0"
                               style={{ backgroundColor: conversationProject.color }}
