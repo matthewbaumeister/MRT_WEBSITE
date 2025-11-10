@@ -237,6 +237,22 @@ export default function MatrixChat({
           const sourceURLs = searchData.sourceURLs || [];
           supabaseSources.push(...sourceURLs);
           
+          // Debug logging
+          console.log(`=== SECTION ${section.id.toUpperCase()} DATA ===`);
+          console.log(`✅ Found ${searchData.debug?.totalResults || 0} total results`);
+          console.log(`Tables with data:`, searchData.debug?.resultsPerTable || []);
+          console.log(`📎 Extracted ${sourceURLs.length} URLs`);
+          if (sourceURLs.length > 0) {
+            console.log(`First 3 URLs:`);
+            sourceURLs.slice(0, 3).forEach((src: any) => {
+              console.log(`  - ${src.name}`);
+              console.log(`    ${src.url}`);
+            });
+          }
+          console.log(`📝 Context length: ${contextData.length} chars`);
+          console.log(`Context preview:`, contextData.substring(0, 200) + "...");
+          console.log("================================");
+          
           // Update status with sources found
           if (sourcesFound.length > 0) {
             setLiveStatus(`Found data in: ${sourcesFound.slice(0, 3).join(", ")}...`);

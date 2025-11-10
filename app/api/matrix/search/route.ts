@@ -33,12 +33,38 @@ export async function POST(request: NextRequest) {
     // Extract real URLs from the data
     const dataSourceURLs = extractSupabaseURLs(results);
 
+    // Debug logging
+    console.log("=== SEARCH API DEBUG ===");
+    console.log(`Topic: "${topic}"`);
+    console.log(`Section: ${sectionId || "all"}`);
+    console.log(`Small Business Focus: ${smallBusinessFocus}`);
+    console.log(`Tables searched: ${sources.join(", ")}`);
+    console.log(`Total results: ${results.length}`);
+    console.log(`Results per table:`);
+    results.forEach(r => {
+      console.log(`  - ${r.table}: ${r.count} rows`);
+    });
+    console.log(`URLs extracted: ${dataSourceURLs.length}`);
+    dataSourceURLs.slice(0, 3).forEach(url => {
+      console.log(`  - ${url.name.substring(0, 60)}...`);
+      console.log(`    ${url.url}`);
+    });
+    console.log(`Context length: ${formattedContext.length} chars`);
+    console.log("========================");
+
     return NextResponse.json({
       success: true,
       context: formattedContext,
       sources,
       sourceURLs: dataSourceURLs, // Actual URLs from database records
       resultCount: results.length,
+      debug: {
+        tablesSearched: sources,
+        totalResults: results.length,
+        urlsExtracted: dataSourceURLs.length,
+        contextLength: formattedContext.length,
+        resultsPerTable: results.map(r => ({ table: r.table, count: r.count })),
+      },
     });
   } catch (error: any) {
     console.error("Search API Error:", error);
