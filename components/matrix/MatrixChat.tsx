@@ -70,6 +70,8 @@ export default function MatrixChat({
   const [researchTopic, setResearchTopic] = useState<string>("");
   const [reportTitle, setReportTitle] = useState<string>("Market Research Report");
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
+  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -252,6 +254,19 @@ export default function MatrixChat({
           console.log(`📝 Context length: ${contextData.length} chars`);
           console.log(`Context preview:`, contextData.substring(0, 200) + "...");
           console.log("================================");
+          
+          // Store debug info for UI panel
+          setDebugInfo((prev: any) => ({
+            ...prev,
+            [section.id]: {
+              totalResults: searchData.debug?.totalResults || 0,
+              tablesWithData: searchData.debug?.resultsPerTable || [],
+              urlsExtracted: sourceURLs.length,
+              sampleUrls: sourceURLs.slice(0, 3),
+              contextLength: contextData.length,
+              contextPreview: contextData.substring(0, 300),
+            }
+          }));
           
           // Update status with sources found
           if (sourcesFound.length > 0) {
@@ -765,22 +780,38 @@ export default function MatrixChat({
           </div>
           )}
 
-          {/* Right - Advanced Panel Toggle */}
+          {/* Right - Advanced Panel Toggle & Debug */}
           {reportMode && (
-            <button
-              onClick={() => setAdvancedPanelOpen(!advancedPanelOpen)}
-              className="text-gray-400 hover:text-white transition-colors"
-              title="Advanced Query Panel"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="Debug Panel - Verify Data Pipeline"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => setAdvancedPanelOpen(!advancedPanelOpen)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="Advanced Query Panel"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
           )}
       </div>
 
@@ -1170,6 +1201,132 @@ export default function MatrixChat({
           selectedSection={selectedSection ? reportSections.find(s => s.id === selectedSection)?.title || null : null}
           onQuery={handleAdvancedQuery}
         />
+      )}
+
+      {/* Debug Panel */}
+      {showDebugPanel && reportMode && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50 max-h-[50vh] overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Data Pipeline Verification
+              </h3>
+              <button
+                onClick={() => setShowDebugPanel(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.keys(debugInfo).map((sectionId) => {
+                const section = REPORT_SECTIONS.find(s => s.id === sectionId);
+                const info = debugInfo[sectionId];
+                
+                return (
+                  <div key={sectionId} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <h4 className="text-white font-semibold mb-3">{section?.title}</h4>
+                    
+                    <div className="space-y-2 text-sm">
+                      {/* Results Found */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400">Results Found:</span>
+                        <span className={`font-bold ${info.totalResults > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {info.totalResults}
+                        </span>
+                      </div>
+
+                      {/* Tables with Data */}
+                      {info.tablesWithData && info.tablesWithData.length > 0 && (
+                        <div>
+                          <span className="text-gray-400">Tables:</span>
+                          <div className="mt-1 space-y-1">
+                            {info.tablesWithData.map((t: any) => (
+                              <div key={t.table} className="text-xs text-gray-300 ml-2">
+                                • {t.table}: {t.count} rows
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* URLs Extracted */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400">URLs Extracted:</span>
+                        <span className={`font-bold ${info.urlsExtracted > 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+                          {info.urlsExtracted}
+                        </span>
+                      </div>
+
+                      {/* Sample URLs */}
+                      {info.sampleUrls && info.sampleUrls.length > 0 && (
+                        <div>
+                          <span className="text-gray-400">Sample URLs:</span>
+                          <div className="mt-1 space-y-1">
+                            {info.sampleUrls.map((url: any, idx: number) => (
+                              <div key={idx} className="text-xs">
+                                <a 
+                                  href={url.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-400 hover:text-blue-300 truncate block"
+                                  title={url.name}
+                                >
+                                  {url.name.substring(0, 40)}...
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Context Length */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400">LLM Context:</span>
+                        <span className={`font-bold ${info.contextLength > 1000 ? 'text-green-400' : info.contextLength > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {info.contextLength} chars
+                        </span>
+                      </div>
+
+                      {/* Context Preview */}
+                      {info.contextPreview && (
+                        <details className="mt-2">
+                          <summary className="text-gray-400 cursor-pointer hover:text-white">
+                            View data sent to LLM
+                          </summary>
+                          <pre className="mt-2 text-xs text-gray-300 bg-gray-900 p-2 rounded overflow-x-auto">
+                            {info.contextPreview}...
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
+              <p className="text-blue-300 text-sm">
+                <strong>What to check:</strong>
+                <br />
+                ✅ <strong>Results Found &gt; 0:</strong> Database search working
+                <br />
+                ✅ <strong>URLs Extracted &gt; 0:</strong> Your data has clickable URLs
+                <br />
+                ✅ <strong>LLM Context &gt; 1000 chars:</strong> AI is receiving substantial data
+                <br />
+                <br />
+                Click "View data sent to LLM" to see actual database records being analyzed.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
