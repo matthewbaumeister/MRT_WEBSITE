@@ -57,6 +57,8 @@ export default function MatrixChat({
   const [reportSections, setReportSections] = useState<ReportSection[]>([]);
   const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(chatId);
+  const [researchTopic, setResearchTopic] = useState<string>("");
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -65,7 +67,84 @@ export default function MatrixChat({
     }
   };
 
+  // Create or update conversation
+  const createConversation = async (topic: string): Promise<string | null> => {
+    try {
+      const response = await fetch("/api/matrix/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Research: ${topic}`,
+          project_id: projectId,
+          metadata: {
+            settings: { extendedThinking, webSearch, research, smallBusinessFocus }
+          }
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.conversation.id;
+      }
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+    }
+    return null;
+  };
+
+  // Save a message to the conversation
+  const saveMessage = async (conversationId: string, role: string, content: string) => {
+    try {
+      await fetch("/api/matrix/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          role,
+          content,
+          files: [],
+        }),
+      });
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  };
+
+  // Load conversation when chatId changes
+  useEffect(() => {
+    if (chatId && chatId !== currentConversationId) {
+      loadConversation(chatId);
+    }
+  }, [chatId]);
+
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`/api/matrix/messages?conversation_id=${conversationId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+        setCurrentConversationId(conversationId);
+        // Check if it's a report (look for report content in metadata)
+        // This is a simplified version - you might want more sophisticated loading
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+    }
+  };
+
   const generateReport = async (topic: string) => {
+    // Create conversation and save initial query
+    let conversationId = currentConversationId;
+    if (!conversationId) {
+      conversationId = await createConversation(topic);
+      if (conversationId) {
+        setCurrentConversationId(conversationId);
+        setResearchTopic(topic);
+        // Save user's query
+        await saveMessage(conversationId, "user", `Research topic: ${topic}`);
+      }
+    }
+
     // Initialize report sections
     const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
       ...s,
@@ -121,6 +200,12 @@ export default function MatrixChat({
       } catch (error) {
         console.error(`Error generating section ${section.id}:`, error);
       }
+    }
+    
+    // Save the complete report as an assistant message
+    if (conversationId) {
+      const reportSummary = `Generated complete market research report with ${REPORT_SECTIONS.length} sections on: ${topic}`;
+      await saveMessage(conversationId, "assistant", reportSummary);
     }
     
     setSearchStatus([]);
