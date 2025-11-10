@@ -15,6 +15,7 @@ interface MatrixChatProps {
   chatId: string | null;
   onNewChat: () => void;
   projectId: string | null;
+  onConversationCreated?: () => void;
 }
 
 interface ReportSection {
@@ -44,6 +45,7 @@ export default function MatrixChat({
   chatId,
   onNewChat,
   projectId,
+  onConversationCreated,
 }: MatrixChatProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
@@ -87,6 +89,11 @@ export default function MatrixChat({
 
       if (response.ok) {
         const data = await response.json();
+        console.log("✅ Conversation created:", data.conversation.id);
+        // Notify parent to refresh sidebar
+        if (onConversationCreated) {
+          onConversationCreated();
+        }
         return data.conversation.id;
       }
     } catch (error) {

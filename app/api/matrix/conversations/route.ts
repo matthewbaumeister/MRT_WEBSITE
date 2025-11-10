@@ -46,9 +46,15 @@ export async function GET(request: NextRequest) {
       .eq("user_id", userData.id)
       .order("updated_at", { ascending: false });
 
-    if (projectId) {
+    // Filter by project_id
+    if (projectId === "null" || projectId === null) {
+      // Show only conversations without a project (in "Recents")
+      query = query.is("project_id", null);
+    } else if (projectId) {
+      // Show conversations for specific project
       query = query.eq("project_id", projectId);
     }
+    // If no projectId param at all, show ALL conversations
 
     const { data: conversations, error } = await query;
 

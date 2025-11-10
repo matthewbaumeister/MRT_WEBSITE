@@ -12,6 +12,13 @@ export default function MatrixPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+
+  // Callback to refresh sidebar when conversations/projects change
+  const refreshSidebar = () => {
+    console.log("Refreshing sidebar...");
+    setSidebarRefreshKey(prev => prev + 1);
+  };
 
   if (status === "loading") {
     return (
@@ -36,6 +43,7 @@ export default function MatrixPage() {
         onSelectChat={setCurrentChatId}
         currentProjectId={currentProjectId}
         onSelectProject={setCurrentProjectId}
+        refreshKey={sidebarRefreshKey}
       />
 
       {/* Main Chat Area */}
@@ -47,6 +55,7 @@ export default function MatrixPage() {
             setCurrentChatId(null);
           }}
           projectId={currentProjectId}
+          onConversationCreated={refreshSidebar}
         />
       </div>
     </div>

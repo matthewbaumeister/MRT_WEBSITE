@@ -29,6 +29,7 @@ interface MatrixSidebarProps {
   onSelectChat: (chatId: string | null) => void;
   currentProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
+  refreshKey?: number;
 }
 
 export default function MatrixSidebar({
@@ -38,6 +39,7 @@ export default function MatrixSidebar({
   onSelectChat,
   currentProjectId,
   onSelectProject,
+  refreshKey,
 }: MatrixSidebarProps) {
   const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -50,23 +52,33 @@ export default function MatrixSidebar({
 
   // Load conversations and projects
   useEffect(() => {
+    console.log("Sidebar useEffect triggered - session:", !!session, "project:", currentProjectId, "refreshKey:", refreshKey);
     if (session) {
       loadConversations();
       loadProjects();
     }
-  }, [session, currentProjectId]);
+  }, [session, currentProjectId, refreshKey]);
 
   const loadConversations = async () => {
     try {
       let url = "/api/matrix/conversations";
-      if (currentProjectId) {
+      
+      // If no project is selected, show only conversations without a project ("Recents")
+      if (currentProjectId === null) {
+        url += "?project_id=null";
+      } else if (currentProjectId) {
         url += `?project_id=${currentProjectId}`;
       }
+      
+      console.log(`Loading conversations for project: ${currentProjectId}, URL: ${url}`);
       
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
+        console.log(`Loaded ${data.conversations?.length || 0} conversations`);
         setConversations(data.conversations || []);
+      } else {
+        console.error("Failed to load conversations:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Error loading conversations:", error);
