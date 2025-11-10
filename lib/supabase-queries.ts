@@ -73,7 +73,44 @@ const MATRIX_TABLES: Record<string, string[]> = {
 };
 
 /**
+ * Column names to search for each table type
+ * Maps table names to their searchable text columns
+ */
+const TABLE_SEARCH_COLUMNS: Record<string, string[]> = {
+  // Army Innovation / xTech tables
+  army_innovation_documents: ['title', 'description', 'document_type', 'content'],
+  army_innovation_opportunities: ['title', 'description', 'opportunity_name'],
+  army_innovation_programs: ['program_name', 'description'],
+  army_innovation_submissions: ['company_name', 'technology_description', 'challenge_title', 'solution_title'],
+  
+  // MANTECH tables
+  mantech_projects: ['project_title', 'description', 'technology_area', 'company'],
+  mantech_company_mentions: ['company_name', 'project_title', 'context'],
+  
+  // DOD Contract News
+  dod_contract_news: ['title', 'description', 'contractor_name', 'content'],
+  dvids_military_news: ['title', 'description', 'content'],
+  
+  // GSA tables
+  gsa_schedule_holders: ['company_name', 'contractor_name', 'business_type'],
+  gsa_labor_categories: ['category_name', 'description'],
+  gsa_sin_catalog: ['sin_number', 'description', 'title'],
+  gsa_price_lists: ['vendor_name', 'product_description'],
+  
+  // Financial tables
+  congressional_stock_trades: ['ticker', 'company_name', 'member_name'],
+  defense_contractors_tickers: ['company_name', 'ticker', 'sector'],
+  
+  // SBIR
+  sbir_final: ['company', 'project_title', 'abstract', 'award_title', 'agency'],
+  
+  // Default columns to try if table not in map
+  _default: ['title', 'description', 'name', 'company', 'company_name', 'content'],
+};
+
+/**
  * Search relevant Supabase tables based on topic and settings
+ * Intelligently searches across appropriate columns based on table structure
  */
 export async function searchSupabaseTables(
   topic: string,
@@ -88,32 +125,59 @@ export async function searchSupabaseTables(
 
   try {
     // Determine which tables to search based on settings
-    const tablesToSearch = options.smallBusinessFocus
-      ? [...MATRIX_TABLES.xtech, ...MATRIX_TABLES.mantech, ...MATRIX_TABLES.small_business]
-      : [...MATRIX_TABLES.xtech, ...MATRIX_TABLES.mantech, ...MATRIX_TABLES.dod_contracts];
+    let tablesToSearch: string[] = [];
+    
+    if (options.smallBusinessFocus) {
+      tablesToSearch = [
+        ...MATRIX_TABLES.xtech,
+        ...MATRIX_TABLES.mantech,
+        ...MATRIX_TABLES.small_business,
+        'sbir_final', // Always include SBIR for small business focus
+      ];
+    } else {
+      // Search all relevant tables
+      tablesToSearch = [
+        ...MATRIX_TABLES.xtech,
+        ...MATRIX_TABLES.mantech,
+        ...MATRIX_TABLES.dod_contracts,
+        ...MATRIX_TABLES.gsa,
+        ...MATRIX_TABLES.financial,
+        'sbir_final',
+      ];
+    }
+
+    // Remove duplicates
+    tablesToSearch = [...new Set(tablesToSearch)];
 
     // Search each table for relevant data
     for (const tableName of tablesToSearch) {
       try {
-        // Search in text columns for the topic
-        // Note: This is a simple search - you can make it more sophisticated
+        // Get columns to search for this specific table
+        const columnsToSearch = TABLE_SEARCH_COLUMNS[tableName] || TABLE_SEARCH_COLUMNS._default;
+        
+        // Build OR query: column1 ILIKE '%topic%' OR column2 ILIKE '%topic%' ...
+        const orConditions = columnsToSearch.map(col => `${col}.ilike.%${topic}%`).join(',');
+        
         const { data, error } = await supabase
           .from(tableName)
           .select('*')
-          .or(`title.ilike.%${topic}%, description.ilike.%${topic}%, name.ilike.%${topic}%`)
-          .limit(50);
+          .or(orConditions)
+          .limit(10); // Limit per table to keep context manageable
 
-        if (data && data.length > 0) {
+        if (error) {
+          console.log(`Error searching ${tableName}:`, error.message);
+        } else if (data && data.length > 0) {
           results.push({
             table: tableName,
             count: data.length,
             data: data,
           });
           sources.push(tableName);
+          console.log(`Found ${data.length} results in ${tableName}`);
         }
-      } catch (tableError) {
-        // Table might not exist yet or have different columns
-        console.log(`Skipping table ${tableName}:`, tableError);
+      } catch (tableError: any) {
+        // Table might not exist or have different columns - skip gracefully
+        console.log(`Skipping table ${tableName}:`, tableError.message);
       }
     }
 
