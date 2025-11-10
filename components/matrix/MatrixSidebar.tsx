@@ -231,10 +231,16 @@ export default function MatrixSidebar({
           <div className="flex-1 overflow-y-auto py-4">
             {/* Recent Chats Section */}
             <div className="px-4 mb-6">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                {currentProjectId ? 
-                  projects.find(p => p.id === currentProjectId)?.name || "Project" 
-                  : "Recents"}
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                {currentProjectId ? (
+                  <>
+                    <div 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: projects.find(p => p.id === currentProjectId)?.color || '#6366f1' }}
+                    />
+                    {projects.find(p => p.id === currentProjectId)?.name || "Project"}
+                  </>
+                ) : "Recents"}
               </h3>
               {conversations.length === 0 ? (
                 <p className="text-sm text-gray-500 py-4 text-center">

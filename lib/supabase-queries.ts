@@ -417,12 +417,25 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
   ];
 
   for (const result of results) {
+    console.log(`[URL EXTRACTION] Checking table: ${result.table}, ${result.data.length} rows`);
+    
+    // Log first row keys to see what fields are available
+    if (result.data.length > 0) {
+      const sampleKeys = Object.keys(result.data[0]);
+      console.log(`[URL EXTRACTION] Available fields in ${result.table}:`, sampleKeys.filter(k => 
+        k.toLowerCase().includes('url') || k.toLowerCase().includes('link') || k.toLowerCase().includes('website')
+      ));
+    }
+    
     for (const item of result.data) {
       // Find URL in this record
       let foundUrl: string | null = null;
+      let foundField: string | null = null;
+      
       for (const field of urlFields) {
         if (item[field] && typeof item[field] === 'string' && item[field].startsWith('http')) {
           foundUrl = item[field];
+          foundField = field;
           break;
         }
       }
@@ -439,6 +452,8 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
           }
         }
 
+        console.log(`[URL EXTRACTION] ✅ Found URL in ${result.table}.${foundField}: ${foundUrl.substring(0, 60)}...`);
+        
         urls.push({
           name: `${sourceName} - ${result.table}`,
           url: foundUrl
@@ -449,6 +464,9 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
 
   // If no URLs found in data, return generic sources
   if (urls.length === 0 && results.length > 0) {
+    console.warn(`[URL EXTRACTION] ⚠️  NO URLs found in any data! Using generic fallback URLs.`);
+    console.warn(`[URL EXTRACTION] This means your Supabase tables don't have url/link/website columns with actual URLs.`);
+    
     // Return generic references to the tables
     const uniqueTables = [...new Set(results.map(r => r.table))];
     return uniqueTables.map(table => ({
@@ -457,6 +475,7 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
     }));
   }
 
+  console.log(`[URL EXTRACTION] ✅ Successfully extracted ${urls.length} real URLs from Supabase data`);
   return urls;
 }
 
