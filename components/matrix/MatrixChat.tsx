@@ -115,27 +115,69 @@ export default function MatrixChat({
       setCurrentConversationId(conversationId);
       
       // Check if this is a report
-      if (conversation.metadata?.isReport && conversation.metadata?.reportSections) {
-        console.log("✅ Loading saved report with", conversation.metadata.reportSections.length, "sections");
+      if (conversation.metadata?.isReport) {
+        const reportStatus = conversation.metadata.reportStatus;
+        const reportSections = conversation.metadata.reportSections || [];
+        const partialSections = conversation.metadata.partialSections || [];
         
-        // Restore report mode and sections
-        setReportMode(true);
-        setReportTitle(conversation.title || "Market Research Report");
-        setResearchTopic(conversation.metadata.reportTopic || "");
+        console.log(`📊 Loading ${reportStatus} report with ${reportSections.length} sections`);
         
-        // Restore sections with proper structure
-        const savedSections = conversation.metadata.reportSections.map((s: any, idx: number) => ({
-          ...s,
-          number: idx + 1,
-          expanded: false, // Start collapsed
-        }));
-        
-        console.log("Restored sections:", savedSections);
-        setReportSections(savedSections);
-        
-        // Restore settings
-        if (conversation.metadata.settings) {
-          console.log("Saved settings:", conversation.metadata.settings);
+        // Check if report is incomplete (in_progress)
+        if (reportStatus === "in_progress" && partialSections.length > 0) {
+          console.log(`⏸️  INCOMPLETE REPORT: ${partialSections.length}/10 sections complete`);
+          console.log("✨ Resume capability available!");
+          
+          // Load partial progress
+          setReportMode(true);
+          setReportTitle(conversation.title || "Market Research Report (In Progress)");
+          setResearchTopic(conversation.metadata.reportTopic || "");
+          setLiveStatus(`Report incomplete: ${partialSections.length}/10 sections done`);
+          
+          // Show partial sections
+          const incompleteSections = REPORT_SECTIONS.map((s, idx) => {
+            const savedSection = partialSections.find((ps: any) => ps.id === s.id);
+            return savedSection ? {
+              ...s,
+              ...savedSection,
+              number: idx + 1,
+              expanded: false,
+            } : {
+              ...s,
+              number: idx + 1,
+              content: "", // Not yet generated
+              expanded: false,
+            };
+          });
+          
+          setReportSections(incompleteSections);
+          setSearchStatus([
+            `⏸️  Report generation was interrupted`,
+            `✅ Completed: ${partialSections.length}/10 sections`,
+            `🔄 Click "Resume Generation" to continue where you left off`
+          ]);
+          
+        } else if (reportSections.length > 0) {
+          // Load complete report
+          console.log("✅ Loading saved report with", reportSections.length, "sections");
+          
+          setReportMode(true);
+          setReportTitle(conversation.title || "Market Research Report");
+          setResearchTopic(conversation.metadata.reportTopic || "");
+          
+          // Restore sections with proper structure
+          const savedSections = reportSections.map((s: any, idx: number) => ({
+            ...s,
+            number: idx + 1,
+            expanded: false, // Start collapsed
+          }));
+          
+          console.log("Restored sections:", savedSections);
+          setReportSections(savedSections);
+          
+          // Restore settings
+          if (conversation.metadata.settings) {
+            console.log("Saved settings:", conversation.metadata.settings);
+          }
         }
       } else {
         console.log("Loading regular chat messages");
@@ -230,7 +272,7 @@ export default function MatrixChat({
     }
   };
 
-  const generateReport = async (topic: string) => {
+  const generateReport = async (topic: string, resumeFromSection?: string) => {
     // Create conversation and save initial query
     let conversationId = currentConversationId;
     if (!conversationId) {
@@ -240,10 +282,27 @@ export default function MatrixChat({
         setResearchTopic(topic);
         // Save user's query
         await saveMessage(conversationId, "user", `Research topic: ${topic}`);
+        
+        // Save initial metadata with "in_progress" flag
+        await fetch("/api/matrix/conversations", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: conversationId,
+            metadata: {
+              settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+              isReport: true,
+              reportStatus: "in_progress", // Track generation status
+              reportTopic: topic,
+              completedSections: [], // Track which sections are done
+              lastUpdated: new Date().toISOString(),
+            }
+          }),
+        });
       }
     }
 
-    // Initialize report sections
+    // Initialize report sections (or restore from existing if resuming)
     const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
       ...s,
       content: "",
@@ -413,6 +472,33 @@ export default function MatrixChat({
               ? { ...s, content, sources: allSources, isGenerating: false, generationStatus: undefined }
               : s
           ));
+          
+          // 💾 SAVE PROGRESS: Save partial report after each section completes
+          if (conversationId) {
+            const completedSectionIds = Object.keys(sectionContents);
+            await fetch("/api/matrix/conversations", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: conversationId,
+                metadata: {
+                  settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+                  isReport: true,
+                  reportStatus: "in_progress",
+                  reportTopic: topic,
+                  completedSections: completedSectionIds,
+                  partialSections: Object.entries(sectionContents).map(([id, content]) => ({
+                    id,
+                    title: REPORT_SECTIONS.find(s => s.id === id)?.title,
+                    content,
+                    sources: allSources,
+                  })),
+                  lastUpdated: new Date().toISOString(),
+                }
+              }),
+            }).catch(err => console.warn("Failed to save progress:", err));
+            console.log(`💾 Progress saved: ${completedSectionIds.length}/${REPORT_SECTIONS.length} sections complete`);
+          }
         }
       } catch (error) {
         console.error(`Error generating section ${section.id}:`, error);
@@ -541,7 +627,9 @@ export default function MatrixChat({
               metadata: {
                 settings: { extendedThinking, webSearch, research, smallBusinessFocus },
                 isReport: true,
+                reportStatus: "complete", // ✅ Mark as complete!
                 reportTopic: topic,
+                completedSections: currentSections.map(s => s.id), // All sections done
                 reportSections: currentSections.map(s => ({
                   id: s.id,
                   number: s.number,
@@ -549,6 +637,7 @@ export default function MatrixChat({
                   content: s.content || "",
                   sources: s.sources || [],
                 })),
+                completedAt: new Date().toISOString(),
               }
             }),
           }).then(async res => {
@@ -556,6 +645,7 @@ export default function MatrixChat({
               const data = await res.json();
               console.log("✅ Report metadata saved successfully!");
               console.log("Saved report with", currentSections.length, "sections");
+              console.log("✅ Report marked as COMPLETE");
             } else {
               console.error("❌ Failed to save report metadata:", res.status);
             }
