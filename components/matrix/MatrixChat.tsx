@@ -371,8 +371,8 @@ export default function MatrixChat({
                 <Image
                   src="/images/logo.png"
                   alt="Make Ready Technologies"
-                  width={150}
-                  height={150}
+                  width={280}
+                  height={280}
                   className="mx-auto"
                 />
               </div>
