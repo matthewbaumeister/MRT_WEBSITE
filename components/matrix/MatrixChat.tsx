@@ -130,10 +130,10 @@ export default function MatrixChat({
               {/* MRT Logo */}
               <div className="mb-8">
                 <Image
-                  src="/favicon.png"
+                  src="/images/logo.png"
                   alt="Make Ready Technologies"
-                  width={120}
-                  height={120}
+                  width={150}
+                  height={150}
                   className="mx-auto"
                 />
               </div>
