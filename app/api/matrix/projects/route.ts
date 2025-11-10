@@ -3,14 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+// Lazy initialization of Supabase client
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Supabase URL and key must be set in environment variables");
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Supabase URL and key must be set in environment variables");
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
 }
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // GET - List all projects for user
 export async function GET(request: NextRequest) {
@@ -19,6 +22,8 @@ export async function GET(request: NextRequest) {
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const supabase = getSupabaseClient();
 
     // Get user from database
     const { data: userData } = await supabase
@@ -66,6 +71,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const supabase = getSupabaseClient();
 
     // Get user from database
     const { data: userData } = await supabase
@@ -118,6 +125,8 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const supabase = getSupabaseClient();
 
     // Get user from database
     const { data: userData } = await supabase
@@ -173,6 +182,8 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const supabase = getSupabaseClient();
 
     // Get user from database
     const { data: userData } = await supabase
