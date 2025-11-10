@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 
-const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+const TIMEOUT_DURATION = 60 * 60 * 1000; // 60 minutes in milliseconds (increased from 30)
 
 export function SessionTimeout() {
   const { data: session, status } = useSession();
@@ -15,6 +15,11 @@ export function SessionTimeout() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+
+    // Disable timeout for MATRIX and platforms - users should stay logged in
+    if (pathname?.startsWith("/matrix") || pathname?.startsWith("/platforms")) {
+      return;
+    }
 
     const resetTimer = () => {
       lastActivityRef.current = Date.now();
