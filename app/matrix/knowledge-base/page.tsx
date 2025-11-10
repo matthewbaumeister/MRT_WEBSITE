@@ -124,7 +124,7 @@ export default function KnowledgeBasePage() {
 
     try {
       if (searchMode === "semantic") {
-        // Semantic search across all tables or filtered table
+        // Try semantic search first
         const response = await fetch("/api/matrix/semantic-search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -136,53 +136,106 @@ export default function KnowledgeBasePage() {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("Semantic search failed");
-        }
-
         const result = await response.json();
         
+        // If semantic search found results, use them
         if (result.success && result.results && result.results.length > 0) {
-          // Combine all results from different tables
           const allData = result.results.flatMap((r: any) => r.data);
           setTableData(allData);
           setTotalRows(allData.length);
           
-          // Get columns from first result
           if (allData.length > 0) {
             setColumns(Object.keys(allData[0]));
           }
         } else {
-          setTableData([]);
-          setTotalRows(0);
-          setError("No semantic matches found");
+          // Fallback to keyword search if semantic returns nothing
+          console.log("[KB] Semantic search returned no results, falling back to keyword search");
+          
+          if (!selectedTable) {
+            setError("No embeddings found for semantic search. Please select a table and use keyword search, or generate embeddings first.");
+            setTableData([]);
+            setTotalRows(0);
+          } else {
+            // Automatically try keyword search on selected table
+            const keywordResponse = await fetch(`/api/matrix/knowledge-base/search`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                table: selectedTable,
+                query: searchQuery,
+                page: currentPage,
+                limit: ROWS_PER_PAGE,
+              }),
+            });
+
+            if (keywordResponse.ok) {
+              const keywordResult = await keywordResponse.json();
+              setTableData(keywordResult.data || []);
+              setColumns(keywordResult.columns || []);
+              setTotalRows(keywordResult.total || 0);
+              
+              if ((keywordResult.data || []).length > 0) {
+                setError("Note: Using keyword search fallback (semantic search embeddings not found)");
+              } else {
+                setError("No results found");
+              }
+            } else {
+              setError("No semantic embeddings found. Please select a table for keyword search.");
+              setTableData([]);
+            }
+          }
         }
       } else {
-        // Keyword search within selected table
+        // Keyword search - can search all tables or specific table
         if (!selectedTable) {
-          setError("Please select a table for keyword search");
-          return;
+          // Search across ALL tables
+          const response = await fetch(`/api/matrix/knowledge-base/search-all`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: searchQuery,
+              limit: ROWS_PER_PAGE,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Search failed");
+          }
+
+          const result = await response.json();
+          setTableData(result.data || []);
+          setColumns(result.columns || []);
+          setTotalRows(result.total || 0);
+          
+          if (result.tablesSearched > 0) {
+            const breakdown = result.tableBreakdown
+              ?.slice(0, 3)
+              .map((t: any) => `${t.table} (${t.count})`)
+              .join(", ");
+            setError(`Searched ${result.tablesSearched} tables. Top results from: ${breakdown}`);
+          }
+        } else {
+          // Search specific table
+          const response = await fetch(`/api/matrix/knowledge-base/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              table: selectedTable,
+              query: searchQuery,
+              page: currentPage,
+              limit: ROWS_PER_PAGE,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Search failed");
+          }
+
+          const result = await response.json();
+          setTableData(result.data || []);
+          setColumns(result.columns || []);
+          setTotalRows(result.total || 0);
         }
-
-        const response = await fetch(`/api/matrix/knowledge-base/search`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            table: selectedTable,
-            query: searchQuery,
-            page: currentPage,
-            limit: ROWS_PER_PAGE,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Search failed");
-        }
-
-        const result = await response.json();
-        setTableData(result.data || []);
-        setColumns(result.columns || []);
-        setTotalRows(result.total || 0);
       }
     } catch (err: any) {
       setError(err.message || "Search failed");
@@ -292,7 +345,9 @@ export default function KnowledgeBasePage() {
                 placeholder={
                   searchMode === "semantic"
                     ? "Describe what you're looking for... (AI will find similar content)"
-                    : "Enter keywords to search..."
+                    : selectedTable 
+                      ? `Search within ${AVAILABLE_TABLES.find(t => t.name === selectedTable)?.displayName}...`
+                      : "Search across ALL tables... (or select a table first)"
                 }
                 className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
@@ -331,7 +386,7 @@ export default function KnowledgeBasePage() {
             {/* Table Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                Select Data Source
+                Select Data Source {searchMode === "keyword" && <span className="text-gray-500">(optional - leave blank to search all tables)</span>}
               </label>
               <select
                 value={selectedTable}
@@ -342,7 +397,7 @@ export default function KnowledgeBasePage() {
                 }}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                <option value="">-- Select a table --</option>
+                <option value="">{searchMode === "keyword" ? "-- All Tables (Keyword Search) --" : "-- Select a table --"}</option>
                 {filteredTables.map((table) => (
                   <option key={table.name} value={table.name}>
                     {table.displayName} ({table.category}) - {table.description}
@@ -403,7 +458,13 @@ export default function KnowledgeBasePage() {
               <table className="w-full">
                 <thead className="bg-gray-800 border-b border-gray-700">
                   <tr>
-                    {columns.filter(col => col !== 'id').slice(0, 8).map((column) => (
+                    {/* Show source table column if searching across multiple tables */}
+                    {!selectedTable && tableData.some(row => row._source_table) && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        Source Table
+                      </th>
+                    )}
+                    {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
                       <th
                         key={column}
                         onClick={() => handleSort(column)}
@@ -431,7 +492,15 @@ export default function KnowledgeBasePage() {
                 <tbody className="divide-y divide-gray-800">
                   {tableData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
-                      {columns.filter(col => col !== 'id').slice(0, 8).map((column) => (
+                      {/* Show source table if searching across multiple tables */}
+                      {!selectedTable && row._source_table && (
+                        <td className="px-4 py-3 text-xs">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
+                            {row._source_table.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                      )}
+                      {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
                         <td key={column} className="px-4 py-3 text-sm text-gray-300">
                           <div className="max-w-xs truncate" title={String(row[column] || '')}>
                             {row[column] !== null && row[column] !== undefined

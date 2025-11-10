@@ -473,7 +473,73 @@ export default function MatrixChat({
               : s
           ));
           
-          // 💾 SAVE PROGRESS: Save partial report after each section completes
+          // ✨ ENRICH THIS SECTION IMMEDIATELY (per-section enrichment)
+          console.log(`✨ Enriching ${section.title} with GPT-4o intelligence...`);
+          
+          // Mark section as enriching
+          setReportSections(prev => prev.map(s => ({
+            ...s,
+            isEnriching: s.id === section.id,
+            generationStatus: s.id === section.id ? "Enriching with GPT-4o..." : s.generationStatus,
+          })));
+          
+          try {
+            const enrichResponse = await fetch("/api/matrix/enrich-section", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sectionId: section.id,
+                sectionTitle: section.title,
+                sectionContent: content,
+                topic: topic,
+              }),
+            });
+
+            if (enrichResponse.ok) {
+              const enrichData = await enrichResponse.json();
+              const enrichedContent = enrichData.enhancedContent;
+              
+              console.log(`✅ Enriched ${section.id}: +${enrichedContent.length - content.length} chars`);
+              
+              // Extract URLs from enriched content
+              const urlPattern = /\[Source:\s*(https?:\/\/[^\]]+)\]/g;
+              const enrichedSources: DataSource[] = [];
+              let match;
+              while ((match = urlPattern.exec(enrichedContent)) !== null) {
+                enrichedSources.push({
+                  name: `Public Source - ${section.title}`,
+                  url: match[1],
+                });
+              }
+              
+              // Update section with enriched content
+              const finalSources = [...allSources, ...enrichedSources];
+              sectionContents[section.id] = enrichedContent; // Update for conclusion
+              
+              setReportSections(prev => prev.map(s => 
+                s.id === section.id 
+                  ? { ...s, content: enrichedContent, sources: finalSources, isEnriching: false, generationStatus: undefined }
+                  : s
+              ));
+            } else {
+              console.warn(`Failed to enrich ${section.id}, keeping original content`);
+              setReportSections(prev => prev.map(s => ({
+                ...s,
+                isEnriching: false,
+                generationStatus: s.id === section.id ? undefined : s.generationStatus,
+              })));
+            }
+          } catch (enrichError) {
+            console.warn(`Error enriching ${section.id}:`, enrichError);
+            // Keep original content if enrichment fails
+            setReportSections(prev => prev.map(s => ({
+              ...s,
+              isEnriching: false,
+              generationStatus: s.id === section.id ? undefined : s.generationStatus,
+            })));
+          }
+          
+          // 💾 SAVE PROGRESS: Save partial report after each section completes (with enrichment!)
           if (conversationId) {
             const completedSectionIds = Object.keys(sectionContents);
             await fetch("/api/matrix/conversations", {
@@ -491,13 +557,13 @@ export default function MatrixChat({
                     id,
                     title: REPORT_SECTIONS.find(s => s.id === id)?.title,
                     content,
-                    sources: allSources,
+                    sources: reportSections.find(s => s.id === id)?.sources || [],
                   })),
                   lastUpdated: new Date().toISOString(),
                 }
               }),
             }).catch(err => console.warn("Failed to save progress:", err));
-            console.log(`💾 Progress saved: ${completedSectionIds.length}/${REPORT_SECTIONS.length} sections complete`);
+            console.log(`💾 Progress saved: ${completedSectionIds.length}/${REPORT_SECTIONS.length} sections complete (enriched!)`);
           }
         }
       } catch (error) {
