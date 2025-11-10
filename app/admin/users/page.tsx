@@ -291,7 +291,7 @@ export default function UsersManagementPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.role === "client" ? (
+                      {user.role === "general" ? (
                         <span
                           className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             user.subscription_tier === "pro"
