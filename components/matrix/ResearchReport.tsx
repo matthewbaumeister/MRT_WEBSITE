@@ -15,12 +15,14 @@ interface ResearchReportProps {
   sections: ReportSection[];
   onSectionClick: (sectionId: string) => void;
   onUpdateSection: (sectionId: string, content: string) => void;
+  onExpandedChange?: (expandedSections: Set<string>) => void;
 }
 
 export default function ResearchReport({
   sections,
   onSectionClick,
   onUpdateSection,
+  onExpandedChange,
 }: ResearchReportProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(sections.map((s) => s.id))
@@ -34,6 +36,7 @@ export default function ResearchReport({
       newExpanded.add(sectionId);
     }
     setExpandedSections(newExpanded);
+    onExpandedChange?.(newExpanded);
   };
 
   return (
@@ -101,8 +104,22 @@ export default function ResearchReport({
             {isExpanded && (
               <div className="p-6 border-t border-gray-700 bg-gray-850">
                 <div className="prose prose-invert max-w-none">
-                  <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                    {section.content || (
+                  <div className="text-gray-300 leading-relaxed">
+                    {section.content ? (
+                      <div 
+                        className="markdown-content"
+                        dangerouslySetInnerHTML={{ 
+                          __html: section.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')
+                            .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>')
+                            .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>')
+                            .replace(/\n\n/g, '</p><p class="mb-4">')
+                            .replace(/^(.+)$/gm, '<p class="mb-4">$1</p>')
+                        }}
+                      />
+                    ) : (
                       <div className="flex items-center space-x-2 text-gray-500 italic">
                         <svg
                           className="w-4 h-4 animate-spin"
@@ -128,21 +145,35 @@ export default function ResearchReport({
                     )}
                   </div>
                 </div>
+                <style jsx>{`
+                  .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+                    margin-top: 1.5em;
+                    margin-bottom: 0.5em;
+                  }
+                  .markdown-content p {
+                    margin-bottom: 1em;
+                  }
+                  .markdown-content strong {
+                    font-weight: 600;
+                    color: #fff;
+                  }
+                `}</style>
 
                 {/* Data Sources */}
                 {section.sources && section.sources.length > 0 && (
                   <div className="mt-6 pt-4 border-t border-gray-700">
-                    <h4 className="text-sm font-semibold text-gray-400 mb-2">
-                      Data Sources:
+                    <h4 className="text-sm font-semibold text-gray-400 mb-3">
+                      Data Sources ({section.sources.length}):
                     </h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-1">
                       {section.sources.map((source, idx) => (
-                        <span
+                        <div
                           key={idx}
-                          className="text-xs bg-gray-900 text-accent-400 px-2 py-1 rounded"
+                          className="text-xs text-gray-400 flex items-start space-x-2"
                         >
-                          {source}
-                        </span>
+                          <span className="text-accent-500">•</span>
+                          <span>{source}</span>
+                        </div>
                       ))}
                     </div>
                   </div>

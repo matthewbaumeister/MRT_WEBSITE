@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
+import { getSectionPrompt, generateDataSources } from "@/lib/report-prompts";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -74,34 +75,46 @@ export default function MatrixChat({
     setReportSections(initialSections);
     setReportMode(true);
 
+    // Collect all section contents for the final conclusion
+    const sectionContents: Record<string, string> = {};
+
     // Generate each section
     for (const section of REPORT_SECTIONS) {
       setSearchStatus([`Researching ${section.title}...`]);
       
       try {
+        // Use section-specific prompt
+        const sectionPrompt = getSectionPrompt(section.id, topic, webSearch || research);
+        
         const response = await fetch("/api/matrix/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: [{
               role: "user",
-              content: `Generate the ${section.title} section for a market research report on: ${topic}. 
-              
-Focus on DOD/USG contracting context. Provide detailed, data-driven analysis.`
+              content: section.id === 'conclusion' 
+                ? `${sectionPrompt}\n\nPrevious sections for context:\n${Object.entries(sectionContents).map(([id, content]) => `${id}: ${content.substring(0, 500)}...`).join('\n\n')}`
+                : sectionPrompt
             }],
             model: "gpt-4o-mini",
             extendedThinking,
-            webSearch,
-            research,
+            webSearch: webSearch || research,
+            research: research || webSearch,
             smallBusinessFocus,
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
+          const content = data.message.content;
+          sectionContents[section.id] = content;
+          
+          // Generate realistic data sources based on content
+          const sources = generateDataSources(section.id, content);
+          
           setReportSections(prev => prev.map(s => 
             s.id === section.id 
-              ? { ...s, content: data.message.content, sources: ["xTech", "MANTECH", "DSIP"] }
+              ? { ...s, content, sources }
               : s
           ));
         }
@@ -341,6 +354,12 @@ Focus on DOD/USG contracting context. Provide detailed, data-driven analysis.`
                 setReportSections(prev => prev.map(s => 
                   s.id === sectionId ? { ...s, content } : s
                 ));
+              }}
+              onExpandedChange={(expandedSections) => {
+                // If all sections collapsed, clear selection
+                if (expandedSections.size === 0) {
+                  setSelectedSection(null);
+                }
               }}
             />
           ) : messages.length === 0 ? (
