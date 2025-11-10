@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
 import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
+import { searchSupabaseTables, formatSupabaseContext } from "@/lib/supabase-queries";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -159,9 +160,20 @@ export default function MatrixChat({
 
     // Generate each section
     for (const section of REPORT_SECTIONS) {
-      setSearchStatus([`Researching ${section.title}...`]);
+      setSearchStatus([`Searching databases for ${section.title}...`]);
       
       try {
+        // Search Supabase tables for relevant data
+        const { results } = await searchSupabaseTables(topic, {
+          smallBusinessFocus,
+          sectionId: section.id
+        });
+        
+        // Format Supabase results for context
+        const supabaseContext = formatSupabaseContext(results);
+        
+        setSearchStatus([`Generating ${section.title}...`]);
+        
         // Use section-specific prompt
         const sectionPrompt = getSectionPrompt(section.id, topic, webSearch || research);
         
@@ -180,6 +192,7 @@ export default function MatrixChat({
             webSearch: webSearch || research,
             research: research || webSearch,
             smallBusinessFocus,
+            supabaseContext // Pass Supabase data to API
           }),
         });
 

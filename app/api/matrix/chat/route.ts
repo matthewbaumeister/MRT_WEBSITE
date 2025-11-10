@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       extendedThinking = false,
       webSearch = false,
       research = false,
-      smallBusinessFocus = false
+      smallBusinessFocus = false,
+      supabaseContext = null
     } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -35,9 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add system message with capabilities based on settings
-    const systemMessage = {
-      role: "system",
-      content: `You are MATRIX, an AI assistant for Make Ready Technologies. You are helpful, professional, and knowledgeable. 
+    let systemContent = `You are MATRIX, an AI assistant for Make Ready Technologies. You are helpful, professional, and knowledgeable. 
 ${extendedThinking ? "Take your time to think through complex problems step by step." : ""}
 ${webSearch ? "You have access to current information through web search." : ""}
 ${research ? "You can conduct in-depth research on topics." : ""}
@@ -57,7 +56,16 @@ Upcoming Data Sources (not yet available):
 Focus on opportunities, contracts, and programs specifically designed for or awarded to small businesses. When broader data is needed, still include it but lead with small business-specific information.
 ` : ""}
 
-Current user: ${session.user.name} (${session.user.email})`
+Current user: ${session.user.name} (${session.user.email})`;
+
+    // Add Supabase context if provided
+    if (supabaseContext) {
+      systemContent += `\n\n=== RELEVANT DATA FROM INTERNAL DATABASES ===\n${supabaseContext}\n=== END INTERNAL DATA ===\n\nUse the above data from our internal databases (xTech, MANTECH, DOD contracts) to provide specific, factual information. Cite specific programs, companies, dollar amounts, and dates from this data.`;
+    }
+
+    const systemMessage = {
+      role: "system",
+      content: systemContent
     };
 
     const fullMessages = [systemMessage, ...messages];
