@@ -105,7 +105,7 @@ Make Ready Team
           password_hash: passwordHash,
           first_name: firstName,
           last_name: lastName,
-          role: "general", // New signups default to client role
+          role: "general", // New signups default to general role
           two_factor_enabled: false,
           is_active: false, // Inactive until email verified
         },
