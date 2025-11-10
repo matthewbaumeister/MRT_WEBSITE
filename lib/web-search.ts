@@ -205,3 +205,42 @@ export function estimateSearchCost(numSearches: number): number {
   return numSearches * COST_PER_SEARCH;
 }
 
+/**
+ * Extract URLs from web search results for citation as data sources
+ * @param results - Web search results
+ * @param maxResults - Maximum number of URLs to extract (default: 10)
+ * @returns Array of source objects with name and URL
+ */
+export function extractWebSourceURLs(
+  results: WebSearchResults | null,
+  maxResults: number = 10
+): Array<{ name: string; url: string }> {
+  if (!results) {
+    return [];
+  }
+
+  const sources: Array<{ name: string; url: string }> = [];
+
+  // Add organic results
+  if (results.organic && results.organic.length > 0) {
+    results.organic.slice(0, maxResults).forEach(result => {
+      sources.push({
+        name: result.title || 'Web Source',
+        url: result.link || '',
+      });
+    });
+  }
+
+  // Add news results
+  if (results.newsResults && results.newsResults.length > 0) {
+    results.newsResults.slice(0, Math.max(0, maxResults - sources.length)).forEach(result => {
+      sources.push({
+        name: result.title || 'News Article',
+        url: result.link || '',
+      });
+    });
+  }
+
+  return sources.filter(source => source.url);
+}
+

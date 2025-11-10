@@ -7,7 +7,8 @@ import ResearchReport from "./ResearchReport";
 import AdvancedQueryPanel from "./AdvancedQueryPanel";
 import { getSectionPrompt, generateDataSources, DataSource } from "@/lib/report-prompts";
 import { searchSupabaseTables, formatSupabaseContext } from "@/lib/supabase-queries";
-import { searchDoDWeb, searchRecentNews, formatWebSearchContext } from "@/lib/web-search";
+import { searchDoDWeb, searchRecentNews, formatWebSearchContext, extractWebSourceURLs } from "@/lib/web-search";
+import { enhanceReportWithPublicData, applyEnhancements } from "@/lib/research-enhancer";
 
 interface MatrixChatProps {
   onToggleSidebar: () => void;
@@ -173,6 +174,9 @@ export default function MatrixChat({
         // Format Supabase results for context
         let contextData = formatSupabaseContext(results);
         
+        // Track web sources for citation
+        const webSources: DataSource[] = [];
+        
         // Search the web if enabled
         if (webSearch || research) {
           setSearchStatus([`Searching web for ${section.title}...`]);
@@ -182,11 +186,19 @@ export default function MatrixChat({
           const webContext = formatWebSearchContext(webResults, 5);
           contextData += webContext;
           
+          // Extract URLs for citation
+          const webURLs = extractWebSourceURLs(webResults, 5);
+          webSources.push(...webURLs);
+          
           // For funding/competition sections, also search recent news
           if (section.id === 'funding' || section.id === 'competition') {
             const newsResults = await searchRecentNews(topic);
             const newsContext = formatWebSearchContext(newsResults, 3);
             contextData += newsContext;
+            
+            // Extract news URLs for citation
+            const newsURLs = extractWebSourceURLs(newsResults, 3);
+            webSources.push(...newsURLs);
           }
         }
         
@@ -220,11 +232,14 @@ export default function MatrixChat({
           sectionContents[section.id] = content;
           
           // Generate realistic data sources based on content
-          const sources = generateDataSources(section.id, content);
+          const databaseSources = generateDataSources(section.id, content);
+          
+          // Combine database sources with web sources
+          const allSources = [...databaseSources, ...webSources];
           
           setReportSections(prev => prev.map(s => 
             s.id === section.id 
-              ? { ...s, content, sources }
+              ? { ...s, content, sources: allSources }
               : s
           ));
         }
@@ -239,7 +254,102 @@ export default function MatrixChat({
       await saveMessage(conversationId, "assistant", reportSummary);
     }
     
-    setSearchStatus([]);
+    // FINAL ENRICHMENT STEP: Enhance with live public data
+    setSearchStatus(["🔍 Final Step: Enhancing report with live public data..."]);
+    
+    try {
+      const openAIApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (!openAIApiKey) {
+        console.warn("OpenAI API key not found, skipping final enrichment");
+        setSearchStatus([]);
+        return;
+      }
+      
+      // Extract companies and people from the report
+      setSearchStatus(["🔍 Identifying companies and key personnel..."]);
+      
+      // Get current sections with content
+      const sectionsToEnhance = reportSections.map(s => ({
+        id: s.id,
+        title: s.title,
+        content: sectionContents[s.id] || "",
+      }));
+      
+      // Enhance report with public data (company websites, LinkedIn, executives, etc.)
+      const enhancements = await enhanceReportWithPublicData(
+        sectionsToEnhance,
+        topic,
+        openAIApiKey
+      );
+      
+      // Apply enhancements section by section with live updates
+      for (const sectionId of Object.keys(enhancements.enhancedSections)) {
+        const section = REPORT_SECTIONS.find(s => s.id === sectionId);
+        if (section) {
+          setSearchStatus([`✨ Enriching ${section.title} with verified public data...`]);
+          
+          // Get enhancement content
+          const enhancement = enhancements.enhancedSections[sectionId];
+          
+          // Add web sources from enhancement
+          const webSources: DataSource[] = [];
+          
+          // Extract URLs from company data
+          enhancements.companies.forEach(company => {
+            if (company.website) {
+              webSources.push({
+                name: `${company.name} - Official Website`,
+                url: company.website,
+              });
+            }
+            if (company.linkedin) {
+              webSources.push({
+                name: `${company.name} - LinkedIn`,
+                url: company.linkedin,
+              });
+            }
+          });
+          
+          // Extract URLs from key people data
+          enhancements.keyPeople.forEach(person => {
+            if (person.linkedin) {
+              webSources.push({
+                name: `${person.name} (${person.title}) - LinkedIn`,
+                url: person.linkedin,
+              });
+            }
+          });
+          
+          // Update section with enhancement and new sources
+          setReportSections(prev => prev.map(s => {
+            if (s.id === sectionId) {
+              const existingSources = s.sources || [];
+              const combinedSources = [...existingSources, ...webSources];
+              
+              return {
+                ...s,
+                content: sectionContents[sectionId] + '\n\n' + enhancement,
+                sources: combinedSources,
+              };
+            }
+            return s;
+          }));
+          
+          // Small delay to show progress
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      setSearchStatus(["✅ Report enhancement complete! Added company websites, LinkedIn profiles, and executive information."]);
+      
+      // Clear status after 3 seconds
+      setTimeout(() => setSearchStatus([]), 3000);
+      
+    } catch (error) {
+      console.error("Error in final enrichment:", error);
+      setSearchStatus(["⚠️ Enhancement completed with some errors. Report is still valid."]);
+      setTimeout(() => setSearchStatus([]), 3000);
+    }
   };
 
   const handleAdvancedQuery = async (query: string, mergeInstructions?: string): Promise<string> => {
