@@ -26,6 +26,7 @@ export default function MatrixChat({
   const [extendedThinking, setExtendedThinking] = useState(true);
   const [webSearch, setWebSearch] = useState(true);
   const [research, setResearch] = useState(false);
+  const [smallBusinessFocus, setSmallBusinessFocus] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -74,6 +75,7 @@ export default function MatrixChat({
           extendedThinking,
           webSearch,
           research,
+          smallBusinessFocus,
         }),
       });
 
@@ -330,6 +332,41 @@ export default function MatrixChat({
                               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${research ? 'right-0.5' : 'left-0.5'}`}></div>
                             </div>
                           </button>
+
+                          {/* Divider */}
+                          <div className="border-t border-gray-800 my-2"></div>
+
+                          {/* Small Business Focus */}
+                          <button
+                            type="button"
+                            onClick={() => setSmallBusinessFocus(!smallBusinessFocus)}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              <div className="flex flex-col items-start">
+                                <span className="text-sm text-gray-300">Small Business Focus</span>
+                                <span className="text-xs text-gray-500">DSIP, MANTECH, xTech, FUZE</span>
+                              </div>
+                            </div>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${smallBusinessFocus ? 'bg-accent-500' : 'bg-gray-700'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${smallBusinessFocus ? 'right-0.5' : 'left-0.5'}`}></div>
+                            </div>
+                          </button>
+
+                          {/* Small Business Note */}
+                          {smallBusinessFocus && (
+                            <div className="px-3 py-2 bg-gray-800 rounded-lg">
+                              <p className="text-xs text-gray-400 leading-relaxed">
+                                Prioritizing small business data from: DSIP, MANTECH, xTech (Army Innovation), FUZE
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                Coming soon: SBA Awards, FPDS Small Business data
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
