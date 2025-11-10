@@ -119,8 +119,65 @@ async function getSearchableColumnsViaRPC(tableName: string): Promise<string[]> 
 
 
 /**
+ * Auto-discover all data tables in Supabase
+ * Returns tables that have data and aren't system tables
+ */
+async function discoverDataTables(): Promise<string[]> {
+  const supabase = getSupabaseClient();
+  
+  try {
+    // Query pg_stat_user_tables to find tables with data
+    const { data, error } = await supabase.rpc('get_tables_with_data');
+    
+    if (error || !data) {
+      console.log('⚠️  Could not auto-discover tables, using configured list');
+      // Fallback to configured tables
+      return [
+        ...MATRIX_TABLES.xtech,
+        ...MATRIX_TABLES.mantech,
+        ...MATRIX_TABLES.dod_contracts,
+        ...MATRIX_TABLES.sbir,
+        ...MATRIX_TABLES.gsa,
+        ...MATRIX_TABLES.financial,
+      ];
+    }
+    
+    // Filter out system tables
+    const dataTablesNames = data
+      .filter((table: any) => {
+        const name = table.tablename || table.relname;
+        // Exclude system tables
+        return name && 
+          !name.startsWith('matrix_') &&       // Internal Matrix app tables
+          !name.startsWith('verification_') &&  // Auth tables
+          !name.includes('_scraper_log') &&     // Scraper logs
+          !name.includes('user_') &&            // User management tables
+          name !== 'users' &&
+          name !== 'contact_submissions';
+      })
+      .map((table: any) => table.tablename || table.relname);
+    
+    console.log(`🔍 Auto-discovered ${dataTablesNames.length} data tables:`, dataTablesNames);
+    return dataTablesNames;
+    
+  } catch (error) {
+    console.log('⚠️  Error auto-discovering tables:', error);
+    // Fallback to configured tables
+    return [
+      ...MATRIX_TABLES.xtech,
+      ...MATRIX_TABLES.mantech,
+      ...MATRIX_TABLES.dod_contracts,
+      ...MATRIX_TABLES.sbir,
+      ...MATRIX_TABLES.gsa,
+      ...MATRIX_TABLES.financial,
+    ];
+  }
+}
+
+/**
  * Get or build the table columns cache
  * Discovers searchable columns for all tables automatically
+ * NOW ALSO AUTO-DISCOVERS TABLES! 🚀
  */
 async function getTableColumnsCache(): Promise<Record<string, string[]>> {
   const now = Date.now();
@@ -130,91 +187,80 @@ async function getTableColumnsCache(): Promise<Record<string, string[]>> {
     return tableColumnsCache;
   }
 
-  console.log('Building table columns cache...');
+  console.log('🔍 Building smart table & column cache...');
   const cache: Record<string, string[]> = {};
 
-  // Get all table names
-  const allTables = [
+  // STEP 1: Auto-discover all data tables (NEW!)
+  const discoveredTables = await discoverDataTables();
+  
+  // STEP 2: Combine with configured tables (ensures we don't miss anything)
+  const allTables = [...new Set([
+    ...discoveredTables,
     ...MATRIX_TABLES.xtech,
     ...MATRIX_TABLES.mantech,
     ...MATRIX_TABLES.dod_contracts,
+    ...MATRIX_TABLES.sbir,
     ...MATRIX_TABLES.gsa,
     ...MATRIX_TABLES.financial,
-    ...MATRIX_TABLES.small_business,
-    'sbir_final', // Always include SBIR
-  ];
+  ])];
 
-  // Discover columns for each table
+  console.log(`📊 Will search ${allTables.length} tables total`);
+
+  // STEP 3: Discover searchable columns for each table
   for (const tableName of allTables) {
     cache[tableName] = await getSearchableColumns(tableName);
-    console.log(`  ${tableName}: ${cache[tableName].join(', ')}`);
+    if (cache[tableName].length > 0) {
+      console.log(`  ✅ ${tableName}: ${cache[tableName].join(', ')}`);
+    }
   }
 
   tableColumnsCache = cache;
   cacheTimestamp = now;
 
-  console.log(`✅ Cached columns for ${Object.keys(cache).length} tables`);
+  console.log(`✅ Smart cache built! ${Object.keys(cache).length} tables ready to search`);
   
   return cache;
 }
 
 // All MATRIX-related tables to query
+// ✅ = Verified tables that exist in your database
 const MATRIX_TABLES: Record<string, string[]> = {
-  // Army Innovation / xTech
+  // Army Innovation / xTech ✅ VERIFIED
   xtech: [
-    'army_innovation_opportunities',
-    'army_innovation_programs',
-    'army_innovation_submissions',
-    'army_innovation_finalists_with_details',
-    'army_innovation_winners_with_details',
-    'army_innovation_phase_progress',
-    'army_innovation_competition_stats',
-    'army_innovation_prize_summary',
-    'army_innovation_documents',
-    'army_innovation_upcoming_deadlines',
+    'army_innovation_opportunities',       // 44 rows ✅
+    'army_innovation_programs',            // 2 rows ✅
+    'army_innovation_submissions',         // 988 rows ✅
+    'army_innovation_documents',           // 0 rows (table exists) ✅
   ],
-  // MANTECH
+  // MANTECH ✅ VERIFIED
   mantech: [
-    'mantech_projects',
-    'mantech_by_component',
-    'mantech_company_mentions',
-    'mantech_top_companies',
-    'mantech_sbir_transitions',
-    'mantech_transition_pipeline',
-    'mantech_recent_projects',
+    'mantech_projects',                    // 296 rows ✅
+    'mantech_company_mentions',            // 343 rows ✅
   ],
-  // DOD Contract News & Information
+  // DOD Contract News & Information ✅ VERIFIED - BIG DATA!
   dod_contracts: [
-    'dod_contract_news',
-    'dod_news_scraper_log',
-    'mil_recent_news',
-    'military_news_articles',
-    'military_news_scraper_log',
+    'dod_contract_news',                   // 44,113 rows! 🔥
+    'dvids_military_news',                 // 3,048 rows ✅
   ],
-  // GSA Schedule & Contractors
+  // SBIR Data ✅ VERIFIED - BIG DATA!
+  sbir: [
+    'sbir_final',                          // 32,131 rows! 🔥
+  ],
+  // GSA Schedule & Contractors ✅ VERIFIED - MASSIVE DATA!
   gsa: [
-    'active_gsa_schedule_holders',
-    'gsa_contractors_with_pricing',
-    'gsa_gwac_scraper_log',
-    'gsa_labor_categories',
-    'gsa_price_lists',
-    'gsa_pricing_scraper_log',
-    'gsa_schedule_holders',
-    'gsa_sin_catalog',
-    'small_business_gsa_holders',
+    'gsa_labor_categories',                // 196,714 rows! 🔥🔥🔥
+    'gsa_schedule_holders',                // 13,968 rows ✅
+    'gsa_price_lists',                     // 1,968 rows ✅
   ],
-  // Stock Trades & Defense Contractors
+  // Stock Trades & Defense Contractors ✅ VERIFIED
   financial: [
-    'congressional_stock_trades',
-    'defense_contractors_tickers',
-    'defense_stock_trades',
+    'congressional_stock_trades',          // 3,338 rows ✅
+    'defense_contractors_tickers',         // 20 rows ✅
   ],
   // Small Business specific
   small_business: [
-    'small_business_gsa_holders',
-    // 'sba_awards',  // Add when government API is back online
-    // 'dsip_awards', // Add when available
-    // 'fpds_small_business', // Add when imported
+    'army_innovation_submissions',         // Often small businesses
+    'sbir_final',                          // SBIR = small business program
   ],
 };
 
@@ -245,7 +291,7 @@ export async function searchSupabaseTables(
         ...MATRIX_TABLES.xtech,
         ...MATRIX_TABLES.mantech,
         ...MATRIX_TABLES.small_business,
-        'sbir_final', // Always include SBIR for small business focus
+        ...MATRIX_TABLES.sbir, // SBIR for small business focus
       ];
     } else {
       // Search all relevant tables
@@ -253,9 +299,9 @@ export async function searchSupabaseTables(
         ...MATRIX_TABLES.xtech,
         ...MATRIX_TABLES.mantech,
         ...MATRIX_TABLES.dod_contracts,
+        ...MATRIX_TABLES.sbir,          // 32K rows of SBIR data! 🔥
         ...MATRIX_TABLES.gsa,
         ...MATRIX_TABLES.financial,
-        'sbir_final',
       ];
     }
 
