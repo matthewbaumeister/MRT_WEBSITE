@@ -396,7 +396,7 @@ export default function MatrixChat({
           const webSources: DataSource[] = [];
           
           // Extract URLs from company data
-          enhancements.companies.forEach(company => {
+          enhancements.companies.forEach((company: any) => {
             if (company.website) {
               webSources.push({
                 name: `${company.name} - Official Website`,
@@ -412,7 +412,7 @@ export default function MatrixChat({
           });
           
           // Extract URLs from key people data
-          enhancements.keyPeople.forEach(person => {
+          enhancements.keyPeople.forEach((person: any) => {
             if (person.linkedin) {
               webSources.push({
                 name: `${person.name} (${person.title}) - LinkedIn`,
