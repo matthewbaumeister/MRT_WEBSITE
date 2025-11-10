@@ -13,7 +13,7 @@ function getSupabaseClient() {
 }
 
 // All MATRIX-related tables to query
-const MATRIX_TABLES = {
+const MATRIX_TABLES: Record<string, string[]> = {
   // Army Innovation / xTech
   xtech: [
     'army_innovation_opportunities',
@@ -205,7 +205,10 @@ export function getAllTableNames(): string[] {
  * Add a new table to the search list
  * Call this when you add DOD contract tables
  */
-export function addTableToSearch(category: keyof typeof MATRIX_TABLES, tableName: string) {
+export function addTableToSearch(category: string, tableName: string) {
+  if (!MATRIX_TABLES[category]) {
+    MATRIX_TABLES[category] = [];
+  }
   if (!MATRIX_TABLES[category].includes(tableName)) {
     MATRIX_TABLES[category].push(tableName);
   }
