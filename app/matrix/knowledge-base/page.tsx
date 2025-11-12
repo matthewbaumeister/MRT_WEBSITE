@@ -413,6 +413,38 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
 
+        {/* Data Source Selector - Always Visible */}
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Data Source {searchMode === "keyword" && <span className="text-gray-500">(optional - leave blank to search all tables)</span>}
+            </label>
+            <select
+              value={selectedTable}
+              onChange={(e) => {
+                setSelectedTable(e.target.value);
+                setCurrentPage(1);
+                setSearchQuery("");
+              }}
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">{searchMode === "keyword" ? "All Tables (Keyword Search)" : "-- Select a table --"}</option>
+              {AVAILABLE_TABLES.map((table) => (
+                <option key={table.name} value={table.name}>
+                  {table.displayName} ({table.category}) - {table.description}
+                </option>
+              ))}
+            </select>
+            {selectedTable && (
+              <p className="mt-2 text-sm text-gray-400">
+                Currently browsing: <span className="text-primary-400 font-medium">
+                  {AVAILABLE_TABLES.find(t => t.name === selectedTable)?.displayName}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Smart Search Section - Collapsible */}
         <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 rounded-lg border-2 border-green-700/30 mb-6 overflow-hidden">
           <button
@@ -553,51 +585,6 @@ export default function KnowledgeBasePage() {
               </button>
             </div>
 
-            {/* Category Filter */}
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-400">Category:</span>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setSelectedTable("");
-                    }}
-                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                      selectedCategory === category
-                        ? "bg-primary-600 text-white"
-                        : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                    }`}
-                  >
-                    {category === "all" ? "All Categories" : category}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Table Selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Select Data Source {searchMode === "keyword" && <span className="text-gray-500">(optional - leave blank to search all tables)</span>}
-              </label>
-              <select
-                value={selectedTable}
-                onChange={(e) => {
-                  setSelectedTable(e.target.value);
-                  setCurrentPage(1);
-                  setSearchQuery("");
-                }}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">{searchMode === "keyword" ? "-- All Tables (Keyword Search) --" : "-- Select a table --"}</option>
-                {filteredTables.map((table) => (
-                  <option key={table.name} value={table.name}>
-                    {table.displayName} ({table.category}) - {table.description}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {/* Clear Filters */}
             {(searchQuery || sortColumn || selectedTable || extractedKeywords) && (
@@ -666,84 +653,85 @@ export default function KnowledgeBasePage() {
           </div>
         ) : tableData.length > 0 ? (
           <>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800 border-b border-gray-700">
-                  <tr>
-                    {/* Show source table column if searching across multiple tables */}
-                    {!selectedTable && tableData.some(row => row._source_table) && (
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Source Table
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-max">
+                  <thead className="bg-gray-800 border-b border-gray-700 sticky top-0">
+                    <tr>
+                      {/* Show source table column if searching across multiple tables */}
+                      {!selectedTable && tableData.some(row => row._source_table) && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                          Source Table
+                        </th>
+                      )}
+                      {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
+                        <th
+                          key={column}
+                          onClick={() => handleSort(column)}
+                          className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-750 transition-colors whitespace-nowrap"
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>{column.replace(/_/g, ' ')}</span>
+                            {sortColumn === column && (
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                {sortDirection === "asc" ? (
+                                  <path d="M5 10l5-5 5 5H5z" />
+                                ) : (
+                                  <path d="M15 10l-5 5-5-5h10z" />
+                                )}
+                              </svg>
+                            )}
+                          </div>
+                        </th>
+                      ))}
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                        Actions
                       </th>
-                    )}
-                    {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
-                      <th
-                        key={column}
-                        onClick={() => handleSort(column)}
-                        className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-750 transition-colors"
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>{column.replace(/_/g, ' ')}</span>
-                          {sortColumn === column && (
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              {sortDirection === "asc" ? (
-                                <path d="M5 10l5-5 5 5H5z" />
-                              ) : (
-                                <path d="M15 10l-5 5-5-5h10z" />
-                              )}
-                            </svg>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {tableData.map((row, idx) => (
+                      <>
+                        <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
+                          {/* Show source table if searching across multiple tables */}
+                          {!selectedTable && row._source_table && (
+                            <td className="px-4 py-3 text-xs whitespace-nowrap">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
+                                {row._source_table.replace(/_/g, ' ')}
+                              </span>
+                            </td>
                           )}
-                        </div>
-                      </th>
-                    ))}
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {tableData.map((row, idx) => (
-                    <>
-                      <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
-                        {/* Show source table if searching across multiple tables */}
-                        {!selectedTable && row._source_table && (
-                          <td className="px-4 py-3 text-xs">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
-                              {row._source_table.replace(/_/g, ' ')}
-                            </span>
+                          {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
+                            <td key={column} className="px-4 py-3 text-sm text-gray-300 whitespace-nowrap">
+                              <div className="max-w-xs overflow-hidden text-ellipsis" title={String(row[column] || '')}>
+                                {row[column] !== null && row[column] !== undefined
+                                  ? String(row[column]).substring(0, 100)
+                                  : '-'}
+                              </div>
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-sm space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={() => toggleRowExpansion(row.id)}
+                              className="text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              {expandedRow === row.id ? 'Collapse' : 'Expand'}
+                            </button>
+                            <button
+                              onClick={() => handleFindSimilar(row)}
+                              disabled={findingSimilar === row.id}
+                              className="text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
+                            >
+                              {findingSimilar === row.id ? 'Finding...' : 'Find Similar'}
+                            </button>
+                            <button
+                              onClick={() => setSelectedRecord(row)}
+                              className="text-primary-400 hover:text-primary-300 transition-colors"
+                            >
+                              Modal
+                            </button>
                           </td>
-                        )}
-                        {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
-                          <td key={column} className="px-4 py-3 text-sm text-gray-300">
-                            <div className="max-w-xs truncate" title={String(row[column] || '')}>
-                              {row[column] !== null && row[column] !== undefined
-                                ? String(row[column]).substring(0, 100)
-                                : '-'}
-                            </div>
-                          </td>
-                        ))}
-                        <td className="px-4 py-3 text-sm space-x-2">
-                          <button
-                            onClick={() => toggleRowExpansion(row.id)}
-                            className="text-blue-400 hover:text-blue-300 transition-colors"
-                          >
-                            {expandedRow === row.id ? 'Collapse' : 'Expand'}
-                          </button>
-                          <button
-                            onClick={() => handleFindSimilar(row)}
-                            disabled={findingSimilar === row.id}
-                            className="text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
-                          >
-                            {findingSimilar === row.id ? 'Finding...' : 'Find Similar'}
-                          </button>
-                          <button
-                            onClick={() => setSelectedRecord(row)}
-                            className="text-primary-400 hover:text-primary-300 transition-colors"
-                          >
-                            Modal
-                          </button>
-                        </td>
-                      </tr>
+                        </tr>
                       {/* Expanded Row Details */}
                       {expandedRow === row.id && (
                         <tr className="bg-gray-800/30">
@@ -794,10 +782,11 @@ export default function KnowledgeBasePage() {
                           </td>
                         </tr>
                       )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Pagination */}
