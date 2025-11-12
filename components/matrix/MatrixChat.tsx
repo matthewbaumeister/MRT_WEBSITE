@@ -325,14 +325,15 @@ export default function MatrixChat({
   // Create or update conversation
   const createConversation = async (topic: string): Promise<string | null> => {
     try {
-      console.log(`🆕 Creating new conversation: "Research: ${topic}"`);
+      const titlePrefix = maxMode ? "MAX-Research:" : "Research:";
+      console.log(`🆕 Creating new conversation: "${titlePrefix} ${topic}"`);
       console.log(`   Project: ${projectId || 'none'}`);
       
       const response = await fetch("/api/matrix/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: `Research: ${topic}`,
+          title: `${titlePrefix} ${topic}`,
           project_id: projectId === "ALL" ? null : projectId, // Convert "ALL" to null
           metadata: {
             settings: { extendedThinking, webSearch, research, smallBusinessFocus, maxMode }
@@ -447,7 +448,7 @@ export default function MatrixChat({
     }));
     setReportSections(initialSections);
     setReportMode(true);
-    setReportTitle(`Research: ${topic}`);
+    setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
 
     // Collect all section contents for the final conclusion
     const sectionContents: Record<string, string> = { ...existingContent };
