@@ -331,11 +331,14 @@ export async function searchSupabaseTables(
         // "defense ai contracts" → ["defense", "ai", "contracts"]
         const keywords = topic.toLowerCase().split(/\s+/).filter(k => k.length > 2); // Filter out 1-2 char words
         
+        // Sanitize keywords to prevent Supabase errors with special characters
+        const sanitizedKeywords = keywords.map(k => k.replace(/[%_]/g, '\\$&'));
+        
         // Build smart OR query: 
         // (column1 ILIKE '%defense%' OR column1 ILIKE '%ai%' OR column1 ILIKE '%contracts%')
         // OR (column2 ILIKE '%defense%' OR column2 ILIKE '%ai%' OR column2 ILIKE '%contracts%')
         const orConditions = columnsToSearch.flatMap(col => 
-          keywords.map(keyword => `${col}.ilike.%${keyword}%`)
+          sanitizedKeywords.map(keyword => `${col}.ilike.%${keyword}%`)
         ).join(',');
         
         console.log(`  🔍 Searching ${tableName} for keywords: [${keywords.join(', ')}]`);

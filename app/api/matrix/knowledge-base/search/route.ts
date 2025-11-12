@@ -55,7 +55,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Build OR query for all searchable columns
-    const orConditions = searchableColumns.map(col => `${col}.ilike.%${query}%`).join(',');
+    // Escape special characters in query to prevent Supabase errors
+    const sanitizedQuery = query.replace(/[%_]/g, '\\$&');
+    const orConditions = searchableColumns.map(col => `${col}.ilike.%${sanitizedQuery}%`).join(',');
+
+    console.log(`[KB SEARCH] Searching ${table} with query: "${sanitizedQuery}" across columns: ${searchableColumns.join(', ')}`);
 
     // Execute search with pagination
     const { data, error, count } = await supabase
