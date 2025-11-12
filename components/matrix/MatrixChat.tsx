@@ -851,36 +851,105 @@ export default function MatrixChat({
         
         const answer = data.answer;
         
-        // If this is a merge operation, update the section
-        if (mergeInstructions !== undefined && selectedSection) {
-          console.log(`[MERGE] Updating section ${selectedSection} with new data`);
-          
-          // Show merging animation
-          setReportSections(prev => prev.map(s => 
-            s.id === selectedSection 
-              ? { ...s, isGenerating: true, generationStatus: "Merging query results..." }
-              : s
-          ));
-          
-          // Wait for visual feedback
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Update the section content with merged data
-          const currentSection = reportSections.find(s => s.id === selectedSection);
-          const updatedContent = currentSection?.content + "\n\n### Advanced Query Update\n\n" + answer;
-          
-          setReportSections(prev => prev.map(s => 
-            s.id === selectedSection 
-              ? { 
-                  ...s, 
-                  content: updatedContent, 
-                  isGenerating: false, 
-                  generationStatus: undefined 
+        // If this is a merge operation, update the section(s)
+        if (mergeInstructions !== undefined) {
+          if (selectedSection) {
+            // Single section merge
+            console.log(`[MERGE] Updating section ${selectedSection} with new data`);
+            
+            // Show merging animation
+            setReportSections(prev => prev.map(s => 
+              s.id === selectedSection 
+                ? { ...s, isGenerating: true, generationStatus: "Merging query results..." }
+                : s
+            ));
+            
+            // Wait for visual feedback
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Update the section content with merged data
+            const currentSection = reportSections.find(s => s.id === selectedSection);
+            const updatedContent = currentSection?.content + "\n\n### Advanced Query Update\n\n" + answer;
+            
+            setReportSections(prev => prev.map(s => 
+              s.id === selectedSection 
+                ? { 
+                    ...s, 
+                    content: updatedContent, 
+                    isGenerating: false, 
+                    generationStatus: undefined 
+                  }
+                : s
+            ));
+            
+            console.log(`[MERGE] ✅ Section content updated`);
+          } else {
+            // Whole-report merge: intelligently update all relevant sections
+            console.log(`[MERGE] Updating entire report with new data`);
+            
+            // Show merging animation on all sections
+            setReportSections(prev => prev.map(s => ({
+              ...s,
+              isGenerating: true,
+              generationStatus: "Analyzing relevance..."
+            })));
+            
+            // Wait for visual feedback
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Use GPT to intelligently distribute content across sections
+            const openai = await import('openai').then(m => new m.default({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, dangerouslyAllowBrowser: true }));
+            
+            try {
+              const distributionResponse = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{
+                  role: "system",
+                  content: "You are a report editor. Given a piece of content and a list of report sections, determine which section(s) this content should be added to. Return a JSON object with section IDs as keys and the content tailored for each section as values. Only include sections where the content is relevant."
+                }, {
+                  role: "user",
+                  content: `Report Sections: ${reportSections.map(s => `${s.id}: ${s.title}`).join(', ')}\n\nContent to distribute:\n${answer}\n\nReturn JSON with relevant section IDs and tailored content for each.`
+                }],
+                response_format: { type: "json_object" },
+                temperature: 0.3,
+              });
+              
+              const distribution = JSON.parse(distributionResponse.choices[0].message.content || "{}");
+              console.log(`[MERGE] Distribution plan:`, Object.keys(distribution));
+              
+              // Update relevant sections
+              setReportSections(prev => prev.map(s => {
+                if (distribution[s.id]) {
+                  return {
+                    ...s,
+                    content: s.content + "\n\n### Advanced Query Update\n\n" + distribution[s.id],
+                    isGenerating: false,
+                    generationStatus: undefined
+                  };
                 }
-              : s
-          ));
-          
-          console.log(`[MERGE] ✅ Section content updated`);
+                return {
+                  ...s,
+                  isGenerating: false,
+                  generationStatus: undefined
+                };
+              }));
+              
+              console.log(`[MERGE] ✅ Updated ${Object.keys(distribution).length} sections`);
+            } catch (error) {
+              console.error("[MERGE] Distribution failed, adding to Background section:", error);
+              // Fallback: add to Background section
+              setReportSections(prev => prev.map(s => 
+                s.id === "background" 
+                  ? { 
+                      ...s, 
+                      content: s.content + "\n\n### Advanced Query Update (Whole Report)\n\n" + answer,
+                      isGenerating: false,
+                      generationStatus: undefined
+                    }
+                  : { ...s, isGenerating: false, generationStatus: undefined }
+              ));
+            }
+          }
           
           // Save updated report to database
           if (currentConversationId) {
@@ -1615,6 +1684,7 @@ export default function MatrixChat({
           selectedSectionId={selectedSection}
           sectionQueryHistory={sectionQueryHistory}
           onQuery={handleAdvancedQuery}
+          onClearSection={() => setSelectedSection(null)}
           onMergeStart={() => setIsMerging(true)}
           onMergeEnd={() => setIsMerging(false)}
         />
