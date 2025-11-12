@@ -36,8 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable} style={{ height: '100%', overflowY: 'auto' }}>
-      <body className={inter.className} style={{ height: '100%', overflowY: 'auto' }}>
+    <html lang="en" className={inter.variable}>
+      <body className={inter.className}>
         <SessionProvider>
           <SessionTimeout />
           <LayoutContent>{children}</LayoutContent>

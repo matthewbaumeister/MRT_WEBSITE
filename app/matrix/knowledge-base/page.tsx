@@ -401,9 +401,9 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] overflow-y-auto">
+    <div className="bg-[#0a0f1e]">
       <Header />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

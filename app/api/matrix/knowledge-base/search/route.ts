@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get all string columns (exclude dates, booleans, numbers)
+    // Get all string columns (exclude dates, booleans, numbers, timestamps)
     const allColumns = Object.keys(sampleData[0]);
     const searchableColumns = allColumns.filter(col => {
       const value = sampleData[0][col];
@@ -60,11 +60,17 @@ export async function POST(request: NextRequest) {
       if (col === 'id') return false;
       if (typeof value !== 'string') return false;
       
-      // Exclude date columns (they look like strings but Supabase stores them as dates)
-      if (colLower.includes('date') || colLower.includes('_at')) return false;
+      // Exclude date/timestamp columns (they look like strings but Supabase stores them as dates/timestamps)
+      // Check for ISO date format YYYY-MM-DD or timestamp format
+      if (colLower.includes('date') || colLower.includes('_at') || colLower.includes('time')) return false;
+      if (/^\d{4}-\d{2}-\d{2}/.test(value)) return false; // ISO date format
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) return false; // ISO timestamp format
       
       // Exclude UUID/ID columns
       if (colLower.includes('uuid') || colLower.endsWith('_id')) return false;
+      
+      // Exclude very short strings (likely codes/flags, not searchable content)
+      if (value && value.length < 3) return false;
       
       return true;
     });
