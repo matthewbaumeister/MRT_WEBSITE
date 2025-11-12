@@ -424,12 +424,16 @@ export default function MatrixChat({
     // Initialize report sections (or restore from existing if resuming)
     let shouldSkip = !!resumeFromSection; // Skip sections until we reach the resume point
     
-    // When resuming, preserve existing content; otherwise start fresh
+    // When resuming, preserve existing content AND sources; otherwise start fresh
     const existingContent: Record<string, string> = {};
+    const existingSources: Record<string, DataSource[]> = {};
     if (resumeFromSection) {
       reportSections.forEach(s => {
         if (s.content && s.content.trim()) {
           existingContent[s.id] = s.content;
+        }
+        if (s.sources && s.sources.length > 0) {
+          existingSources[s.id] = s.sources;
         }
       });
     }
@@ -437,6 +441,7 @@ export default function MatrixChat({
     const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
       ...s,
       content: existingContent[s.id] || "", // Preserve existing content when resuming
+      sources: existingSources[s.id] || [], // Preserve existing sources when resuming
       expanded: true,
     }));
     setReportSections(initialSections);
