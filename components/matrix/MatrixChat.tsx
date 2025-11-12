@@ -446,6 +446,9 @@ export default function MatrixChat({
     // Collect all section contents for the final conclusion
     const sectionContents: Record<string, string> = { ...existingContent };
     
+    // Track sources separately (state updates are async, can't rely on reportSections state)
+    const sectionSources: Record<string, DataSource[]> = {};
+    
     if (resumeFromSection) {
       console.log(`🔄 Resuming from section: ${resumeFromSection}`);
       console.log(`   Already completed: ${Object.keys(existingContent).length} sections`);
@@ -623,6 +626,9 @@ export default function MatrixChat({
           // Combine database sources with web sources
           const allSources = [...databaseSources, ...webSources];
           
+          // Store sources in our tracking object (for saving progress)
+          sectionSources[section.id] = allSources;
+          
           setReportSections(prev => prev.map(s => 
             s.id === section.id 
               ? { ...s, content, sources: allSources, isGenerating: false, generationStatus: undefined }
@@ -713,13 +719,13 @@ export default function MatrixChat({
                     id,
                     title: REPORT_SECTIONS.find(s => s.id === id)?.title,
                     content,
-                    sources: reportSections.find(s => s.id === id)?.sources || [],
+                    sources: sectionSources[id] || [], // Use tracked sources, not state
                   })),
                   lastUpdated: new Date().toISOString(),
                 }
               }),
             }).catch(err => console.warn("Failed to save progress:", err));
-            console.log(`💾 Progress saved: ${completedSectionIds.length}/${REPORT_SECTIONS.length} sections complete (enriched!)`);
+            console.log(`💾 Progress saved: ${completedSectionIds.length}/${REPORT_SECTIONS.length} sections complete (with ${sectionSources[section.id]?.length || 0} sources)`);
           }
         }
       } catch (error) {
