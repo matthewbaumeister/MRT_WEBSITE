@@ -472,63 +472,6 @@ export default function KnowledgeBasePage() {
       setExtractingKeywords(false);
     }
   };
-
-  // Handle Find Similar
-  const handleFindSimilar = async (record: any) => {
-    if (!selectedTable && !record._source_table) {
-      setError("Cannot find similar records without table information");
-      return;
-    }
-
-    const table = selectedTable || record._source_table;
-    setFindingSimilar(record.id);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/matrix/knowledge-base/find-similar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          record,
-          table,
-          limit: 10,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to find similar records");
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setSimilarRecords(result.results);
-        setExpandedRow(record.id);
-        if (result.results.length === 0) {
-          setError("No similar records found");
-        } else {
-          setError(`Found ${result.results.length} similar records using ${result.method} search`);
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to find similar records");
-      setSimilarRecords(null);
-    } finally {
-      setFindingSimilar(null);
-    }
-  };
-
-  // Toggle row expansion
-  const toggleRowExpansion = (recordId: string) => {
-    if (expandedRow === recordId) {
-      setExpandedRow(null);
-      setSimilarRecords(null);
-    } else {
-      setExpandedRow(recordId);
-      setSimilarRecords(null);
-    }
-  };
-
   // Get unique categories
   const categories = ["all", ...Array.from(new Set(AVAILABLE_TABLES.map(t => t.category)))];
 
