@@ -1474,35 +1474,37 @@ export default function MatrixChat({
                         ))}
                       </div>
                     )}
-                    
-                    {/* Continue Report Button - For incomplete reports */}
-                    {showResumeButton && !isLoading && (
-                      <div className="mt-4">
-                        <button
-                          onClick={async () => {
-                            setShowResumeButton(false);
-                            setIsLoading(true);
-                            
-                            // Find first incomplete section
-                            const firstIncomplete = reportSections.find(s => !s.content || s.content.trim() === "");
-                            
-                            console.log(`🔄 Resuming report from section: ${firstIncomplete?.id || 'unknown'}`);
-                            
-                            // Resume generation
-                            await generateReport(researchTopic, firstIncomplete?.id);
-                            setIsLoading(false);
-                          }}
-                          className="w-full px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Continue Report</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Continue Report Button - For incomplete reports (OUTSIDE loading block) */}
+            {showResumeButton && !isLoading && (
+              <div className="flex justify-start mt-4">
+                <div className="bg-gray-800 text-gray-100 rounded-2xl px-4 py-3 max-w-[80%]">
+                  <button
+                    onClick={async () => {
+                      setShowResumeButton(false);
+                      setIsLoading(true);
+                      
+                      // Find first incomplete section
+                      const firstIncomplete = reportSections.find(s => !s.content || s.content.trim() === "");
+                      
+                      console.log(`🔄 Resuming report from section: ${firstIncomplete?.id || 'unknown'}`);
+                      
+                      // Resume generation
+                      await generateReport(researchTopic, firstIncomplete?.id);
+                      setIsLoading(false);
+                    }}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Continue Report</span>
+                  </button>
                 </div>
               </div>
             )}
