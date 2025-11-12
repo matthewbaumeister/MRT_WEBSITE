@@ -216,7 +216,7 @@ export default function MatrixSidebar({
             <button
               onClick={() => {
                 onNewChat(); // Reset to home screen
-                onClose();
+                // Don't close sidebar - let user control it with the close button
               }}
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg transition-all duration-200"
             >

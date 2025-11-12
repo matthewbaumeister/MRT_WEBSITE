@@ -60,18 +60,16 @@ export default function MatrixPage() {
         />
       )}
 
-      {/* Main Chat Area - Flexible width */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <MatrixChat
-          key={chatResetKey} // Force remount on reset
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          chatId={currentChatId}
-          onNewChat={resetChat}
-          projectId={currentProjectId}
-          onConversationCreated={refreshSidebar}
-          sidebarOpen={sidebarOpen}
-        />
-      </div>
+      {/* Main Chat Area + Advanced Query Panel - Both flex siblings */}
+      <MatrixChat
+        key={chatResetKey} // Force remount on reset
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        chatId={currentChatId}
+        onNewChat={resetChat}
+        projectId={currentProjectId}
+        onConversationCreated={refreshSidebar}
+        sidebarOpen={sidebarOpen}
+      />
     </div>
   );
 }
