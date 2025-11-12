@@ -80,6 +80,8 @@ export default function KnowledgeBasePage() {
   const [shareUrl, setShareUrl] = useState<string>("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [fullDataForExport, setFullDataForExport] = useState<any[]>([]);
   
   const ROWS_PER_PAGE = pageSize;
 
@@ -121,9 +123,52 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  // Export to PDF
-  const handleExportPDF = () => {
-    window.print();
+  // Export to PDF - fetch all data first
+  const handleExportPDF = async () => {
+    if (!selectedTable) {
+      alert("Please select a table first");
+      return;
+    }
+
+    setIsExportingPDF(true);
+    
+    try {
+      // Fetch ALL data for export (not just current page)
+      const params = new URLSearchParams({
+        table: selectedTable,
+        page: "1",
+        limit: totalRows.toString(), // Get all rows
+      });
+
+      if (searchQuery) {
+        params.append("query", searchQuery);
+      }
+      if (sortColumn) {
+        params.append("sortColumn", sortColumn);
+        params.append("sortDirection", sortDirection);
+      }
+
+      const response = await fetch(`/api/matrix/knowledge-base/table?${params}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch full data");
+      }
+
+      const data = await response.json();
+      setFullDataForExport(data.data || []);
+      
+      // Wait a moment for state to update, then print
+      setTimeout(() => {
+        window.print();
+        // Clear after print
+        setTimeout(() => setFullDataForExport([]), 1000);
+      }, 500);
+    } catch (error) {
+      console.error("Error preparing PDF export:", error);
+      alert("Failed to prepare PDF export. Please try again.");
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   // Generate shareable link
@@ -715,13 +760,14 @@ export default function KnowledgeBasePage() {
                 {/* Export & Share Buttons */}
                 <button
                   onClick={handleExportPDF}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                  disabled={isExportingPDF}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
                   title="Export to PDF"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>
-                  <span>Export PDF</span>
+                  <span>{isExportingPDF ? 'Preparing...' : 'Export PDF'}</span>
                 </button>
                 <button
                   onClick={handleGenerateShareLink}
@@ -1041,6 +1087,52 @@ export default function KnowledgeBasePage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Full Export Table - Only visible when printing */}
+      {fullDataForExport.length > 0 && (
+        <div className="print-only-content hidden">
+          <div className="print-header">
+            <div className="print-brand">
+              <h1>Make Ready Tech</h1>
+              <h2>Knowledge Base Export</h2>
+            </div>
+            <div className="print-meta">
+              <p><strong>Data Source:</strong> {selectedTable?.replace(/_/g, ' ')}</p>
+              {searchQuery && <p><strong>Search Query:</strong> {searchQuery}</p>}
+              <p><strong>Export Date:</strong> {new Date().toLocaleDateString()}</p>
+              <p><strong>Total Records:</strong> {fullDataForExport.length}</p>
+            </div>
+          </div>
+
+          <table className="print-table">
+            <thead>
+              <tr>
+                {columns.filter(col => col !== 'id').map((column) => (
+                  <th key={column}>{column.replace(/_/g, ' ')}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {fullDataForExport.map((row, idx) => (
+                <tr key={idx}>
+                  {columns.filter(col => col !== 'id').map((column) => (
+                    <td key={column}>
+                      {row[column] !== null && row[column] !== undefined
+                        ? String(row[column])
+                        : '-'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="print-footer">
+            <p>© {new Date().getFullYear()} Make Ready Tech - makereadytech.com</p>
+            <p>This document is proprietary and confidential</p>
           </div>
         </div>
       )}

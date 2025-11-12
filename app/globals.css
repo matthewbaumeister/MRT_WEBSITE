@@ -53,57 +53,218 @@
   /* Hide navigation, buttons, and non-essential elements */
   header,
   button,
-  .no-print {
+  .no-print,
+  nav,
+  footer {
     display: none !important;
   }
 
-  /* Ensure table fits on page */
-  table {
+  /* Hide the screen view, show print-only content */
+  body > div > div:not(.print-only-content) {
+    display: none !important;
+  }
+
+  .print-only-content {
+    display: block !important;
+    position: relative;
+  }
+
+  /* Add watermark background */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+    position: relative;
+  }
+
+  /* Watermark - diagonal repeating logo text */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.05;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 200px,
+      rgba(0, 0, 0, 0.03) 200px,
+      rgba(0, 0, 0, 0.03) 201px
+    );
+    pointer-events: none;
+  }
+
+  .print-only-content::after {
+    content: 'MAKE READY TECH';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 120px;
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.02);
+    white-space: nowrap;
+    z-index: -1;
+    pointer-events: none;
+    letter-spacing: 10px;
+  }
+
+  /* Print Header Styling */
+  .print-header {
+    margin-bottom: 30px;
+    border-bottom: 3px solid #1a1a1a;
+    padding-bottom: 20px;
+  }
+
+  .print-brand h1 {
+    font-size: 28px;
+    font-weight: 900;
+    color: #1a1a1a;
+    margin: 0 0 5px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .print-brand h2 {
+    font-size: 16px;
+    font-weight: 400;
+    color: #666;
+    margin: 0;
+  }
+
+  .print-meta {
+    margin-top: 15px;
+    font-size: 11px;
+    color: #444;
+  }
+
+  .print-meta p {
+    margin: 3px 0;
+    line-height: 1.4;
+  }
+
+  .print-meta strong {
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  /* Print Table Styling */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
     page-break-inside: auto;
-    font-size: 10px;
+    margin: 20px 0;
+  }
+
+  .print-table thead {
+    display: table-header-group;
+  }
+
+  .print-table thead tr {
+    background: #f8f9fa !important;
+    border-bottom: 2px solid #1a1a1a;
+  }
+
+  .print-table th {
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 700;
+    color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
+    text-transform: uppercase;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .print-table tbody tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .print-table tbody tr:nth-child(even) {
+    background: #fafafa !important;
+  }
+
+  .print-table td {
+    padding: 8px;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+    word-wrap: break-word;
+    max-width: 150px;
+    font-size: 8px;
+    line-height: 1.3;
+  }
+
+  /* Print Footer */
+  .print-footer {
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 2px solid #1a1a1a;
+    text-align: center;
+    font-size: 9px;
+    color: #666;
+  }
+
+  .print-footer p {
+    margin: 3px 0;
+  }
+
+  /* Ensure proper page breaks */
+  h1, h2, h3 {
+    page-break-after: avoid;
   }
 
   tr {
     page-break-inside: avoid;
-    page-break-after: auto;
   }
 
-  thead {
-    display: table-header-group;
-  }
-
-  /* Reset colors for print */
-  body {
-    background: white !important;
-    color: black !important;
-  }
-
+  /* Reset unwanted styles */
   .bg-gray-900,
   .bg-gray-800,
-  .bg-gray-950 {
+  .bg-gray-950,
+  .bg-\[\#0a0f1e\] {
     background: white !important;
-    color: black !important;
   }
 
   .text-white,
   .text-gray-300,
   .text-gray-400 {
-    color: black !important;
+    color: #1a1a1a !important;
   }
 
-  .border-gray-800,
-  .border-gray-700 {
-    border-color: #ccc !important;
-  }
-
-  /* Show all table rows for print */
+  /* Hide scrollbars and overflow for print */
   .overflow-auto,
-  .overflow-x-auto {
+  .overflow-x-auto,
+  .overflow-y-auto {
     overflow: visible !important;
   }
 
-  .max-h-\[70vh\] {
+  .max-h-\[70vh\],
+  .max-h-\[90vh\] {
     max-height: none !important;
+  }
+
+  /* Ensure links are visible */
+  a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+  }
+
+  /* Page numbering */
+  @page {
+    @bottom-right {
+      content: counter(page) " of " counter(pages);
+      font-size: 9px;
+      color: #666;
+    }
   }
 }
 
