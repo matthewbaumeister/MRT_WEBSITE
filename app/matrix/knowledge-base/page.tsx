@@ -76,6 +76,11 @@ export default function KnowledgeBasePage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 });
   
+  // Export and share functionality
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  
   const ROWS_PER_PAGE = pageSize;
 
   // Drag-to-scroll handlers
@@ -114,6 +119,47 @@ export default function KnowledgeBasePage() {
       tableScrollRef.current.style.cursor = 'grab';
       tableScrollRef.current.style.userSelect = 'auto';
     }
+  };
+
+  // Export to PDF
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  // Generate shareable link
+  const handleGenerateShareLink = async () => {
+    setIsGeneratingShare(true);
+    try {
+      const response = await fetch("/api/matrix/knowledge-base/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: selectedTable,
+          query: searchQuery,
+          searchMode,
+          sortColumn,
+          sortDirection,
+          pageSize,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate share link");
+
+      const data = await response.json();
+      const fullUrl = `${window.location.origin}/matrix/knowledge-base/shared/${data.shareId}`;
+      setShareUrl(fullUrl);
+      setShowShareModal(true);
+    } catch (error) {
+      console.error("Error generating share link:", error);
+      alert("Failed to generate share link. Please try again.");
+    } finally {
+      setIsGeneratingShare(false);
+    }
+  };
+
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    alert("Link copied to clipboard!");
   };
 
   // Redirect if not authenticated
@@ -658,12 +704,36 @@ export default function KnowledgeBasePage() {
           </div>
         )}
 
-        {/* Results Info */}
+        {/* Results Info & Export Controls */}
         {selectedTable && !isLoading && (
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-4">
             <div className="flex items-center justify-between text-sm text-gray-400 flex-wrap gap-3">
               <div>
                 Showing {((currentPage - 1) * ROWS_PER_PAGE) + 1} - {Math.min(currentPage * ROWS_PER_PAGE, totalRows)} of {totalRows} records
+              </div>
+              <div className="flex items-center space-x-4">
+                {/* Export & Share Buttons */}
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                  title="Export to PDF"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                  <span>Export PDF</span>
+                </button>
+                <button
+                  onClick={handleGenerateShareLink}
+                  disabled={isGeneratingShare}
+                  className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
+                  title="Generate shareable link"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  <span>{isGeneratingShare ? 'Generating...' : 'Share View'}</span>
+                </button>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -917,6 +987,55 @@ export default function KnowledgeBasePage() {
             <div className="p-6 border-t border-gray-800">
               <button
                 onClick={() => setSelectedRecord(null)}
+                className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700">
+            <div className="flex justify-between items-center p-6 border-b border-gray-800">
+              <h2 className="text-2xl font-semibold text-white">Shareable View Link</h2>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-300 mb-4">
+                Anyone with this link can view this data (read-only). They'll be prompted to create an account to search or access other features.
+              </p>
+              <div className="flex items-center space-x-2 bg-gray-800 rounded-lg p-3 border border-gray-700">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 bg-transparent text-white outline-none"
+                />
+                <button
+                  onClick={copyShareLink}
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors whitespace-nowrap"
+                >
+                  Copy Link
+                </button>
+              </div>
+              <div className="mt-4 text-sm text-gray-400">
+                <p>This link will remain active and can be shared with anyone.</p>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-800">
+              <button
+                onClick={() => setShowShareModal(false)}
                 className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
               >
                 Close

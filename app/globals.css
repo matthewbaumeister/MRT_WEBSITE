@@ -48,3 +48,62 @@
   @apply bg-primary-700;
 }
 
+/* Print styles for PDF export */
+@media print {
+  /* Hide navigation, buttons, and non-essential elements */
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure table fits on page */
+  table {
+    page-break-inside: auto;
+    font-size: 10px;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Reset colors for print */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .bg-gray-900,
+  .bg-gray-800,
+  .bg-gray-950 {
+    background: white !important;
+    color: black !important;
+  }
+
+  .text-white,
+  .text-gray-300,
+  .text-gray-400 {
+    color: black !important;
+  }
+
+  .border-gray-800,
+  .border-gray-700 {
+    border-color: #ccc !important;
+  }
+
+  /* Show all table rows for print */
+  .overflow-auto,
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  .max-h-\[70vh\] {
+    max-height: none !important;
+  }
+}
+
