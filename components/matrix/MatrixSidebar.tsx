@@ -31,6 +31,7 @@ interface MatrixSidebarProps {
   onSelectProject: (projectId: string | null) => void;
   refreshKey?: number;
   onNewChat: () => void;
+  onCancelGeneration: (() => void) | null;
 }
 
 export default function MatrixSidebar({
@@ -42,6 +43,7 @@ export default function MatrixSidebar({
   onSelectProject,
   refreshKey,
   onNewChat,
+  onCancelGeneration,
 }: MatrixSidebarProps) {
   const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -168,6 +170,15 @@ export default function MatrixSidebar({
     }
 
     try {
+      // If deleting the currently open chat, cancel any ongoing generation first
+      if (currentChatId === conversationId) {
+        console.log("🗑️ Deleting currently open chat - cancelling generation & returning to home screen");
+        if (onCancelGeneration) {
+          console.log("   → Calling onCancelGeneration()");
+          onCancelGeneration(); // Cancel any ongoing API calls
+        }
+      }
+      
       const response = await fetch(`/api/matrix/conversations?id=${conversationId}`, {
         method: "DELETE",
       });
@@ -175,7 +186,6 @@ export default function MatrixSidebar({
       if (response.ok) {
         // If deleting the currently open chat, return to home screen
         if (currentChatId === conversationId) {
-          console.log("🗑️ Deleting currently open chat - returning to home screen");
           onNewChat(); // Fully reset to home screen
         }
         await loadConversations();

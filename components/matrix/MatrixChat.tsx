@@ -17,6 +17,7 @@ interface MatrixChatProps {
   projectId: string | null;
   onConversationCreated?: () => void;
   sidebarOpen?: boolean;
+  onRegisterCancelGeneration?: (cancelFn: () => void) => void;
 }
 
 interface ReportSection {
@@ -50,6 +51,7 @@ export default function MatrixChat({
   onNewChat,
   projectId,
   onConversationCreated,
+  onRegisterCancelGeneration,
 }: MatrixChatProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
@@ -101,6 +103,25 @@ export default function MatrixChat({
       }
     };
   }, [abortController]);
+  
+  // Register cancel function with parent (so sidebar can cancel when deleting)
+  useEffect(() => {
+    if (onRegisterCancelGeneration) {
+      const cancelFn = () => {
+        console.log("🛑 [CANCEL] Manual cancellation triggered (delete)");
+        if (abortController) {
+          abortController.abort();
+          setAbortController(null);
+        }
+        setIsLoading(false);
+        setSearchStatus([]);
+        setLiveStatus("");
+        setShowResumeButton(false);
+      };
+      
+      onRegisterCancelGeneration(cancelFn);
+    }
+  }, [onRegisterCancelGeneration, abortController]);
 
   // Load conversation when chatId changes (and cancel ongoing generation)
   useEffect(() => {

@@ -30,6 +30,9 @@ export default function MatrixPage() {
     setCurrentChatId(null);
     setChatResetKey(prev => prev + 1); // Force remount
   };
+  
+  // Store ref to cancel function from MatrixChat
+  const [cancelGeneration, setCancelGeneration] = useState<(() => void) | null>(null);
 
   if (status === "loading") {
     return (
@@ -57,6 +60,7 @@ export default function MatrixPage() {
           onSelectProject={setCurrentProjectId}
           refreshKey={sidebarRefreshKey}
           onNewChat={resetChat}
+          onCancelGeneration={cancelGeneration}
         />
       )}
 
@@ -69,6 +73,7 @@ export default function MatrixPage() {
         projectId={currentProjectId}
         onConversationCreated={refreshSidebar}
         sidebarOpen={sidebarOpen}
+        onRegisterCancelGeneration={setCancelGeneration}
       />
     </div>
   );
