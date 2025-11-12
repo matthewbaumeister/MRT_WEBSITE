@@ -63,6 +63,7 @@ export default function MatrixChat({
   const [webSearch, setWebSearch] = useState(true);
   const [research, setResearch] = useState(false);
   const [smallBusinessFocus, setSmallBusinessFocus] = useState(false);
+  const [maxMode, setMaxMode] = useState(false); // Premium mode: GPT-4o for everything
   const [searchStatus, setSearchStatus] = useState<string[]>([]);
   const [liveStatus, setLiveStatus] = useState<string>(""); // Live status for report header
   const [reportMode, setReportMode] = useState(false);
@@ -334,7 +335,7 @@ export default function MatrixChat({
           title: `Research: ${topic}`,
           project_id: projectId === "ALL" ? null : projectId, // Convert "ALL" to null
           metadata: {
-            settings: { extendedThinking, webSearch, research, smallBusinessFocus }
+            settings: { extendedThinking, webSearch, research, smallBusinessFocus, maxMode }
           }
         }),
       });
@@ -618,7 +619,7 @@ export default function MatrixChat({
                 ? `${sectionPrompt}\n\nPrevious sections for context:\n${Object.entries(sectionContents).map(([id, content]) => `${id}: ${content.substring(0, 500)}...`).join('\n\n')}`
                 : sectionPrompt
             }],
-            model: "gpt-4o-mini",
+            model: maxMode ? "gpt-4o" : "gpt-4o-mini", // MAX MODE uses GPT-4o
             extendedThinking,
             webSearch: webSearch || research,
             research: research || webSearch,
@@ -668,6 +669,7 @@ export default function MatrixChat({
                 sectionTitle: section.title,
                 sectionContent: content,
                 topic: topic,
+                maxMode, // Pass MAX MODE flag to enrichment
               }),
             });
 
@@ -1006,7 +1008,7 @@ export default function MatrixChat({
             
             try {
               const distributionResponse = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: maxMode ? "gpt-4o" : "gpt-4o-mini", // MAX MODE uses GPT-4o
                 messages: [{
                   role: "system",
                   content: "You are a report editor. Given a piece of content and a list of report sections, determine which section(s) this content should be added to. Return a JSON object with section IDs as keys and the content tailored for each section as values. Only include sections where the content is relevant."
@@ -1247,7 +1249,7 @@ export default function MatrixChat({
         },
         body: JSON.stringify({
           messages: apiMessages,
-          model: "gpt-4o-mini",
+          model: maxMode ? "gpt-4o" : "gpt-4o-mini", // MAX MODE uses GPT-4o
           extendedThinking,
           webSearch,
           research,
@@ -1719,6 +1721,68 @@ export default function MatrixChat({
                               </p>
                       </div>
                     )}
+
+                          {/* Divider */}
+                          <div className="border-t border-gray-800 my-2"></div>
+
+                          {/* MAX MODE - Premium GPT-4o */}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!maxMode) {
+                                // Turning ON - validate auth key
+                                const authKey = prompt("Enter MAX MODE auth key:\n\n⚠️ WARNING: This uses GPT-4o for ALL generation steps.\nCost: ~$1-3 per report (10x standard cost).\n\nEnter key or cancel:");
+                                if (!authKey) return;
+                                
+                                // Validate key
+                                try {
+                                  const response = await fetch("/api/matrix/validate-max-mode", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ authKey }),
+                                  });
+                                  
+                                  if (response.ok) {
+                                    setMaxMode(true);
+                                    alert("✅ MAX MODE ENABLED\n\nUsing GPT-4o for all generation.\nEstimated cost: $1-3 per report.");
+                                  } else {
+                                    alert("❌ Invalid auth key");
+                                  }
+                                } catch (error) {
+                                  alert("❌ Error validating key");
+                                }
+                              } else {
+                                // Turning OFF
+                                setMaxMode(false);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              <div className="flex flex-col items-start">
+                                <span className="text-sm text-yellow-400 font-semibold">MAX MODE</span>
+                                <span className="text-xs text-gray-500">GPT-4o • $1-3/report</span>
+                              </div>
+                            </div>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${maxMode ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gray-700'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${maxMode ? 'right-0.5' : 'left-0.5'}`}></div>
+                            </div>
+                          </button>
+
+                          {/* MAX MODE Note */}
+                          {maxMode && (
+                            <div className="px-3 py-2 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-600/30 rounded-lg">
+                              <p className="text-xs text-yellow-400 font-semibold leading-relaxed">
+                                ⚡ MAX MODE ACTIVE
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                Using GPT-4o for all generation steps. Superior quality, 10x cost.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { sectionId, sectionTitle, sectionContent, topic, companiesInSection } = body;
+    const { sectionId, sectionTitle, sectionContent, topic, companiesInSection, maxMode } = body;
 
     if (!sectionId || !sectionTitle || !sectionContent || !topic) {
       return NextResponse.json(
@@ -23,6 +23,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // MAX MODE: Already using GPT-4o by default, but could increase tokens/depth
+    const modelToUse = 'gpt-4o'; // Always use GPT-4o for enrichment
+    const maxTokens = maxMode ? 3000 : 2000; // More tokens in MAX MODE
 
     // Get API keys
     const openAIApiKey = process.env.OPENAI_API_KEY;
@@ -141,7 +145,7 @@ REQUIREMENTS:
 Return the enhanced section content with integrated intelligence.`;
 
     const response = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: modelToUse,
       messages: [
         {
           role: 'system',
@@ -152,8 +156,8 @@ Return the enhanced section content with integrated intelligence.`;
           content: prompt,
         },
       ],
-      temperature: 0.3,
-      max_tokens: 2000,
+      temperature: maxMode ? 0.2 : 0.3, // More precise in MAX MODE
+      max_tokens: maxTokens,
     });
 
     const enhancedContent = response.choices[0].message.content || sectionContent;
