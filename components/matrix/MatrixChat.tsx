@@ -1106,9 +1106,11 @@ export default function MatrixChat({
       <div className="flex-1 flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        {/* Left - Toggle Chat History Sidebar */}
         <button
           onClick={onToggleSidebar}
-            className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white transition-all hover:bg-gray-800 p-2 rounded-lg"
+          title="Toggle Chat History & Projects"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -1176,7 +1178,7 @@ export default function MatrixChat({
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowDebugPanel(!showDebugPanel)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-all hover:bg-gray-800 p-2 rounded-lg"
                 title="Debug Panel - Verify Data Pipeline"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1188,10 +1190,18 @@ export default function MatrixChat({
                   />
                 </svg>
               </button>
+              {/* Advanced Query Toggle - Opens right sidebar */}
               <button
-                onClick={() => setAdvancedPanelOpen(!advancedPanelOpen)}
-                className="text-gray-400 hover:text-white transition-colors"
-                title="Advanced Query Panel"
+                onClick={() => {
+                  setAdvancedPanelOpen(!advancedPanelOpen);
+                  console.log(`🔍 [HEADER] Advanced Query panel: ${advancedPanelOpen ? 'closing' : 'opening'}`);
+                }}
+                className={`transition-all p-2 rounded-lg ${
+                  advancedPanelOpen 
+                    ? 'text-primary-400 bg-gray-800' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title={advancedPanelOpen ? "Close Advanced Query Panel" : "Open Advanced Query Panel"}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
