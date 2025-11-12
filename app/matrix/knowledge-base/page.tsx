@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 
 interface TableInfo {
@@ -70,7 +70,51 @@ export default function KnowledgeBasePage() {
   const [findingSimilar, setFindingSimilar] = useState<string | null>(null);
   const [similarRecords, setSimilarRecords] = useState<any[] | null>(null);
   
+  // Drag to scroll functionality
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 });
+  
   const ROWS_PER_PAGE = pageSize;
+
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tableScrollRef.current) return;
+    setIsDragging(true);
+    setDragStart({ x: e.pageX, y: e.pageY });
+    setScrollStart({
+      x: tableScrollRef.current.scrollLeft,
+      y: tableScrollRef.current.scrollTop,
+    });
+    tableScrollRef.current.style.cursor = 'grabbing';
+    tableScrollRef.current.style.userSelect = 'none';
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !tableScrollRef.current) return;
+    e.preventDefault();
+    const dx = e.pageX - dragStart.x;
+    const dy = e.pageY - dragStart.y;
+    tableScrollRef.current.scrollLeft = scrollStart.x - dx;
+    tableScrollRef.current.scrollTop = scrollStart.y - dy;
+  };
+
+  const handleMouseUp = () => {
+    if (!tableScrollRef.current) return;
+    setIsDragging(false);
+    tableScrollRef.current.style.cursor = 'grab';
+    tableScrollRef.current.style.userSelect = 'auto';
+  };
+
+  const handleMouseLeave = () => {
+    if (!tableScrollRef.current) return;
+    if (isDragging) {
+      setIsDragging(false);
+      tableScrollRef.current.style.cursor = 'grab';
+      tableScrollRef.current.style.userSelect = 'auto';
+    }
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -660,9 +704,17 @@ export default function KnowledgeBasePage() {
           </div>
         ) : tableData.length > 0 ? (
           <>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-x-auto mb-8">
+            <div 
+              ref={tableScrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              className="bg-gray-900 rounded-lg border border-gray-800 overflow-auto mb-8 max-h-[70vh] cursor-grab"
+              style={{ scrollbarWidth: 'thin' }}
+            >
                 <table className="w-full min-w-max">
-                  <thead className="bg-gray-800 border-b border-gray-700">
+                  <thead className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
                     <tr>
                       {/* Show source table column if searching across multiple tables */}
                       {!selectedTable && tableData.some(row => row._source_table) && (
