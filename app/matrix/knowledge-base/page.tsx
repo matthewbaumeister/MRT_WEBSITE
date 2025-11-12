@@ -227,6 +227,8 @@ export default function KnowledgeBasePage() {
           }
         } else {
           // Search specific table
+          console.log("[KB] Sending search request:", { table: selectedTable, query: searchQuery });
+          
           const response = await fetch(`/api/matrix/knowledge-base/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -239,16 +241,20 @@ export default function KnowledgeBasePage() {
           });
 
           if (!response.ok) {
-            throw new Error("Search failed");
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error("[KB] Search error response:", errorData);
+            throw new Error(errorData.error || "Search failed");
           }
 
           const result = await response.json();
+          console.log("[KB] Search results:", result);
           setTableData(result.data || []);
           setColumns(result.columns || []);
           setTotalRows(result.total || 0);
         }
       }
     } catch (err: any) {
+      console.error("[KB] Search error:", err);
       setError(err.message || "Search failed");
       setTableData([]);
     } finally {

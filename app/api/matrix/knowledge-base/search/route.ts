@@ -88,8 +88,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error("[KNOWLEDGE BASE SEARCH API] Error:", error);
+    console.error("[KNOWLEDGE BASE SEARCH API] Error stack:", error.stack);
+    console.error("[KNOWLEDGE BASE SEARCH API] Request params:", { table, query, page, limit });
     return NextResponse.json(
-      { error: error.message || "Search failed" },
+      { 
+        error: error.message || "Search failed",
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
