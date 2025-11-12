@@ -138,6 +138,13 @@ CRITICAL INSTRUCTIONS:
 6. Include numbers, dates, companies, contracts, and URLs when available
 7. If truly no relevant data exists, state: "Searched: ${sourcesSearched}. No additional public information found on [topic]. Recommend: [specific data sources that might have this info]."
 
+URL & FORMATTING RULES:
+- ONLY include SPECIFIC URLs with full paths (e.g., https://defense.gov/News/Article/2024/cyber-contract)
+- NEVER use generic URLs like "boeing.com/news" or "raytheon.com/press"
+- DO NOT create a separate "References" section - URLs should be inline with content
+- The "Data Sources" section will be auto-generated - don't duplicate it
+- Use ### for subsection headers, ** for bold, * for italic
+
 FOCUS: Provide actionable content that IMPROVES the ${sectionId} section, even if indirect.`
       : `You are a DoD market research analyst. Your task is to provide content to ENHANCE this entire research report.
 
@@ -149,6 +156,13 @@ CRITICAL INSTRUCTIONS:
 5. Include numbers, dates, companies, and sources
 6. If no direct data, state what WAS searched and provide related insights
 7. Focus on ADDING VALUE to the report with whatever information exists
+
+URL & FORMATTING RULES:
+- ONLY include SPECIFIC URLs with full paths (e.g., https://xtech.army.mil/competition/xtechsearch-9/)
+- NEVER use generic URLs like "domain.com/news"
+- DO NOT create a separate "References" section - URLs should be inline
+- The "Data Sources" section is auto-generated - don't duplicate it
+- Use ### for subsection headers, ** for bold, * for italic
 
 GOAL: Provide actionable insights that enhance the overall market research report.`;
 

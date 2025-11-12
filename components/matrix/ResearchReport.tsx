@@ -28,11 +28,13 @@ interface ResearchReportProps {
   isGenerating?: boolean; // Whether report is still generating
 }
 
-// Helper function to parse markdown tables
-function parseMarkdownTables(content: string): string {
-  const tableRegex = /\|(.+)\|\n\|([-:\s|]+)\|\n((?:\|.+\|\n?)+)/g;
+// Helper function to parse markdown content
+function parseMarkdownContent(content: string): string {
+  let html = content;
   
-  return content.replace(tableRegex, (match, headerRow, separatorRow, bodyRows) => {
+  // 1. Parse tables
+  const tableRegex = /\|(.+)\|\n\|([-:\s|]+)\|\n((?:\|.+\|\n?)+)/g;
+  html = html.replace(tableRegex, (match, headerRow, separatorRow, bodyRows) => {
     const headers = headerRow.split('|').map((h: string) => h.trim()).filter(Boolean);
     const rows = bodyRows.trim().split('\n').map((row: string) => 
       row.split('|').map((cell: string) => cell.trim()).filter(Boolean)
@@ -60,6 +62,45 @@ function parseMarkdownTables(content: string): string {
     
     return tableHTML;
   });
+  
+  // 2. Headers (BEFORE bold/italic to prevent breaking them)
+  html = html.replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>');
+  
+  // 3. Bold (before italic)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+  
+  // 4. Italic
+  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+  
+  // 5. URLs - Make clickable and copyable (specific URLs only, not generic domains)
+  // Match URLs that have paths (not just domain.com)
+  html = html.replace(
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi,
+    (url) => {
+      // Skip generic URLs like "domain.com/news" - only use if they have specific paths
+      if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
+        return url; // Return as plain text
+      }
+      return `<a 
+        href="${url}" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group"
+        onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);"
+      >
+        ${url}
+        <span class="opacity-0 group-hover:opacity-100 transition-opacity text-xs">📋</span>
+      </a>`;
+    }
+  );
+  
+  // 6. Line breaks
+  html = html.replace(/\n\n/g, '</p><p class="mb-4">');
+  html = html.replace(/\n/g, '<br/>');
+  
+  return `<p class="mb-4">${html}</p>`;
 }
 
 export default function ResearchReport({
@@ -78,6 +119,35 @@ export default function ResearchReport({
   const [expandedSources, setExpandedSources] = useState<Set<string>>(
     new Set()
   );
+
+  // Add CSS for copied link animation
+  if (typeof document !== 'undefined' && !document.getElementById('report-link-styles')) {
+    const style = document.createElement('style');
+    style.id = 'report-link-styles';
+    style.textContent = `
+      .markdown-content a.copied::after {
+        content: "✓ Copied!";
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #10b981;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        animation: fadeInOut 2s ease;
+      }
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
+        20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
@@ -224,14 +294,7 @@ export default function ResearchReport({
                       <div 
                         className="markdown-content"
                         dangerouslySetInnerHTML={{ 
-                          __html: parseMarkdownTables(section.content)
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                            .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')
-                            .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>')
-                            .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>')
-                            .replace(/\n\n/g, '</p><p class="mb-4">')
-                            .replace(/^(.+)$/gm, '<p class="mb-4">$1</p>')
+                          __html: parseMarkdownContent(section.content)
                         }}
                       />
                     ) : (
