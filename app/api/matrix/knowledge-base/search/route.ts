@@ -50,30 +50,52 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get all string columns (exclude dates, booleans, numbers, timestamps)
+    // Query Postgres information_schema to get actual column types
+    const { data: columnTypes } = await supabase.rpc('get_column_types', { 
+      table_name: table 
+    }).catch(() => ({ data: null }));
+    
+    // If RPC doesn't exist, use client-side detection
     const allColumns = Object.keys(sampleData[0]);
-    const searchableColumns = allColumns.filter(col => {
-      const value = sampleData[0][col];
-      const colLower = col.toLowerCase();
+    let searchableColumns = allColumns;
+    
+    // If we got column types from DB, use them to filter properly
+    if (columnTypes && Array.isArray(columnTypes)) {
+      const textTypeColumns = new Set(
+        columnTypes
+          .filter((col: any) => 
+            col.data_type === 'text' || 
+            col.data_type === 'character varying' ||
+            col.data_type === 'varchar'
+          )
+          .map((col: any) => col.column_name)
+      );
       
-      // Exclude non-text columns
-      if (col === 'id') return false;
-      if (typeof value !== 'string') return false;
-      
-      // Exclude date/timestamp columns (they look like strings but Supabase stores them as dates/timestamps)
-      // Check for ISO date format YYYY-MM-DD or timestamp format
-      if (colLower.includes('date') || colLower.includes('_at') || colLower.includes('time')) return false;
-      if (/^\d{4}-\d{2}-\d{2}/.test(value)) return false; // ISO date format
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) return false; // ISO timestamp format
-      
-      // Exclude UUID/ID columns
-      if (colLower.includes('uuid') || colLower.endsWith('_id')) return false;
-      
-      // Exclude very short strings (likely codes/flags, not searchable content)
-      if (value && value.length < 3) return false;
-      
-      return true;
-    });
+      searchableColumns = allColumns.filter(col => textTypeColumns.has(col) && col !== 'id');
+      console.log(`[KB SEARCH] Using DB schema - ${searchableColumns.length} text columns found`);
+    } else {
+      // Fallback: Filter by value inspection
+      searchableColumns = allColumns.filter(col => {
+        const value = sampleData[0][col];
+        const colLower = col.toLowerCase();
+        
+        // Must be string type
+        if (typeof value !== 'string') return false;
+        if (col === 'id') return false;
+        
+        // Exclude special Postgres types by column name patterns
+        if (colLower.includes('vector') || colLower.includes('tsv')) return false;
+        if (colLower.includes('date') || colLower.includes('_at') || colLower.includes('time')) return false;
+        if (colLower.includes('uuid') || colLower.endsWith('_id')) return false;
+        
+        // Exclude by value format
+        if (/^\d{4}-\d{2}-\d{2}/.test(value)) return false; // Date format
+        if (value && value.length < 3) return false; // Too short
+        
+        return true;
+      });
+      console.log(`[KB SEARCH] Using client detection - ${searchableColumns.length} text columns found`);
+    }
 
     if (searchableColumns.length === 0) {
       return NextResponse.json({

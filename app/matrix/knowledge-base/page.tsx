@@ -660,10 +660,9 @@ export default function KnowledgeBasePage() {
           </div>
         ) : tableData.length > 0 ? (
           <>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden mb-8">
-              <div className="overflow-x-auto" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-x-auto mb-8">
                 <table className="w-full min-w-max">
-                  <thead className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
+                  <thead className="bg-gray-800 border-b border-gray-700">
                     <tr>
                       {/* Show source table column if searching across multiple tables */}
                       {!selectedTable && tableData.some(row => row._source_table) && (
@@ -793,7 +792,6 @@ export default function KnowledgeBasePage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
             </div>
 
             {/* Pagination */}
