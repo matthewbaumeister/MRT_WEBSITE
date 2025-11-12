@@ -256,9 +256,29 @@ export default function AdvancedQueryPanel({
           <button
             onClick={handleQuery}
             disabled={!query.trim() || isLoading}
-            className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-500 hover:from-primary-700 hover:to-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all font-medium"
+            onMouseMove={(e) => {
+              if (!query.trim() || isLoading) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+              e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+              e.currentTarget.style.setProperty('--mouse-y', `${y}%`);
+            }}
+            className="mt-3 w-full px-4 py-2 relative overflow-hidden bg-gradient-to-r from-accent-500 to-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all font-medium group"
+            style={
+              {
+                '--mouse-x': '50%',
+                '--mouse-y': '50%',
+              } as React.CSSProperties
+            }
           >
-            {isLoading ? "Querying..." : "Run Query"}
+            <span className="relative z-10">{isLoading ? "Querying..." : "Run Query"}</span>
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{
+                background: `radial-gradient(circle 200px at var(--mouse-x) var(--mouse-y), rgb(99 102 241), rgb(124 58 237))`,
+              }}
+            />
           </button>
         </div>
 
@@ -310,10 +330,23 @@ export default function AdvancedQueryPanel({
                 <div className="space-y-3">
                   <button
                     onClick={() => setShowMerge(!showMerge)}
-                    className="w-full px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center space-x-2"
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+                      e.currentTarget.style.setProperty('--mouse-y', `${y}%`);
+                    }}
+                    className="w-full px-4 py-2 relative overflow-hidden bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-lg transition-all font-medium flex items-center justify-center space-x-2 group"
+                    style={
+                      {
+                        '--mouse-x': '50%',
+                        '--mouse-y': '50%',
+                      } as React.CSSProperties
+                    }
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-4 h-4 relative z-10"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -325,7 +358,13 @@ export default function AdvancedQueryPanel({
                         d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
                       />
                     </svg>
-                    <span>Merge to Report</span>
+                    <span className="relative z-10">Merge to Report</span>
+                    <div
+                      className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background: `radial-gradient(circle 200px at var(--mouse-x) var(--mouse-y), rgb(99 102 241), rgb(124 58 237))`,
+                      }}
+                    />
                   </button>
 
                   <div>
@@ -344,23 +383,45 @@ export default function AdvancedQueryPanel({
                   <button
                     onClick={handleMerge}
                     disabled={isLoading || mergeSuccess}
-                    className={`w-full px-4 py-2 ${
+                    onMouseMove={(e) => {
+                      if (isLoading || mergeSuccess) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+                      e.currentTarget.style.setProperty('--mouse-y', `${y}%`);
+                    }}
+                    className={`w-full px-4 py-2 relative overflow-hidden ${
                       mergeSuccess 
-                        ? 'bg-green-600 hover:bg-green-700' 
-                        : 'bg-primary-600 hover:bg-primary-700'
-                    } disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center space-x-2`}
+                        ? 'bg-green-600' 
+                        : 'bg-gradient-to-r from-primary-600 to-primary-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all font-medium flex items-center justify-center space-x-2 group`}
+                    style={
+                      !mergeSuccess ? {
+                        '--mouse-x': '50%',
+                        '--mouse-y': '50%',
+                      } as React.CSSProperties : {}
+                    }
                   >
                     {mergeSuccess ? (
                       <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span>Merged Successfully! Check report section →</span>
+                        <span className="relative z-10">Merged Successfully! Check report section →</span>
                       </>
                     ) : isLoading ? (
-                      <span>Merging into report...</span>
+                      <span className="relative z-10">Merging into report...</span>
                     ) : (
-                      <span>Apply Merge to Report</span>
+                      <>
+                        <span className="relative z-10">Apply Merge to Report</span>
+                        <div
+                          className="absolute inset-0 bg-gradient-to-r from-accent-500 to-accent-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          style={{
+                            background: `radial-gradient(circle 200px at var(--mouse-x) var(--mouse-y), rgb(245 158 11), rgb(234 179 8))`,
+                          }}
+                        />
+                      </>
                     )}
                   </button>
                 </div>
