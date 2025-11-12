@@ -1593,7 +1593,7 @@ export default function MatrixChat({
         </div>
       </div>
         )}
-      </div>
+        </div>
 
       {/* Advanced Query Panel - Flex sibling, not overlay */}
       {reportMode && advancedPanelOpen && (
