@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import ResearchReport from "./ResearchReport";
@@ -82,6 +82,7 @@ export default function MatrixChat({
   
   // Abort controller for cancelling ongoing API calls
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null); // Ref for immediate access
   
   // Resume button for incomplete reports
   const [showResumeButton, setShowResumeButton] = useState<boolean>(false);
@@ -93,35 +94,47 @@ export default function MatrixChat({
     }
   };
 
+  // Sync ref with state (ref always has current value)
+  useEffect(() => {
+    abortControllerRef.current = abortController;
+  }, [abortController]);
+  
   // Cleanup: Cancel ongoing API calls when navigating away or unmounting
   useEffect(() => {
     return () => {
-      if (abortController) {
+      if (abortControllerRef.current) {
         console.log("🛑 [CLEANUP] Cancelling ongoing API calls...");
-        abortController.abort();
+        abortControllerRef.current.abort();
         setAbortController(null);
+        abortControllerRef.current = null;
       }
     };
-  }, [abortController]);
+  }, []);
   
   // Register cancel function with parent (so sidebar can cancel when deleting)
   useEffect(() => {
     if (onRegisterCancelGeneration) {
       const cancelFn = () => {
         console.log("🛑 [CANCEL] Manual cancellation triggered (delete)");
-        if (abortController) {
-          abortController.abort();
+        console.log("   Current abortController:", abortControllerRef.current ? "EXISTS" : "NULL");
+        
+        if (abortControllerRef.current) {
+          console.log("   → Aborting controller...");
+          abortControllerRef.current.abort();
           setAbortController(null);
+          abortControllerRef.current = null;
         }
+        
         setIsLoading(false);
         setSearchStatus([]);
         setLiveStatus("");
         setShowResumeButton(false);
       };
       
+      console.log("📝 Registering cancel function with parent");
       onRegisterCancelGeneration(cancelFn);
     }
-  }, [onRegisterCancelGeneration, abortController]);
+  }, [onRegisterCancelGeneration]); // Only register once, function uses ref
 
   // Load conversation when chatId changes (and cancel ongoing generation)
   useEffect(() => {
