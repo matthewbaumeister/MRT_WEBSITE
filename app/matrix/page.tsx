@@ -46,20 +46,22 @@ export default function MatrixPage() {
 
   return (
     <div className="flex h-screen bg-gray-900 overflow-hidden">
-      {/* Sidebar */}
-      <MatrixSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentChatId={currentChatId}
-        onSelectChat={setCurrentChatId}
-        currentProjectId={currentProjectId}
-        onSelectProject={setCurrentProjectId}
-        refreshKey={sidebarRefreshKey}
-        onNewChat={resetChat}
-      />
+      {/* Left Sidebar - Collapsible */}
+      {sidebarOpen && (
+        <MatrixSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          currentChatId={currentChatId}
+          onSelectChat={setCurrentChatId}
+          currentProjectId={currentProjectId}
+          onSelectProject={setCurrentProjectId}
+          refreshKey={sidebarRefreshKey}
+          onNewChat={resetChat}
+        />
+      )}
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Chat Area - Flexible width */}
+      <div className="flex-1 flex flex-col min-w-0">
         <MatrixChat
           key={chatResetKey} // Force remount on reset
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -67,6 +69,7 @@ export default function MatrixPage() {
           onNewChat={resetChat}
           projectId={currentProjectId}
           onConversationCreated={refreshSidebar}
+          sidebarOpen={sidebarOpen}
         />
       </div>
     </div>

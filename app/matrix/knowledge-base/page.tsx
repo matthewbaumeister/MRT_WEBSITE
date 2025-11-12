@@ -401,11 +401,12 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <div className="bg-[#0a0f1e]">
-      <Header />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
-        {/* Page Header */}
-        <div className="mb-8">
+    <>
+      <div className="bg-[#0a0f1e] min-h-screen">
+        <Header />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
+          {/* Page Header */}
+          <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Knowledge Base</h1>
@@ -872,9 +873,11 @@ export default function KnowledgeBasePage() {
               </button>
             </div>
           </div>
+          </div>
+        )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -16,6 +16,7 @@ interface MatrixChatProps {
   onNewChat: () => void;
   projectId: string | null;
   onConversationCreated?: () => void;
+  sidebarOpen?: boolean;
 }
 
 interface ReportSection {
@@ -1101,9 +1102,9 @@ export default function MatrixChat({
   };
 
   return (
-    <div className="flex h-full">
+    <>
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full">
+      <div className="flex-1 flex flex-col h-full min-w-0">
       {/* Header - Aligned height with sidebars */}
       <div className="flex items-center justify-between p-4 border-b border-gray-800 h-[73px]">
         {/* Left - Toggle Chat History Sidebar */}
@@ -1147,7 +1148,7 @@ export default function MatrixChat({
                   className="bg-gray-800 text-white px-2 py-1 rounded border border-gray-600 focus:border-primary-500 outline-none"
                 />
               ) : (
-                <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
                   <span>{reportTitle}</span>
                   <button
                     onClick={() => setIsEditingTitle(true)}
@@ -1158,9 +1159,9 @@ export default function MatrixChat({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                </div>
-              )}
             </div>
+              )}
+          </div>
           )}
 
           {/* Project indicator */}
@@ -1170,7 +1171,7 @@ export default function MatrixChat({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span>Project Active</span>
-          </div>
+        </div>
           )}
 
           {/* Right - Advanced Panel Toggle & Debug */}
@@ -1182,13 +1183,13 @@ export default function MatrixChat({
                 title="Debug Panel - Verify Data Pipeline"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+                    />
+                  </svg>
               </button>
               {/* Advanced Query Toggle - Opens right sidebar */}
               <button
@@ -1212,7 +1213,7 @@ export default function MatrixChat({
                   />
                 </svg>
               </button>
-            </div>
+                </div>
           )}
       </div>
 
@@ -1471,8 +1472,8 @@ export default function MatrixChat({
                               <div className="flex flex-col items-start">
                                 <span className="text-sm text-gray-300">Small Business Focus</span>
                                 <span className="text-xs text-gray-500">DSIP, MANTECH, xTech, FUZE</span>
-                              </div>
-                            </div>
+                          </div>
+                        </div>
                             <div className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${smallBusinessFocus ? 'bg-accent-500' : 'bg-gray-700'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${smallBusinessFocus ? 'right-0.5' : 'left-0.5'}`}></div>
                             </div>
@@ -1487,13 +1488,13 @@ export default function MatrixChat({
                               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                                 Coming soon: SBA Awards, FPDS Small Business data
                               </p>
-                          </div>
-                          )}
+                      </div>
+                    )}
                         </div>
                       </div>
                     )}
                   </div>
-                </div>
+                  </div>
 
                 {/* Text Input */}
                 <div className="flex-1 flex flex-col">
@@ -1508,16 +1509,16 @@ export default function MatrixChat({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           <span className="text-gray-300">{file.name}</span>
-                          <button
-                            type="button"
+                  <button
+                    type="button"
                             onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
                             className="text-gray-400 hover:text-white"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                    </svg>
+                  </button>
+                </div>
                       ))}
                     </div>
                   )}
