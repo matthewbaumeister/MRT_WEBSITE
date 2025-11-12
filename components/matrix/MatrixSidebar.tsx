@@ -208,29 +208,17 @@ export default function MatrixSidebar({
 
   return (
     <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 border-r border-gray-800 transform transition-transform duration-200 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
+      {/* Sidebar - Flex item, not overlay */}
+      <div className="w-64 bg-gray-950 border-r border-gray-800 flex-shrink-0">
         <div className="flex flex-col h-full">
-          {/* New Chat Button Header - Align with other headers */}
-          <div className="flex items-center p-4 border-b border-gray-800 h-[73px]">
+          {/* Header - New Chat Button + Close Button */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-800 h-[73px] gap-2">
             <button
               onClick={() => {
                 onNewChat(); // Reset to home screen
                 onClose();
               }}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg transition-all duration-200"
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg transition-all duration-200"
             >
               <svg
                 className="w-5 h-5"

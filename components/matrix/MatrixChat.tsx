@@ -1595,8 +1595,8 @@ export default function MatrixChat({
         )}
       </div>
 
-      {/* Advanced Query Panel */}
-      {reportMode && (
+      {/* Advanced Query Panel - Flex sibling, not overlay */}
+      {reportMode && advancedPanelOpen && (
         <AdvancedQueryPanel
           isOpen={advancedPanelOpen}
           onClose={() => setAdvancedPanelOpen(false)}

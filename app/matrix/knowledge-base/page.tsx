@@ -873,9 +873,9 @@ export default function KnowledgeBasePage() {
               </button>
             </div>
           </div>
-          </div>
-        )}
         </div>
+      )}
+      </div>
       </div>
     </>
   );
