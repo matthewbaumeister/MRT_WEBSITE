@@ -50,17 +50,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Query Postgres information_schema to get actual column types
-    const { data: columnTypes } = await supabase.rpc('get_column_types', { 
-      table_name: table 
-    }).catch(() => ({ data: null }));
+    // Try to query Postgres information_schema to get actual column types
+    let columnTypes: any = null;
+    try {
+      const { data } = await supabase.rpc('get_column_types', { 
+        table_name: table 
+      });
+      columnTypes = data;
+    } catch (rpcError) {
+      console.log(`[KB SEARCH] RPC get_column_types not available, using fallback`);
+    }
     
     // If RPC doesn't exist, use client-side detection
     const allColumns = Object.keys(sampleData[0]);
     let searchableColumns = allColumns;
     
     // If we got column types from DB, use them to filter properly
-    if (columnTypes && Array.isArray(columnTypes)) {
+    if (columnTypes && Array.isArray(columnTypes) && columnTypes.length > 0) {
       const textTypeColumns = new Set(
         columnTypes
           .filter((col: any) => 
