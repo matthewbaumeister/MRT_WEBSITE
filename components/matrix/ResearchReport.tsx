@@ -238,11 +238,14 @@ export default function ResearchReport({
                 </h2>
                 {section.isGenerating && section.generationStatus && (
                   <div className="flex items-center gap-2 ml-4">
-                    <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
-                    </div>
+                    {/* Only show bouncing dots if NOT paused */}
+                    {!section.generationStatus.includes('Paused') && (
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                      </div>
+                    )}
                     <span className="text-blue-400 text-xs font-semibold">
                       {section.generationStatus}
                     </span>

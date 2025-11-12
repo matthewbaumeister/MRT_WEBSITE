@@ -449,9 +449,18 @@ export default function MatrixChat({
     // Track sources separately (state updates are async, can't rely on reportSections state)
     const sectionSources: Record<string, DataSource[]> = {};
     
+    // 🔧 CRITICAL: Pre-populate sources when resuming (otherwise they'll be lost on save!)
     if (resumeFromSection) {
       console.log(`🔄 Resuming from section: ${resumeFromSection}`);
       console.log(`   Already completed: ${Object.keys(existingContent).length} sections`);
+      
+      // Pre-populate sectionSources from existing reportSections state
+      reportSections.forEach(s => {
+        if (s.sources && s.sources.length > 0) {
+          sectionSources[s.id] = s.sources;
+          console.log(`   📎 Restored ${s.sources.length} sources for ${s.id}`);
+        }
+      });
     }
 
     // Generate each section
