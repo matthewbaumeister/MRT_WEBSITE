@@ -876,7 +876,6 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }
