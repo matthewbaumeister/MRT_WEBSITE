@@ -50,11 +50,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get all string columns
+    // Get all string columns (exclude dates, booleans, numbers)
     const allColumns = Object.keys(sampleData[0]);
     const searchableColumns = allColumns.filter(col => {
       const value = sampleData[0][col];
-      return typeof value === 'string' && col !== 'id';
+      const colLower = col.toLowerCase();
+      
+      // Exclude non-text columns
+      if (col === 'id') return false;
+      if (typeof value !== 'string') return false;
+      
+      // Exclude date columns (they look like strings but Supabase stores them as dates)
+      if (colLower.includes('date') || colLower.includes('_at')) return false;
+      
+      // Exclude UUID/ID columns
+      if (colLower.includes('uuid') || colLower.endsWith('_id')) return false;
+      
+      return true;
     });
 
     if (searchableColumns.length === 0) {
