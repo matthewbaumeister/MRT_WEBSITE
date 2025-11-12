@@ -202,42 +202,44 @@ export default function MatrixChat({
           setReportTitle(conversation.title || "Market Research Report (In Progress)");
           setResearchTopic(conversation.metadata.reportTopic || "");
           
-          // Show partial sections
+          // Show partial sections with status indicators
+          let firstIncompleteFound = false;
           const incompleteSections = REPORT_SECTIONS.map((s, idx) => {
             const savedSection = partialSections.find((ps: any) => ps.id === s.id);
-            return savedSection ? {
-              ...s,
-              ...savedSection,
-              number: idx + 1,
-              expanded: false,
-            } : {
-              ...s,
-              number: idx + 1,
-              content: "", // Not yet generated
-              expanded: false,
-            };
+            
+            if (savedSection) {
+              // Completed section - show as complete
+              return {
+                ...s,
+                ...savedSection,
+                number: idx + 1,
+                expanded: false, // Keep collapsed by default
+                isGenerating: false,
+                generationStatus: undefined,
+              };
+            } else {
+              // Incomplete section
+              const isFirstIncomplete = !firstIncompleteFound;
+              if (isFirstIncomplete) firstIncompleteFound = true;
+              
+              return {
+                ...s,
+                number: idx + 1,
+                content: "", // Not yet generated
+                expanded: false,
+                isGenerating: isFirstIncomplete, // Mark first incomplete as "ready to generate"
+                generationStatus: isFirstIncomplete ? "⏸️ Paused - Click to continue from here" : undefined,
+              };
+            }
           });
           
           setReportSections(incompleteSections);
           console.log("📊 Set reportSections:", incompleteSections.length, "sections");
-          console.log("   Sample section 1:", incompleteSections[0]?.id, "has content:", !!incompleteSections[0]?.content);
-          console.log("   Sample section 2:", incompleteSections[1]?.id, "has content:", !!incompleteSections[1]?.content);
+          console.log("   Completed:", partialSections.length, "sections");
+          console.log("   First incomplete:", incompleteSections.find(s => s.isGenerating)?.id);
           
-          // Show resume message
-          if (partialSections.length > 0) {
-            setSearchStatus([
-              `⏸️  Report generation was interrupted`,
-              `✅ Completed: ${partialSections.length}/10 sections (enriched)`,
-              `📊 ${partialSections.length} of 10 sections complete`,
-              `🔄 Click "Continue Report" button below to resume`
-            ]);
-            
-            // Show resume button
-            setShowResumeButton(true);
-            console.log("🟡 Set showResumeButton = true");
-            console.log("🟢 Set reportMode = true");
-            console.log("📝 Set searchStatus with", 4, "status messages");
-          }
+          // Don't show separate resume button - status is on the section itself
+          setShowResumeButton(false);
           
         } else if (reportSections.length > 0) {
           // Load complete report
@@ -1380,8 +1382,18 @@ export default function MatrixChat({
               <ResearchReport
                 sections={reportSections}
                 onSectionClick={(sectionId) => {
-                  setSelectedSection(sectionId);
-                  setAdvancedPanelOpen(true);
+                  // Check if clicking on paused section (resume)
+                  const clickedSection = reportSections.find(s => s.id === sectionId);
+                  if (clickedSection?.generationStatus?.includes("Paused")) {
+                    // Resume generation from this section
+                    console.log(`🔄 Resuming report from section: ${sectionId}`);
+                    setIsLoading(true);
+                    generateReport(researchTopic, sectionId).then(() => setIsLoading(false));
+                  } else {
+                    // Normal section click - open advanced query
+                    setSelectedSection(sectionId);
+                    setAdvancedPanelOpen(true);
+                  }
                 }}
                 onUpdateSection={(sectionId, content) => {
                   setReportSections(prev => prev.map(s => 
