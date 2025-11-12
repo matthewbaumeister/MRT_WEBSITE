@@ -276,7 +276,7 @@ export default function MatrixChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: `Research: ${topic}`,
-          project_id: projectId,
+          project_id: projectId === "ALL" ? null : projectId, // Convert "ALL" to null
           metadata: {
             settings: { extendedThinking, webSearch, research, smallBusinessFocus }
           }
@@ -1792,8 +1792,8 @@ export default function MatrixChat({
                           </pre>
                         </details>
                       )}
-                    </div>
-                  </div>
+      </div>
+    </div>
                 );
               })}
             </div>
