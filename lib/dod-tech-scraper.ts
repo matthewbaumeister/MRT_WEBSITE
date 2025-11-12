@@ -281,7 +281,7 @@ export async function batchInsertDODContracts(contracts: any[], batchSize: numbe
       // Check which contracts already exist
       const transactionNumbers = batch.map((c: any) => c.transaction_number);
       const { data: existing, error: checkError } = await supabase
-        .from('dod_tech_contracts')
+        .from('fpds_contracts')
         .select('transaction_number')
         .in('transaction_number', transactionNumbers);
       
@@ -291,7 +291,7 @@ export async function batchInsertDODContracts(contracts: any[], batchSize: numbe
 
       // Upsert
       const { data, error } = await supabase
-        .from('dod_tech_contracts')
+        .from('fpds_contracts')
         .upsert(batch, {
           onConflict: 'transaction_number',
           ignoreDuplicates: false
@@ -321,12 +321,12 @@ export async function batchInsertDODContracts(contracts: any[], batchSize: numbe
 async function getLastCompletedPage(startDate: string, endDate: string): Promise<number> {
   try {
     const { data, error } = await supabase
-      .from('dod_tech_scraper_log')
+      .from('fpds_scraper_log')
       .select('records_found')
       .eq('scrape_type', 'dod_tech_daily')
       .eq('date_range', `${startDate}_to_${endDate}`)
       .eq('status', 'running')
-      .order('updated_at', { ascending: false })
+      .order('started_at', { ascending: false })
       .limit(1)
       .single();
 
@@ -358,7 +358,7 @@ async function saveProgress(
     const dateRangeKey = `${startDate}_to_${endDate}`;
     
     const { data: existing } = await supabase
-      .from('dod_tech_scraper_log')
+      .from('fpds_scraper_log')
       .select('id, started_at')
       .eq('scrape_type', 'dod_tech_daily')
       .eq('date_range', dateRangeKey)
@@ -366,7 +366,7 @@ async function saveProgress(
     
     if (existing) {
       const { error } = await supabase
-        .from('dod_tech_scraper_log')
+        .from('fpds_scraper_log')
         .update({
           records_found: totalProcessed,
           records_inserted: totalInserted,
@@ -380,7 +380,7 @@ async function saveProgress(
       }
     } else {
       const { error } = await supabase
-        .from('dod_tech_scraper_log')
+        .from('fpds_scraper_log')
         .insert({
           scrape_type: 'dod_tech_daily',
           date_range: dateRangeKey,
@@ -548,8 +548,8 @@ export async function scrapeDODTechContracts(
 
     // Mark complete
     await supabase
-      .from('dod_tech_scraper_log')
-      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .from('fpds_scraper_log')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('scrape_type', 'dod_tech_daily')
       .eq('date_range', `${startDate}_to_${endDate}`);
 

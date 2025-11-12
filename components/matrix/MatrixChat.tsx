@@ -101,8 +101,8 @@ export default function MatrixChat({
 
   // Load conversation when chatId changes (and cancel ongoing generation)
   useEffect(() => {
-    // Cancel any ongoing generation when switching chats
-    if (abortController) {
+    // Only cancel if we're actually switching to a DIFFERENT chat (not during new report generation)
+    if (abortController && chatId && chatId !== currentConversationId) {
       console.log("🛑 Switching chats - cancelling ongoing generation");
       abortController.abort();
       setAbortController(null);
