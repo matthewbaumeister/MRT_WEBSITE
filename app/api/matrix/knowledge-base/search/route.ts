@@ -8,13 +8,22 @@ import { getSupabaseClient } from "@/lib/supabase-queries";
  * Search within a specific table using keyword search
  */
 export async function POST(request: NextRequest) {
+  let table: string = '';
+  let query: string = '';
+  let page: number = 1;
+  let limit: number = 50;
+  
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { table, query, page = 1, limit = 50 } = await request.json();
+    const body = await request.json();
+    table = body.table;
+    query = body.query;
+    page = body.page || 1;
+    limit = body.limit || 50;
 
     if (!table || !query) {
       return NextResponse.json(
