@@ -173,8 +173,10 @@ export default function MatrixSidebar({
       });
 
       if (response.ok) {
+        // If deleting the currently open chat, return to home screen
         if (currentChatId === conversationId) {
-          onSelectChat(null);
+          console.log("🗑️ Deleting currently open chat - returning to home screen");
+          onNewChat(); // Fully reset to home screen
         }
         await loadConversations();
         setOpenMenuId(null);

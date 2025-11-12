@@ -412,7 +412,7 @@ async function logFailedContract(
 ) {
   try {
     await supabase
-      .from('dod_tech_failed_contracts')
+      .from('fpds_failed_contracts')
       .insert({
         contract_id: contractId,
         error_message: errorMessage.substring(0, 500),

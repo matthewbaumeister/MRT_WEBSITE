@@ -73,7 +73,7 @@ function log(message: string) {
 
 async function getLastCompletedPage(date: string): Promise<number> {
   const { data, error } = await supabase
-    .from('dod_tech_page_progress')
+    .from('fpds_page_progress')
     .select('page_number')
     .eq('date', date)
     .eq('status', 'completed')
@@ -96,7 +96,7 @@ async function markPageComplete(
   failed: number
 ): Promise<void> {
   const { error } = await supabase
-    .from('dod_tech_page_progress')
+    .from('fpds_page_progress')
     .upsert({
       date,
       page_number: page,
@@ -116,7 +116,7 @@ async function markPageComplete(
 
 async function markPageFailed(date: string, page: number, errorMsg: string): Promise<void> {
   const { error } = await supabase
-    .from('dod_tech_page_progress')
+    .from('fpds_page_progress')
     .upsert({
       date,
       page_number: page,
@@ -187,7 +187,7 @@ async function scrapePage(
           fetchErrors++;
           consecutiveErrors++;
           
-          await supabase.from('dod_tech_failed_contracts').insert({
+          await supabase.from('fpds_failed_contracts').insert({
             contract_id: contractIds[i],
             error_message: 'Contract details fetch returned null',
             error_type: 'details_fetch_failed',
@@ -209,7 +209,7 @@ async function scrapePage(
           throw err;
         }
         
-        await supabase.from('dod_tech_failed_contracts').insert({
+        await supabase.from('fpds_failed_contracts').insert({
           contract_id: contractIds[i],
           error_message: err instanceof Error ? err.message : 'Unknown error',
           error_type: 'details_fetch_failed',
@@ -241,7 +241,7 @@ async function scrapePage(
     // Clean up resolved failures
     if (successfulIds.length > 0) {
       const { count: deletedCount } = await supabase
-        .from('dod_tech_failed_contracts')
+        .from('fpds_failed_contracts')
         .delete({ count: 'exact' })
         .in('contract_id', successfulIds)
         .eq('date_range', date)
@@ -432,10 +432,12 @@ async function main() {
   console.log(`Dates to scrape: ${dates.join(', ')}\n`);
   console.log('================================================================================\n');
 
-  // Get initial database count
+  // Get initial database count (DOD tech contracts only)
   const { count: initialCount } = await supabase
-    .from('dod_tech_contracts')
-    .select('*', { count: 'exact', head: true });
+    .from('fpds_contracts')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_tech_contract', true)
+    .ilike('contracting_agency_name', '%defense%');
 
   console.log(`Database currently has: ${initialCount?.toLocaleString() || 0} DOD tech contracts\n`);
 
@@ -471,10 +473,12 @@ async function main() {
     }
   }
 
-  // Get final database count
+  // Get final database count (DOD tech contracts only)
   const { count: finalCount } = await supabase
-    .from('dod_tech_contracts')
-    .select('*', { count: 'exact', head: true });
+    .from('fpds_contracts')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_tech_contract', true)
+    .ilike('contracting_agency_name', '%defense%');
 
   console.log('\n' + '='.repeat(80));
   console.log('SCRAPE SUMMARY');
