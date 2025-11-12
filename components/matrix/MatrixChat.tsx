@@ -1104,8 +1104,8 @@ export default function MatrixChat({
     <div className="flex h-full">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+      {/* Header - Aligned height with sidebars */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800 h-[73px]">
         {/* Left - Toggle Chat History Sidebar */}
         <button
           onClick={onToggleSidebar}

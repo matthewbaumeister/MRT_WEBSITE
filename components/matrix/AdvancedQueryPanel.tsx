@@ -190,9 +190,9 @@ export default function AdvancedQueryPanel({
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-gray-800">
-          <div className="flex items-center justify-between mb-2">
+        {/* Header - Aligned height with other panels */}
+        <div className="flex flex-col justify-center p-4 border-b border-gray-800 h-[73px]">
+          <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">
               Advanced Query
             </h2>
