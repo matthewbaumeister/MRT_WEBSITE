@@ -113,14 +113,44 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openAIApiKey });
 
+    // Build data source summary
+    const sourceSummary = [];
+    if (supabaseSearch.results.length > 0) {
+      const tableNames = supabaseSearch.results.map(r => r.tableName).join(", ");
+      sourceSummary.push(`Supabase database (${supabaseSearch.results.length} tables: ${tableNames})`);
+    }
+    if (webContext) {
+      sourceSummary.push("DoD websites and recent news articles");
+    }
+    const sourcesSearched = sourceSummary.length > 0 
+      ? sourceSummary.join(" + ") 
+      : "No sources returned data";
+
     const systemPrompt = sectionId
-      ? `You are a DoD market research analyst. Answer the user's question specifically about the ${sectionId} section. 
-         Use the provided data to give SPECIFIC, DATA-DRIVEN answers with numbers, dates, and sources.
-         Do NOT give generic instructions - provide actual findings from the data.
-         If the data doesn't contain the answer, say "The available data does not contain this information" and suggest what would be needed.`
-      : `You are a DoD market research analyst. Answer the user's question using the provided data.
-         Provide SPECIFIC, DATA-DRIVEN answers with numbers, dates, and sources.
-         Do NOT give generic instructions - provide actual findings from the data.`;
+      ? `You are a DoD market research analyst. Your task is to UPDATE/ENHANCE the "${sectionId}" section of this report.
+      
+CRITICAL INSTRUCTIONS:
+1. ALWAYS provide content to add to the report section - never say "no data available" without also providing what WAS found
+2. Synthesize ANY relevant information from the provided context
+3. If direct data isn't available, provide related/adjacent information that adds value
+4. Be SPECIFIC about data sources: explicitly state which databases/websites were searched
+5. Format as report content ready to be added to the section (use markdown)
+6. Include numbers, dates, companies, contracts, and URLs when available
+7. If truly no relevant data exists, state: "Searched: ${sourcesSearched}. No additional public information found on [topic]. Recommend: [specific data sources that might have this info]."
+
+FOCUS: Provide actionable content that IMPROVES the ${sectionId} section, even if indirect.`
+      : `You are a DoD market research analyst. Your task is to provide content to ENHANCE this entire research report.
+
+CRITICAL INSTRUCTIONS:
+1. ALWAYS provide synthesized content - never just say "no data"
+2. Use ANY relevant information from the provided context
+3. Be SPECIFIC about sources searched: ${sourcesSearched}
+4. Format as report-ready content (use markdown)
+5. Include numbers, dates, companies, and sources
+6. If no direct data, state what WAS searched and provide related insights
+7. Focus on ADDING VALUE to the report with whatever information exists
+
+GOAL: Provide actionable insights that enhance the overall market research report.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -130,12 +160,21 @@ export async function POST(request: NextRequest) {
           role: "user",
           content: `Research Topic: ${researchTopic || "Various DoD programs"}
 
-Context Data:
+Data Sources Searched:
+${sourcesSearched}
+
+Available Context:
 ${contextForLLM}
 
-User Question: ${query}
+User Query: ${query}
 
-Provide a specific, data-driven answer using the context above. Include specific numbers, dates, companies, and sources when available.`,
+TASK: Provide report-ready content that addresses this query. Include:
+1. What information WAS found (be specific with sources)
+2. Specific data points (numbers, dates, companies, URLs)
+3. If no direct data exists, state what was searched and provide related/adjacent insights
+4. Format with markdown for easy integration into report
+
+Remember: ALWAYS provide value - synthesize available data into actionable content.`,
         },
       ],
       temperature: 0.3,
