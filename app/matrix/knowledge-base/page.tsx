@@ -393,10 +393,10 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <>
       <Header />
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20 mb-20">
+      <div className="min-h-screen bg-[#0a0f1e] pt-24 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -653,8 +653,8 @@ export default function KnowledgeBasePage() {
           </div>
         ) : tableData.length > 0 ? (
           <>
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden mb-8">
+              <div className="overflow-x-auto" style={{ maxHeight: '600px', overflowY: 'auto' }}>
                 <table className="w-full min-w-max">
                   <thead className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
                     <tr>
@@ -869,7 +869,8 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
