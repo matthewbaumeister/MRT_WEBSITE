@@ -1732,7 +1732,7 @@ export default function MatrixChat({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
