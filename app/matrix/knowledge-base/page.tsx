@@ -401,10 +401,9 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <>
-      <div className="bg-[#0a0f1e]">
-        <Header />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 min-h-screen">
+    <div className="min-h-screen bg-[#0a0f1e]">
+      <Header />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-32">
           {/* Page Header */}
           <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -874,9 +873,10 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
       )}
+
+      {/* Modal is rendered at document level for proper fixed positioning */}
       </div>
-      </div>
-    </>
+    </div>
   );
 }
 
