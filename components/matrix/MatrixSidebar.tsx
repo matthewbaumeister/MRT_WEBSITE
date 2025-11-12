@@ -218,13 +218,13 @@ export default function MatrixSidebar({
 
       {/* Sidebar */}
       <div
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-950 border-r border-gray-800 transform transition-transform duration-200 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 border-r border-gray-800 transform transition-transform duration-200 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* New Chat Button */}
-          <div className="p-4 border-b border-gray-800">
+          {/* New Chat Button Header - Align with other headers */}
+          <div className="flex items-center p-4 border-b border-gray-800 h-[73px]">
             <button
               onClick={() => {
                 onNewChat(); // Reset to home screen

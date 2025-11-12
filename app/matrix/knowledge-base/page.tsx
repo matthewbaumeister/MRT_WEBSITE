@@ -389,9 +389,11 @@ export default function KnowledgeBasePage() {
   const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
 
   if (status === "loading") {
-    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="text-white">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
   }
 
   if (!session) {

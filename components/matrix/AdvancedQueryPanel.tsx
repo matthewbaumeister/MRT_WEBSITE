@@ -186,8 +186,8 @@ export default function AdvancedQueryPanel({
 
       {/* Panel */}
       <div
-        className={`fixed lg:static inset-y-0 right-0 z-50 w-96 bg-gray-950 border-l border-gray-800 transform transition-transform duration-200 ease-in-out flex flex-col ${
-          isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 right-0 z-50 w-96 bg-gray-950 border-l border-gray-800 transform transition-transform duration-200 ease-in-out flex flex-col ${
+          isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
