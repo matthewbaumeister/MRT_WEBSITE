@@ -69,16 +69,28 @@ export async function POST(request: NextRequest) {
     if (columnTypes && Array.isArray(columnTypes) && columnTypes.length > 0) {
       const textTypeColumns = new Set(
         columnTypes
-          .filter((col: any) => 
-            col.data_type === 'text' || 
-            col.data_type === 'character varying' ||
-            col.data_type === 'varchar'
-          )
+          .filter((col: any) => {
+            // Only include standard text types
+            const isTextType = col.data_type === 'text' || 
+                              col.data_type === 'character varying' ||
+                              col.data_type === 'varchar';
+            // Explicitly exclude tsvector, vector, and other special types
+            const isExcludedType = col.udt_name === 'tsvector' || 
+                                  col.udt_name === 'vector' ||
+                                  col.data_type === 'USER-DEFINED' ||
+                                  col.data_type === 'date' ||
+                                  col.data_type === 'timestamp' ||
+                                  col.data_type === 'timestamp with time zone' ||
+                                  col.data_type === 'timestamp without time zone';
+            
+            return isTextType && !isExcludedType;
+          })
           .map((col: any) => col.column_name)
       );
       
       searchableColumns = allColumns.filter(col => textTypeColumns.has(col) && col !== 'id');
       console.log(`[KB SEARCH] Using DB schema - ${searchableColumns.length} text columns found`);
+      console.log(`[KB SEARCH] Excluded types:`, columnTypes.filter((col: any) => !textTypeColumns.has(col.column_name)).map((col: any) => `${col.column_name}(${col.data_type}/${col.udt_name})`));
     } else {
       // Fallback: Filter by value inspection
       searchableColumns = allColumns.filter(col => {

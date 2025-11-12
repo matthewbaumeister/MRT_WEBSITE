@@ -233,7 +233,7 @@ export default function MatrixSidebar({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              <span className="font-semibold">New Chat</span>
+              <span className="font-semibold">New Report</span>
             </button>
             
             {/* Close Sidebar Button */}
@@ -297,7 +297,7 @@ export default function MatrixSidebar({
                           if (currentProjectId === "ALL" && conversation.project_id) {
                             onSelectProject(conversation.project_id);
                           }
-                          onClose();
+                          // Don't close sidebar - let user control it with the close button
                         }}
                         className={`w-full text-left px-3 py-2 pr-10 rounded-lg text-sm transition-colors ${
                           currentChatId === conversation.id
