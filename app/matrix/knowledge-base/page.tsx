@@ -66,9 +66,7 @@ export default function KnowledgeBasePage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [extractingKeywords, setExtractingKeywords] = useState(false);
   const [extractedKeywords, setExtractedKeywords] = useState<string>("");
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [findingSimilar, setFindingSimilar] = useState<string | null>(null);
-  const [similarRecords, setSimilarRecords] = useState<any[] | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   
   // Drag to scroll functionality
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -205,6 +203,24 @@ export default function KnowledgeBasePage() {
   const copyShareLink = () => {
     navigator.clipboard.writeText(shareUrl);
     alert("Link copied to clipboard!");
+  };
+
+  // Copy link to clipboard with visual feedback
+  const handleCopyLink = async (link: string, rowId: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLink(rowId);
+      // Clear the notification after 2 seconds
+      setTimeout(() => setCopiedLink(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+    }
+  };
+
+  // Check if a value is a URL
+  const isURL = (value: any): boolean => {
+    if (typeof value !== 'string') return false;
+    return value.startsWith('http://') || value.startsWith('https://');
   };
 
   // Redirect if not authenticated
@@ -838,7 +854,7 @@ export default function KnowledgeBasePage() {
                           Source Table
                         </th>
                       )}
-                      {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
+                      {columns.filter(col => col !== 'id' && col !== '_source_table').map((column) => (
                         <th
                           key={column}
                           onClick={() => handleSort(column)}
@@ -858,127 +874,83 @@ export default function KnowledgeBasePage() {
                           </div>
                         </th>
                       ))}
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
                     {tableData.map((row, idx) => (
-                      <>
-                        <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
-                          {/* Show source table if searching across multiple tables */}
-                          {!selectedTable && row._source_table && (
-                            <td className="px-4 py-3 text-xs whitespace-nowrap">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
-                                {row._source_table.replace(/_/g, ' ')}
-                              </span>
-                            </td>
-                          )}
-                          {columns.filter(col => col !== 'id' && col !== '_source_table').slice(0, 7).map((column) => (
-                            <td key={column} className="px-4 py-3 text-sm text-gray-300 whitespace-nowrap">
-                              <div className="max-w-xs overflow-hidden text-ellipsis" title={String(row[column] || '')}>
-                                {row[column] !== null && row[column] !== undefined
-                                  ? String(row[column]).substring(0, 100)
-                                  : '-'}
-                              </div>
-                            </td>
-                          ))}
-                          <td className="px-4 py-3 text-sm space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => toggleRowExpansion(row.id)}
-                              className="text-blue-400 hover:text-blue-300 transition-colors"
-                            >
-                              {expandedRow === row.id ? 'Collapse' : 'Expand'}
-                            </button>
-                            <button
-                              onClick={() => handleFindSimilar(row)}
-                              disabled={findingSimilar === row.id}
-                              className="text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
-                            >
-                              {findingSimilar === row.id ? 'Finding...' : 'Find Similar'}
-                            </button>
-                            <button
-                              onClick={() => setSelectedRecord(row)}
-                              className="text-primary-400 hover:text-primary-300 transition-colors"
-                            >
-                              Modal
-                            </button>
+                      <tr key={idx} className="hover:bg-gray-800/50 transition-colors relative">
+                        {/* Show source table if searching across multiple tables */}
+                        {!selectedTable && row._source_table && (
+                          <td className="px-4 py-3 text-xs whitespace-nowrap">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-300 border border-primary-700/50">
+                              {row._source_table.replace(/_/g, ' ')}
+                            </span>
                           </td>
-                        </tr>
-                      {/* Expanded Row Details */}
-                      {expandedRow === row.id && (
-                        <tr className="bg-gray-800/30">
-                          <td colSpan={!selectedTable && row._source_table ? 9 : 8} className="px-4 py-4">
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-4">
-                                {columns.filter(col => col !== 'id' && col !== '_source_table').map((column) => (
-                                  <div key={column} className="border-b border-gray-700 pb-2">
-                                    <dt className="text-xs font-medium text-gray-400 uppercase mb-1">
-                                      {column.replace(/_/g, ' ')}
-                                    </dt>
-                                    <dd className="text-sm text-gray-200">
-                                      {row[column] !== null && row[column] !== undefined ? String(row[column]) : '-'}
-                                    </dd>
-                                  </div>
-                                ))}
-                              </div>
-                              
-                              {/* Similar Records Section */}
-                              {similarRecords && similarRecords.length > 0 && (
-                                <div className="mt-4 border-t border-gray-700 pt-4">
-                                  <h4 className="text-sm font-semibold text-green-400 mb-3">
-                                    Similar Records ({similarRecords.length}):
-                                  </h4>
-                                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {similarRecords.map((similar, sidx) => (
-                                      <div key={sidx} className="bg-gray-900 border border-gray-700 rounded p-3">
-                                        <div className="flex items-start justify-between">
-                                          <div className="flex-1">
-                                            {columns.slice(0, 3).map((col) => (
-                                              <div key={col} className="text-xs text-gray-400 truncate">
-                                                <strong>{col}:</strong> {String(similar[col] || '-').substring(0, 100)}
-                                              </div>
-                                            ))}
-                                          </div>
-                                          {similar._similarity && (
-                                            <span className="ml-2 px-2 py-1 bg-green-900/30 text-green-300 text-xs rounded">
-                                              {Math.round(similar._similarity * 100)}% match
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                        )}
+                        {columns.filter(col => col !== 'id' && col !== '_source_table').map((column) => {
+                          const value = row[column];
+                          const isLink = isURL(value);
+                          const cellId = `${row.id}-${column}`;
+                          
+                          return (
+                            <td key={column} className="px-4 py-3 text-sm text-gray-300 whitespace-nowrap relative">
+                              {isLink ? (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => handleCopyLink(value, cellId)}
+                                    className="text-blue-400 hover:text-blue-300 underline transition-colors cursor-pointer flex items-center space-x-1 max-w-xs overflow-hidden"
+                                    title="Click to copy link"
+                                  >
+                                    <span className="overflow-hidden text-ellipsis">
+                                      {String(value).substring(0, 80)}
+                                      {String(value).length > 80 && '...'}
+                                    </span>
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
+                                  </button>
+                                  {copiedLink === cellId && (
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-green-600 text-white px-3 py-1 rounded-lg text-xs whitespace-nowrap flex items-center space-x-1 shadow-lg z-20 animate-fade-in">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      <span>Link Copied!</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="max-w-xs overflow-hidden text-ellipsis" title={String(value || '')}>
+                                  {value !== null && value !== undefined
+                                    ? String(value)
+                                    : '-'}
                                 </div>
                               )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                      </>
+                            </td>
+                          );
+                        })}
+                      </tr>
                     ))}
                   </tbody>
                 </table>
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center space-x-2">
+            {totalRows > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-center space-x-4 mb-8">
                 <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <span className="text-gray-400">
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage} of {Math.ceil(totalRows / ROWS_PER_PAGE)}
                 </span>
                 <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalRows / ROWS_PER_PAGE), p + 1))}
+                  disabled={currentPage >= Math.ceil(totalRows / ROWS_PER_PAGE)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
