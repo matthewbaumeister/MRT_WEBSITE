@@ -6,6 +6,8 @@ interface AdvancedQueryPanelProps {
   isOpen: boolean;
   onClose: () => void;
   selectedSection: string | null;
+  selectedSectionId: string | null;
+  sectionQueryHistory: Record<string, { query: string; result: string }>;
   onQuery: (query: string, mergeInstructions?: string) => Promise<string>;
   onMergeStart?: () => void;
   onMergeEnd?: () => void;
@@ -104,6 +106,8 @@ export default function AdvancedQueryPanel({
   isOpen,
   onClose,
   selectedSection,
+  selectedSectionId,
+  sectionQueryHistory,
   onQuery,
   onMergeStart,
   onMergeEnd,
@@ -115,6 +119,24 @@ export default function AdvancedQueryPanel({
   const [mergeInstructions, setMergeInstructions] = useState("");
   const [dataSources, setDataSources] = useState<{supabaseTables: number; webResults: boolean} | null>(null);
   const [mergeSuccess, setMergeSuccess] = useState(false);
+  
+  // Load query history when section changes
+  const historyKey = selectedSectionId || "whole-report";
+  const currentHistory = sectionQueryHistory[historyKey];
+  
+  // Update query and result when section changes
+  if (currentHistory) {
+    if (query !== currentHistory.query) {
+      setQuery(currentHistory.query);
+      setResult(currentHistory.result);
+      setShowMerge(true);
+    }
+  } else if (query !== "") {
+    // Clear query when switching to a section with no history
+    setQuery("");
+    setResult("");
+    setShowMerge(false);
+  }
 
   const handleQuery = async () => {
     if (!query.trim()) return;
@@ -223,7 +245,11 @@ export default function AdvancedQueryPanel({
           <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask a specific question about this section..."
+            placeholder={
+              selectedSection
+                ? `Ask a specific question about ${selectedSection}...`
+                : "Query entire research report..."
+            }
             rows={4}
             className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
           />

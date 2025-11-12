@@ -75,6 +75,9 @@ export default function MatrixChat({
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [isMerging, setIsMerging] = useState<boolean>(false);
   
+  // Per-section query history: sectionId -> { query: string, result: string }
+  const [sectionQueryHistory, setSectionQueryHistory] = useState<Record<string, { query: string; result: string }>>({});
+  
   // Abort controller for cancelling ongoing API calls
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
@@ -916,6 +919,14 @@ export default function MatrixChat({
           }
         }
         
+        // Save query and result to section history
+        const historyKey = selectedSection || "whole-report";
+        setSectionQueryHistory(prev => ({
+          ...prev,
+          [historyKey]: { query, result: answer }
+        }));
+        console.log(`[ADVANCED QUERY] ✅ Saved to history for ${historyKey}`);
+        
         return answer;
       }
       
@@ -1601,6 +1612,8 @@ export default function MatrixChat({
           isOpen={advancedPanelOpen}
           onClose={() => setAdvancedPanelOpen(false)}
           selectedSection={selectedSection ? reportSections.find(s => s.id === selectedSection)?.title || null : null}
+          selectedSectionId={selectedSection}
+          sectionQueryHistory={sectionQueryHistory}
           onQuery={handleAdvancedQuery}
           onMergeStart={() => setIsMerging(true)}
           onMergeEnd={() => setIsMerging(false)}
