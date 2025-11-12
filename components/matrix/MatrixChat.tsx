@@ -209,6 +209,13 @@ export default function MatrixChat({
             
             if (savedSection) {
               // Completed section - show as complete
+              console.log(`✅ Restoring section ${savedSection.id}:`, {
+                hasContent: !!savedSection.content,
+                contentLength: savedSection.content?.length || 0,
+                sourcesCount: savedSection.sources?.length || 0,
+                sources: savedSection.sources
+              });
+              
               return {
                 ...s,
                 ...savedSection,
