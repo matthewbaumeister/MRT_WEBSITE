@@ -833,10 +833,9 @@ export default function KnowledgeBasePage() {
             <p className="text-gray-400">Select a data source to begin browsing</p>
           </div>
         )}
-      </div>
 
-      {/* Record Detail Modal */}
-      {selectedRecord && (
+        {/* Record Detail Modal */}
+        {selectedRecord && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700">
             <div className="flex justify-between items-center p-6 border-b border-gray-800">

@@ -235,6 +235,22 @@ export default function MatrixSidebar({
               </svg>
               <span className="font-semibold">New Chat</span>
             </button>
+            
+            {/* Close Sidebar Button */}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-all hover:bg-gray-800 p-2 rounded-lg"
+              title="Hide Chat History"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
           </div>
 
           {/* Navigation */}

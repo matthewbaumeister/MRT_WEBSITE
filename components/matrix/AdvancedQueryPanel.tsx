@@ -177,53 +177,42 @@ export default function AdvancedQueryPanel({
   return (
     <>
       {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Panel */}
-      <div
-        className={`fixed inset-y-0 right-0 z-50 w-96 bg-gray-950 border-l border-gray-800 transform transition-transform duration-200 ease-in-out flex flex-col ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
+      {/* Panel - Flex item, not overlay */}
+      <div className="w-96 bg-gray-950 border-l border-gray-800 flex-shrink-0 flex flex-col">
         {/* Header - Aligned height with other panels */}
         <div className="flex flex-col justify-center p-4 border-b border-gray-800 h-[73px]">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">
-              Advanced Query
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Advanced Query
+              </h2>
+              <p className="text-sm text-gray-400">
+                {selectedSection ? (
+                  <>
+                    Querying: <span className="text-primary-400">{selectedSection}</span>
+                  </>
+                ) : (
+                  "Query entire research report"
+                )}
+              </p>
+            </div>
+            
+            {/* Close Panel Button */}
             <button
               onClick={onClose}
-              className="lg:hidden text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white transition-all hover:bg-gray-800 p-2 rounded-lg"
+              title="Close Advanced Query"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
+                  d="M9 5l7 7-7 7"
                 />
               </svg>
             </button>
           </div>
-          <p className="text-sm text-gray-400">
-            {selectedSection ? (
-              <>
-                Querying: <span className="text-primary-400">{selectedSection}</span>
-              </>
-            ) : (
-              "Query entire research report"
-            )}
-          </p>
         </div>
 
         {/* Query Input */}
