@@ -75,34 +75,34 @@ function parseMarkdownContent(content: string): string {
   html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
   
   // 5. URLs - Make clickable and copyable (specific URLs only, not generic domains)
-  // Match URLs and handle markdown context properly
+  // Simple approach: Just make URLs clickable without fancy copy functionality
   html = html.replace(
-    /\[Source:\s*([^\]]+)\]\(?(https?:\/\/[^\s\)]+)\)?/gi,
+    /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
     (match, label, url) => {
       // Handle [Source: Label](URL) format
-      return `[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group" onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);">${label}</a>]`;
+      return `[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline">${label}</a>]`;
     }
   );
   
   // Then handle standalone URLs (not in markdown format)
   html = html.replace(
-    /(?<!\]\()(?<!href=")(https?:\/\/[^\s<>"]+?)(?=[.,;:)!?\s]|$)/gi,
+    /(https?:\/\/[^\s<>"]+?)(?=[.,;:)!?\s]|<|$)/gi,
     (url) => {
       // Skip URLs that are already in href attributes
-      if (html.indexOf(`href="${url}"`) !== -1) {
+      if (html.includes(`href="${url}"`)) {
         return url;
       }
       
       // Remove trailing punctuation that's clearly not part of URL
       url = url.replace(/[.,;:!?]+$/, '');
       
-      // Skip generic URLs like "domain.com/news" - only use if they have specific paths
+      // Skip generic URLs
       if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
-        return url; // Return as plain text
+        return url;
       }
       
-      // Return as single line to prevent escaping issues
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group" onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);">${url}<span class="opacity-0 group-hover:opacity-100 transition-opacity text-xs">📋</span></a>`;
+      // Return simple clickable link
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline">${url}</a>`;
     }
   );
   

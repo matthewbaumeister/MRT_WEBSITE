@@ -157,17 +157,28 @@ export default function AdvancedQueryPanel({
   };
 
   const handleMerge = async () => {
-    if (!result) return;
+    console.log("🔵 [MERGE BUTTON] CLICKED!");
+    console.log("🔵 [MERGE BUTTON] result exists:", !!result);
+    console.log("🔵 [MERGE BUTTON] isLoading:", isLoading);
+    console.log("🔵 [MERGE BUTTON] mergeSuccess:", mergeSuccess);
+    
+    if (!result) {
+      console.log("❌ [MERGE BUTTON] No result - aborting");
+      return;
+    }
 
+    console.log("✅ [MERGE BUTTON] Starting merge process");
     setIsLoading(true);
     
     // Notify parent that merge is starting
     if (onMergeStart) {
+      console.log("📢 [MERGE BUTTON] Calling onMergeStart");
       onMergeStart();
     }
     
     try {
       console.log("[MERGE] Starting merge with instructions:", mergeInstructions || "(no additional instructions)");
+      console.log("[MERGE] Calling onQuery with:", { query, mergeInstructions: mergeInstructions || "" });
       // CRITICAL: Pass empty string "" (not query) to signal merge mode
       // mergeInstructions !== undefined is the check, so we pass "" even if user didn't type anything
       await onQuery(query, mergeInstructions || ""); // Empty string means "merge with no additional instructions"
@@ -175,6 +186,7 @@ export default function AdvancedQueryPanel({
       
       // Show success state
       setMergeSuccess(true);
+      console.log("[MERGE] ✅ Set mergeSuccess = true");
       
       // DON'T clear everything - keep the result visible with success state
       // User can manually close the panel or run another query
@@ -184,9 +196,11 @@ export default function AdvancedQueryPanel({
       alert("Merge failed. Please check the console for details.");
     } finally {
       setIsLoading(false);
+      console.log("[MERGE] Finally block - setIsLoading(false)");
       
       // Notify parent that merge is complete
       if (onMergeEnd) {
+        console.log("📢 [MERGE] Calling onMergeEnd");
         onMergeEnd();
       }
     }
