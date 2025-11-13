@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
 
     // Get API keys
     const openAIApiKey = process.env.OPENAI_API_KEY;
+    const tavilyApiKey = process.env.TAVILY_API_KEY;
     const serperApiKey = process.env.SERPER_API_KEY;
-    const bingApiKey = process.env.BING_SEARCH_API_KEY;
 
     if (!openAIApiKey) {
       return NextResponse.json(
@@ -42,10 +42,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`[ENRICH SECTION] ${sectionTitle}`);
 
-    // Determine which search provider to use (Bing preferred, Serper as fallback)
-    const useBing = !!bingApiKey;
-    const useSerper = !useBing && !!serperApiKey;
-    const searchProvider = useBing ? 'Bing' : (useSerper ? 'Serper' : 'None');
+    // Determine which search provider to use (Tavily preferred, Serper as fallback)
+    // Note: Bing Search API was decommissioned in August 2025
+    const useTavily = !!tavilyApiKey;
+    const useSerper = !useTavily && !!serperApiKey;
+    const searchProvider = useTavily ? 'Tavily' : (useSerper ? 'Serper' : 'None');
 
     console.log(`[ENRICH SECTION] Search provider: ${searchProvider}`);
 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
     let webContext = "";
     const verifiedUrls = new Set<string>(); // Track verified URLs to prevent duplicates
     
-    if ((useBing || useSerper) && companyList.length > 0) {
+    if ((useTavily || useSerper) && companyList.length > 0) {
       console.log(`[ENRICH SECTION] Searching web for VERIFIED company intelligence using ${searchProvider}...`);
       
       for (const company of companyList) {
@@ -111,20 +112,20 @@ export async function POST(request: NextRequest) {
           for (const query of queries) {
             let results: Array<{ title: string; link: string; snippet: string; date?: string }> = [];
 
-            if (useBing) {
-              // Use Bing Search API
+            if (useTavily) {
+              // Use Tavily AI Search API (designed for LLM/RAG)
               try {
-                const { searchBing } = await import('@/lib/bing-search');
-                const bingResults = await searchBing(query, 3);
-                results = bingResults.map(r => ({
+                const { searchTavily } = await import('@/lib/tavily-search');
+                const tavilyResults = await searchTavily(query, 3);
+                results = tavilyResults.map(r => ({
                   title: r.title,
                   link: r.link,
                   snippet: r.snippet,
                   date: r.date,
                 }));
-              } catch (bingError) {
-                console.error(`[ENRICH SECTION] Bing search error for "${query}":`, bingError);
-                // Fallback to Serper if Bing fails and Serper is available
+              } catch (tavilyError) {
+                console.error(`[ENRICH SECTION] Tavily search error for "${query}":`, tavilyError);
+                // Fallback to Serper if Tavily fails and Serper is available
                 if (useSerper) {
                   console.log(`[ENRICH SECTION] Falling back to Serper for "${query}"`);
                   // Continue to Serper code below
