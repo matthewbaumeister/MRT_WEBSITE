@@ -11,6 +11,12 @@ interface Conversation {
   project_id?: string;
   created_at: string;
   updated_at: string;
+  metadata?: {
+    isReport?: boolean;
+    reportStatus?: "in_progress" | "complete";
+    reportTopic?: string;
+    [key: string]: any; // Allow other metadata properties
+  };
 }
 
 interface Project {
