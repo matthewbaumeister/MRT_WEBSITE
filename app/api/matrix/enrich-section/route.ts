@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     // Get API keys
     const openAIApiKey = process.env.OPENAI_API_KEY;
     const serperApiKey = process.env.SERPER_API_KEY;
+    const bingApiKey = process.env.BING_SEARCH_API_KEY;
 
     if (!openAIApiKey) {
       return NextResponse.json(
@@ -40,6 +41,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[ENRICH SECTION] ${sectionTitle}`);
+
+    // Determine which search provider to use (Bing preferred, Serper as fallback)
+    const useBing = !!bingApiKey;
+    const useSerper = !useBing && !!serperApiKey;
+    const searchProvider = useBing ? 'Bing' : (useSerper ? 'Serper' : 'None');
+
+    console.log(`[ENRICH SECTION] Search provider: ${searchProvider}`);
 
     // Step 1: Extract companies from this section with improved patterns
     const companyPatterns = [
@@ -79,12 +87,12 @@ export async function POST(request: NextRequest) {
     const companyList = Array.from(companies).slice(0, 8); // Increased to 8 companies
     console.log(`[ENRICH SECTION] Found ${companyList.length} companies:`, companyList);
 
-    // Step 2: Search for company info with VERIFIED sources only (if Serper is configured)
+    // Step 2: Search for company info with VERIFIED sources only
     let webContext = "";
     const verifiedUrls = new Set<string>(); // Track verified URLs to prevent duplicates
     
-    if (serperApiKey && companyList.length > 0) {
-      console.log(`[ENRICH SECTION] Searching web for VERIFIED company intelligence...`);
+    if ((useBing || useSerper) && companyList.length > 0) {
+      console.log(`[ENRICH SECTION] Searching web for VERIFIED company intelligence using ${searchProvider}...`);
       
       for (const company of companyList) {
         try {
@@ -101,54 +109,94 @@ export async function POST(request: NextRequest) {
           ];
 
           for (const query of queries) {
-            const response = await fetch('https://google.serper.dev/search', {
-              method: 'POST',
-              headers: {
-                'X-API-KEY': serperApiKey,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ q: query, num: 3 }), // Get 3 results per query
+            let results: Array<{ title: string; link: string; snippet: string; date?: string }> = [];
+
+            if (useBing) {
+              // Use Bing Search API
+              try {
+                const { searchBing } = await import('@/lib/bing-search');
+                const bingResults = await searchBing(query, 3);
+                results = bingResults.map(r => ({
+                  title: r.title,
+                  link: r.link,
+                  snippet: r.snippet,
+                  date: r.date,
+                }));
+              } catch (bingError) {
+                console.error(`[ENRICH SECTION] Bing search error for "${query}":`, bingError);
+                // Fallback to Serper if Bing fails and Serper is available
+                if (useSerper) {
+                  console.log(`[ENRICH SECTION] Falling back to Serper for "${query}"`);
+                  // Continue to Serper code below
+                } else {
+                  continue; // Skip this query if no fallback
+                }
+              }
+            }
+
+            if (useSerper && results.length === 0) {
+              // Use Serper API (either as primary or fallback)
+              try {
+                const response = await fetch('https://google.serper.dev/search', {
+                  method: 'POST',
+                  headers: {
+                    'X-API-KEY': serperApiKey!,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ q: query, num: 3 }),
+                });
+
+                const data = await response.json();
+                if (data.organic && data.organic.length > 0) {
+                  results = data.organic.map((result: any) => ({
+                    title: result.title || '',
+                    link: result.link || '',
+                    snippet: result.snippet || '',
+                    date: result.date,
+                  }));
+                }
+              } catch (serperError) {
+                console.error(`[ENRICH SECTION] Serper search error for "${query}":`, serperError);
+                continue; // Skip this query
+              }
+            }
+
+            // Validate and filter results
+            const validResults = results.filter((result) => {
+              if (!result.link) return false;
+              // Validate URL - reject placeholders
+              try {
+                const url = new URL(result.link);
+                // Reject placeholder domains
+                const invalidDomains = ['exact-url.com', 'example.com', 'placeholder.com', 'test.com', 'localhost'];
+                if (invalidDomains.some(domain => url.hostname.includes(domain))) {
+                  return false;
+                }
+                // Must be http or https
+                if (!['http:', 'https:'].includes(url.protocol)) {
+                  return false;
+                }
+                // Must have valid hostname
+                if (!url.hostname || url.hostname.length < 3) {
+                  return false;
+                }
+                // Track verified URLs
+                verifiedUrls.add(result.link);
+                return true;
+              } catch {
+                return false; // Invalid URL format
+              }
             });
 
-            const data = await response.json();
-            if (data.organic && data.organic.length > 0) {
-              // Only include results with valid, non-placeholder URLs
-              const validResults = data.organic.filter((result: any) => {
-                if (!result.link) return false;
-                // Validate URL - reject placeholders
-                try {
-                  const url = new URL(result.link);
-                  // Reject placeholder domains
-                  const invalidDomains = ['exact-url.com', 'example.com', 'placeholder.com', 'test.com', 'localhost'];
-                  if (invalidDomains.some(domain => url.hostname.includes(domain))) {
-                    return false;
-                  }
-                  // Must be http or https
-                  if (!['http:', 'https:'].includes(url.protocol)) {
-                    return false;
-                  }
-                  // Must have valid hostname
-                  if (!url.hostname || url.hostname.length < 3) {
-                    return false;
-                  }
-                  // Track verified URLs
-                  verifiedUrls.add(result.link);
-                  return true;
-                } catch {
-                  return false; // Invalid URL format
-                }
+            if (validResults.length > 0) {
+              webContext += `\n=== ${company} - ${query} ===\n`;
+              validResults.slice(0, 3).forEach((result) => {
+                webContext += `TITLE: ${result.title}\n`;
+                webContext += `VERIFIED URL: ${result.link}\n`;
+                webContext += `CONTENT: ${result.snippet || ''}\n`;
+                if (result.date) webContext += `DATE: ${result.date}\n`;
+                webContext += `\n`;
               });
-
-              if (validResults.length > 0) {
-                webContext += `\n=== ${company} - ${query} ===\n`;
-                validResults.slice(0, 3).forEach((result: any) => {
-                  webContext += `TITLE: ${result.title}\n`;
-                  webContext += `VERIFIED URL: ${result.link}\n`;
-                  webContext += `CONTENT: ${result.snippet || ''}\n`;
-                  if (result.date) webContext += `DATE: ${result.date}\n`;
-                  webContext += `\n`;
-                });
-              }
             }
           }
         } catch (err) {
@@ -156,9 +204,9 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      console.log(`[ENRICH SECTION] Collected ${verifiedUrls.size} verified URLs`);
+      console.log(`[ENRICH SECTION] Collected ${verifiedUrls.size} verified URLs using ${searchProvider}`);
     } else {
-      console.log(`[ENRICH SECTION] Serper API not configured, skipping web search`);
+      console.log(`[ENRICH SECTION] No search API configured (Bing or Serper), skipping web search`);
     }
 
     // Step 3: Ask GPT-4o to enrich this section
