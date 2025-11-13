@@ -75,14 +75,21 @@ function parseMarkdownContent(content: string): string {
   html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
   
   // 5. URLs - Make clickable and copyable (specific URLs only, not generic domains)
-  // Match URLs that have paths (not just domain.com)
+  // Match URLs that have paths (not just domain.com), excluding trailing punctuation
   html = html.replace(
-    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi,
-    (url) => {
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+~#?&/=]*)/gi,
+    (match) => {
+      // Remove trailing punctuation (. , ) ] } etc) from URLs
+      let url = match;
+      while (url.match(/[.,;:)\]}\-!?]+$/)) {
+        url = url.slice(0, -1);
+      }
+      
       // Skip generic URLs like "domain.com/news" - only use if they have specific paths
       if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
         return url; // Return as plain text
       }
+      
       // Return as single line to prevent escaping issues
       return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group" onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);">${url}<span class="opacity-0 group-hover:opacity-100 transition-opacity text-xs">📋</span></a>`;
     }
@@ -211,6 +218,7 @@ export default function ResearchReport({
         return (
           <div
             key={section.id}
+            data-section-id={section.id}
             className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden transition-all hover:border-gray-600"
           >
             {/* Section Header */}

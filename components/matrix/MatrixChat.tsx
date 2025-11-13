@@ -964,17 +964,36 @@ export default function MatrixChat({
             // Single section merge
             console.log(`[MERGE] Updating section ${selectedSection} with new data`);
             
-            // Show merging animation
+            // Show merging animation with visual feedback
+            console.log(`[MERGE] 🔵 Showing merge indicator for section: ${selectedSection}`);
             setReportSections(prev => prev.map(s => 
               s.id === selectedSection 
-                ? { ...s, isGenerating: true, generationStatus: "Merging advanced query results..." }
+                ? { 
+                    ...s, 
+                    isGenerating: true, 
+                    generationStatus: "🔄 Merging advanced query results...",
+                    expanded: true // Expand NOW so user sees the indicator
+                  }
                 : s
             ));
             
-            // Wait for visual feedback
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Scroll to section immediately so user sees the indicator
+            setTimeout(() => {
+              const sectionElement = document.querySelector(`[data-section-id="${selectedSection}"]`);
+              if (sectionElement) {
+                sectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Flash the section to draw attention
+                sectionElement.classList.add('ring-4', 'ring-blue-500', 'ring-opacity-50');
+                setTimeout(() => {
+                  sectionElement.classList.remove('ring-4', 'ring-blue-500', 'ring-opacity-50');
+                }, 2000);
+              }
+            }, 100);
             
-            // Update the section content with merged data
+            // Wait for visual feedback (longer to ensure user sees it)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Update the section content with merged data AND expand it
             const currentSection = reportSections.find(s => s.id === selectedSection);
             const updatedContent = currentSection?.content + "\n\n### Advanced Query Update\n\n" + answer;
             
@@ -982,27 +1001,31 @@ export default function MatrixChat({
               s.id === selectedSection 
                 ? { 
                     ...s, 
-                    content: updatedContent, 
+                    content: updatedContent,
+                    expanded: true, // Force expand to show merged content
                     isGenerating: false, 
                     generationStatus: undefined 
                   }
                 : s
             ));
             
-            console.log(`[MERGE] ✅ Section content updated`);
+            console.log(`[MERGE] ✅ Section content updated and expanded`);
+            console.log(`[MERGE] 📝 Added content length:`, answer.length, "chars");
           } else {
             // Whole-report merge: intelligently update all relevant sections
             console.log(`[MERGE] Updating entire report with new data`);
             
             // Show merging animation on all sections
+            console.log(`[MERGE] 🔵 Showing merge indicator for ALL sections`);
             setReportSections(prev => prev.map(s => ({
               ...s,
               isGenerating: true,
-              generationStatus: "Merging advanced query results..."
+              generationStatus: "🔄 Merging advanced query results...",
+              expanded: false // Keep collapsed for whole-report merges
             })));
             
             // Wait for visual feedback
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Use GPT to intelligently distribute content across sections
             const openai = await import('openai').then(m => new m.default({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, dangerouslyAllowBrowser: true }));
@@ -1024,12 +1047,14 @@ export default function MatrixChat({
               const distribution = JSON.parse(distributionResponse.choices[0].message.content || "{}");
               console.log(`[MERGE] Distribution plan:`, Object.keys(distribution));
               
-              // Update relevant sections
+              // Update relevant sections AND expand them
+              const updatedSectionIds = Object.keys(distribution);
               setReportSections(prev => prev.map(s => {
                 if (distribution[s.id]) {
                   return {
                     ...s,
                     content: s.content + "\n\n### Advanced Query Update\n\n" + distribution[s.id],
+                    expanded: true, // Force expand to show merged content
                     isGenerating: false,
                     generationStatus: undefined
                   };
@@ -1041,20 +1066,39 @@ export default function MatrixChat({
                 };
               }));
               
-              console.log(`[MERGE] ✅ Updated ${Object.keys(distribution).length} sections`);
+              console.log(`[MERGE] ✅ Updated ${updatedSectionIds.length} sections:`, updatedSectionIds);
+              
+              // Scroll to first updated section
+              if (updatedSectionIds.length > 0) {
+                setTimeout(() => {
+                  const firstSectionElement = document.querySelector(`[data-section-id="${updatedSectionIds[0]}"]`);
+                  if (firstSectionElement) {
+                    firstSectionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 1000);
+              }
             } catch (error) {
               console.error("[MERGE] Distribution failed, adding to Background section:", error);
-              // Fallback: add to Background section
+              // Fallback: add to Background section AND expand it
               setReportSections(prev => prev.map(s => 
                 s.id === "background" 
                   ? { 
                       ...s, 
                       content: s.content + "\n\n### Advanced Query Update (Whole Report)\n\n" + answer,
+                      expanded: true, // Force expand
                       isGenerating: false,
                       generationStatus: undefined
                     }
                   : { ...s, isGenerating: false, generationStatus: undefined }
               ));
+              
+              // Scroll to Background section
+              setTimeout(() => {
+                const backgroundElement = document.querySelector(`[data-section-id="background"]`);
+                if (backgroundElement) {
+                  backgroundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 1000);
             }
           }
           
