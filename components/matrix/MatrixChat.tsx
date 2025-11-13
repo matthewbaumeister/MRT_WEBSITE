@@ -480,7 +480,7 @@ export default function MatrixChat({
               await saveMessage(conversationId, "user", `Research topic: ${topic}`);
               
               // Save initial metadata with "in_progress" flag
-              await fetch("/api/matrix/conversations", {
+              const metadataResponse = await fetch("/api/matrix/conversations", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -495,6 +495,15 @@ export default function MatrixChat({
                   }
                 }),
               });
+              
+              // Refresh sidebar AFTER metadata is saved so "Generating" tag appears
+              if (metadataResponse.ok && onConversationCreated) {
+                console.log("🔄 Triggering sidebar refresh after metadata save...");
+                // Small delay to ensure database has persisted
+                setTimeout(() => {
+                  onConversationCreated();
+                }, 100);
+              }
             }
           }
         }
@@ -506,7 +515,7 @@ export default function MatrixChat({
           setCurrentConversationId(conversationId);
           setResearchTopic(topic);
           await saveMessage(conversationId, "user", `Research topic: ${topic}`);
-          await fetch("/api/matrix/conversations", {
+          const metadataResponse = await fetch("/api/matrix/conversations", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -521,6 +530,14 @@ export default function MatrixChat({
               }
             }),
           });
+          
+          // Refresh sidebar AFTER metadata is saved so "Generating" tag appears
+          if (metadataResponse.ok && onConversationCreated) {
+            console.log("🔄 Triggering sidebar refresh after metadata save (fallback)...");
+            setTimeout(() => {
+              onConversationCreated();
+            }, 100);
+          }
         }
       }
     }
