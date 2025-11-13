@@ -74,37 +74,49 @@ function parseMarkdownContent(content: string): string {
   // 4. Italic
   html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
   
-  // 5. URLs - Make clickable and copyable (specific URLs only, not generic domains)
-  // Simple approach: Just make URLs clickable without fancy copy functionality
+  // 5. URLs - Keep as plain text citations (no hyperlinks)
+  // First, clean up any existing broken HTML anchor tags in [Source: ...] citations
+  // Handle broken pattern: [Source: URL" target="..." rel="..." class="...">Label]
+  // This pattern matches URLs followed by HTML attributes without proper <a> tag
   html = html.replace(
-    /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
-    (match, label, url) => {
-      // Handle [Source: Label](URL) format
-      return `[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline">${label}</a>]`;
+    /\[Source:\s*([^"<>]+)"\s*(?:target="[^"]*"\s*)?(?:rel="[^"]*"\s*)?(?:class="[^"]*"\s*)?>([^\]]+)\]/gi,
+    (match, url, label) => {
+      // Extract the label from the link text or use the URL
+      const cleanLabel = label.trim() || url.trim();
+      return `[Source: ${cleanLabel}]`;
     }
   );
   
-  // Then handle standalone URLs (not in markdown format)
+  // Handle properly formed anchor tags in [Source: ...] citations
   html = html.replace(
-    /(https?:\/\/[^\s<>"]+?)(?=[.,;:)!?\s]|<|$)/gi,
-    (url) => {
-      // Skip URLs that are already in href attributes
-      if (html.includes(`href="${url}"`)) {
-        return url;
-      }
-      
-      // Remove trailing punctuation that's clearly not part of URL
-      url = url.replace(/[.,;:!?]+$/, '');
-      
-      // Skip generic URLs
-      if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
-        return url;
-      }
-      
-      // Return simple clickable link
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline">${url}</a>`;
+    /\[Source:\s*([^<]*?)<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>([^\]]*?)\]/gi,
+    (match, before, url, linkText, after) => {
+      // Extract the label from the link text or use the URL
+      const label = linkText.trim() || url;
+      return `[Source: ${before}${label}${after}]`;
     }
   );
+  
+  // Handle [Source: Label](URL) format - convert to plain text [Source: Label]
+  html = html.replace(
+    /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
+    (match, label, url) => {
+      // Keep as plain text citation with label
+      return `[Source: ${label}]`;
+    }
+  );
+  
+  // Remove any remaining anchor tags that might be in the text (standalone URLs)
+  html = html.replace(
+    /<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
+    (match, url, linkText) => {
+      // Replace with just the link text or URL
+      return linkText.trim() || url;
+    }
+  );
+  
+  // Handle standalone URLs - keep as plain text (no hyperlinks)
+  // URLs are already in the text, so we don't need to convert them to links
   
   // 6. Line breaks
   html = html.replace(/\n\n/g, '</p><p class="mb-4">');
