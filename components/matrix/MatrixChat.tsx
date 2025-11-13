@@ -1720,8 +1720,53 @@ export default function MatrixChat({
                             </div>
                           </button>
 
-                          {/* Web Search - REMOVED (web enrichment disabled) */}
-                          {/* Research - REMOVED (does nothing) */}
+                          {/* Web Search - Coming Soon */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Show coming soon warning
+                              alert("Web search enrichment is coming soon! This feature will add live company intelligence including current CEOs, executives, and recent news.");
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg opacity-60 cursor-not-allowed"
+                            disabled
+                          >
+                            <div className="flex items-center space-x-3">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                              </svg>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-300">Web search</span>
+                                <span className="text-xs text-gray-500">Coming soon</span>
+                              </div>
+                            </div>
+                            <div className="w-10 h-5 rounded-full relative bg-gray-700 opacity-50">
+                              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full"></div>
+                            </div>
+                          </button>
+
+                          {/* Research - Coming Soon */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Show coming soon warning
+                              alert("Research mode is coming soon! This feature will enhance report generation with additional research capabilities.");
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-800 rounded-lg opacity-60 cursor-not-allowed"
+                            disabled
+                          >
+                            <div className="flex items-center space-x-3">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-300">Research</span>
+                                <span className="text-xs text-gray-500">Coming soon</span>
+                              </div>
+                            </div>
+                            <div className="w-10 h-5 rounded-full relative bg-gray-700 opacity-50">
+                              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full"></div>
+                            </div>
+                          </button>
 
                           {/* Divider */}
                           <div className="border-t border-gray-800 my-2"></div>
