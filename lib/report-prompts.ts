@@ -2,109 +2,109 @@
 // Each section is tailored to generate focused, data-driven content without generic conclusions
 
 export const SECTION_PROMPTS: Record<string, string> = {
-  background: `Provide a comprehensive background and market overview. Include:
-- Industry definition and scope
-- Current market landscape
-- Key market segments
-- Historical context and evolution
-- Major market drivers
-- Recent significant developments
+  background: `Provide a comprehensive background and market overview in academic paragraph form. Cover:
+- Industry definition and scope (analytical paragraph)
+- Current market landscape (synthesize data into flowing paragraphs)
+- Key market segments (integrate into narrative, use bullets only if truly necessary for a list)
+- Historical context and evolution (chronological narrative)
+- Major market drivers (analytical paragraphs with supporting evidence)
+- Recent significant developments (paragraph-based analysis)
 
-Focus on factual analysis with specific data points, companies, and statistics. Cite specific sources from xTech awards, MANTECH projects, DSIP opportunities when available.`,
+Write in PhD-level academic style with flowing paragraphs. Focus on factual analysis with specific data points, companies, and statistics. Cite specific sources from xTech awards, MANTECH projects, DSIP opportunities when available.`,
 
-  funding: `Analyze the funding and investment landscape. Include:
-- Total funding amounts and trends
-- Major investors and investment firms
-- Recent significant funding rounds
-- SBIR/STTR award amounts and recipients
-- Government contract values
-- Venture capital activity
+  funding: `Analyze the funding and investment landscape in academic paragraph form. Synthesize:
+- Total funding amounts and trends (analytical paragraphs with data integration)
+- Major investors and investment firms (narrative paragraphs)
+- Recent significant funding rounds (paragraph-based analysis)
+- SBIR/STTR award amounts and recipients (integrate into narrative)
+- Government contract values (analytical paragraphs)
+- Venture capital activity (synthesize into flowing text)
 
-Provide specific dollar amounts, company names, dates, and funding sources. Reference actual SBIR/STTR awards, xTech prizes, and contract values from the databases.`,
+Write in PhD-level academic style. Provide specific dollar amounts, company names, dates, and funding sources integrated naturally into paragraphs. Reference actual SBIR/STTR awards, xTech prizes, and contract values from the databases.`,
 
-  "market-size": `Analyze market size and revenue. Provide:
-- Current market size in dollars
-- Historical growth rates (past 3-5 years)
-- Projected growth rates
-- Revenue by segment
-- Key revenue-generating companies and their figures
-- Market share distribution
+  "market-size": `Analyze market size and revenue in academic paragraph form. Synthesize:
+- Current market size in dollars (analytical paragraphs with data integration)
+- Historical growth rates (past 3-5 years) (narrative paragraphs with trends)
+- Projected growth rates (analytical paragraphs)
+- Revenue by segment (integrate into narrative, use table only if comparing multiple segments)
+- Key revenue-generating companies and their figures (paragraph-based analysis)
+- Market share distribution (synthesize into flowing text)
 
-Use specific numbers and percentages. Reference actual contract values, award amounts, and company revenues from the databases.`,
+Write in PhD-level academic style. Use specific numbers and percentages integrated naturally into paragraphs. Reference actual contract values, award amounts, and company revenues from the databases.`,
 
-  tam: `Calculate and present the Total Addressable Market (TAM). Include:
-- TAM calculation methodology
-- Top-down market sizing
-- Bottom-up market sizing
-- Serviceable Addressable Market (SAM)
-- Serviceable Obtainable Market (SOM)
-- TAM for DOD/Federal sector specifically
+  tam: `Calculate and present the Total Addressable Market (TAM) in academic paragraph form. Synthesize:
+- TAM calculation methodology (analytical paragraphs explaining approach)
+- Top-down market sizing (paragraph-based analysis with calculations)
+- Bottom-up market sizing (analytical paragraphs)
+- Serviceable Addressable Market (SAM) (integrate into narrative)
+- Serviceable Obtainable Market (SOM) (paragraph form)
+- TAM for DOD/Federal sector specifically (analytical paragraphs)
 
-Provide clear dollar figures and percentages. Be concise and data-focused. No introductory or concluding paragraphs needed - just the TAM analysis.`,
+Write in PhD-level academic style. Provide clear dollar figures and percentages integrated naturally into paragraphs. Be concise and data-focused.`,
 
-  competition: `Provide a detailed competitive analysis. Include:
-- Top 10-15 competitors by market share
-- Recent contract wins (company, value, date)
-- Competitive positioning matrix
-- Key differentiators
-- Strengths and weaknesses of major players
-- Recent M&A activity
+  competition: `Provide a detailed competitive analysis in academic paragraph form. Synthesize:
+- Top 10-15 competitors by market share (analytical paragraphs, use table only if comparing multiple dimensions)
+- Recent contract wins (integrate company, value, date into narrative paragraphs)
+- Competitive positioning (analytical paragraphs with evidence)
+- Key differentiators (paragraph-based analysis)
+- Strengths and weaknesses of major players (synthesize into flowing text)
+- Recent M&A activity (narrative paragraphs)
 
-Name specific companies with their contract values, SBIR/STTR awards, and xTech wins. Include actual data from MANTECH, Army Innovation, and DSIP databases.`,
+Write in PhD-level academic style. Name specific companies with their contract values, SBIR/STTR awards, and xTech wins integrated naturally into paragraphs. Include actual data from MANTECH, Army Innovation, and DSIP databases.`,
 
-  technology: `Analyze technology trends and innovation. Cover:
-- Emerging technologies in this space
-- Technology maturity levels
-- Key innovations from xTech and MANTECH
-- R&D investment trends
-- Technology adoption rates
-- Future technology roadmap
+  technology: `Analyze technology trends and innovation in academic paragraph form. Synthesize:
+- Emerging technologies in this space (analytical paragraphs)
+- Technology maturity levels (paragraph-based analysis)
+- Key innovations from xTech and MANTECH (integrate into narrative)
+- R&D investment trends (analytical paragraphs with data)
+- Technology adoption rates (synthesize into flowing text)
+- Future technology roadmap (narrative paragraphs)
 
-Reference specific technologies being developed, actual xTech projects, MANTECH initiatives, and innovation programs. Name companies and their specific tech developments.`,
+Write in PhD-level academic style. Reference specific technologies being developed, actual xTech projects, MANTECH initiatives, and innovation programs integrated naturally into paragraphs. Name companies and their specific tech developments.`,
 
-  "usg-alignment": `Analyze alignment with USG missions. Include:
-- Relevant DOD priorities and strategies
-- Alignment with Army, Navy, Air Force, Space Force missions
-- National security implications
-- Recent USG initiatives and programs
-- Congressional interest and funding
-- Interagency applications
+  "usg-alignment": `Analyze alignment with USG missions in academic paragraph form. Synthesize:
+- Relevant DOD priorities and strategies (analytical paragraphs)
+- Alignment with Army, Navy, Air Force, Space Force missions (paragraph-based analysis)
+- National security implications (integrate into narrative)
+- Recent USG initiatives and programs (analytical paragraphs)
+- Congressional interest and funding (synthesize into flowing text)
+- Interagency applications (narrative paragraphs)
 
-Reference specific DOD priorities, Army Modernization priorities, xTech focus areas, and actual government programs. Include specific budget lines if available.`,
+Write in PhD-level academic style. Reference specific DOD priorities, Army Modernization priorities, xTech focus areas, and actual government programs integrated naturally into paragraphs. Include specific budget lines if available.`,
 
-  regulatory: `Analyze the regulatory environment. Cover:
-- Relevant federal regulations (FAR, DFARS, ITAR, etc.)
-- Compliance requirements
-- Recent regulatory changes
-- Certification requirements
-- Export control considerations
-- Cybersecurity requirements (CMMC, etc.)
+  regulatory: `Analyze the regulatory environment in academic paragraph form. Synthesize:
+- Relevant federal regulations (FAR, DFARS, ITAR, etc.) (analytical paragraphs)
+- Compliance requirements (paragraph-based analysis)
+- Recent regulatory changes (integrate into narrative)
+- Certification requirements (analytical paragraphs)
+- Export control considerations (synthesize into flowing text)
+- Cybersecurity requirements (CMMC, etc.) (narrative paragraphs)
 
-Be specific about actual regulations, compliance frameworks, and requirements. No generic regulatory overview - focus on what's specifically applicable.`,
+Write in PhD-level academic style. Be specific about actual regulations, compliance frameworks, and requirements integrated naturally into paragraphs. No generic regulatory overview - focus on what's specifically applicable.`,
 
-  barriers: `Identify barriers to entry and assess risks. Include:
-- Capital requirements
-- Technical barriers
-- Regulatory barriers
-- Competitive barriers
-- Supply chain risks
-- Technology risks
-- Market risks
-- Mitigation strategies
+  barriers: `Identify barriers to entry and assess risks in academic paragraph form. Synthesize:
+- Capital requirements (analytical paragraphs with quantification)
+- Technical barriers (paragraph-based analysis)
+- Regulatory barriers (integrate into narrative)
+- Competitive barriers (analytical paragraphs)
+- Supply chain risks (synthesize into flowing text)
+- Technology risks (narrative paragraphs)
+- Market risks (paragraph-based analysis)
+- Mitigation strategies (analytical paragraphs)
 
-Be specific and analytical. Quantify barriers where possible (e.g., "$50M+ capital required"). Focus on actionable risk assessment.`,
+Write in PhD-level academic style. Be specific and analytical. Quantify barriers where possible (e.g., "$50M+ capital required") integrated naturally into paragraphs. Focus on actionable risk assessment.`,
 
-  conclusion: `Synthesize ALL previous sections into comprehensive conclusions and recommendations. This section should:
-- Summarize key findings from ALL 9 previous sections
-- Provide strategic recommendations based on the complete analysis
-- Identify immediate opportunities
-- Suggest market entry strategies
-- Recommend next steps for stakeholders
-- Highlight critical success factors
-- Reference specific data points from earlier sections
-- Include specific companies, programs, and opportunities identified
+  conclusion: `Synthesize ALL previous sections into comprehensive conclusions and recommendations in academic paragraph form. This section should:
+- Summarize key findings from ALL 9 previous sections (synthesize into flowing analytical paragraphs)
+- Provide strategic recommendations based on the complete analysis (paragraph-based recommendations)
+- Identify immediate opportunities (integrate into narrative)
+- Suggest market entry strategies (analytical paragraphs)
+- Recommend next steps for stakeholders (paragraph form)
+- Highlight critical success factors (synthesize into text)
+- Reference specific data points from earlier sections (integrate naturally)
+- Include specific companies, programs, and opportunities identified (narrative paragraphs)
 
-This is the capstone - integrate insights from Background, Funding, Market Size, TAM, Competition, Technology, USG Alignment, Regulatory, and Barriers sections. Make specific, actionable recommendations based on the complete data picture.`
+Write in PhD-level academic style. This is the capstone - integrate insights from Background, Funding, Market Size, TAM, Competition, Technology, USG Alignment, Regulatory, and Barriers sections into flowing, analytical paragraphs. Make specific, actionable recommendations based on the complete data picture.`
 };
 
 // Web search augmentation prompts
@@ -130,14 +130,32 @@ export function getSectionPrompt(sectionId: string, topic: string, useWebSearch:
 
 ${basePrompt}
 
-IMPORTANT:
+CRITICAL WRITING STYLE REQUIREMENTS:
+- Write in ACADEMIC RESEARCH STYLE (PhD-level quality)
+- Use PARAGRAPH FORM primarily - write flowing, analytical paragraphs
+- AVOID excessive bullet points - only use bullets for:
+  * True lists (e.g., "Key market segments include: X, Y, Z")
+  * When data is best presented as a list
+- Use TABLES only when presenting structured data (e.g., financial comparisons, competitive matrices)
+- Write in third person, objective, analytical tone
+- Use transitional phrases to connect ideas between paragraphs
+- Each paragraph should develop a complete thought with evidence and analysis
+- Integrate data points naturally into sentences rather than listing them
+
+FORMATTING REQUIREMENTS:
+- Use ## for major section headers (not ###)
+- Use ### only for subsections within a major section (sparingly)
+- Use **bold** for emphasis on key terms, company names, or important figures
+- Ensure proper markdown formatting - no broken headers or formatting errors
+
+CONTENT REQUIREMENTS:
 - Be extremely specific with data: company names, dollar amounts, dates, program names
 - Reference actual programs: cite specific xTech competitions, MANTECH projects, SBIR/STTR awards, DSIP opportunities
-- Use bullet points for lists, tables where appropriate
 - No generic filler content - only data-driven analysis
 ${useWebSearch ? '- Include recent public information from web sources' : ''}
-- Cite data sources inline (e.g., "According to Army xTech Competition 2024...")
-- Format with markdown: **bold** for emphasis, ## for sub-headers
+- Cite data sources inline with exact URLs: [Source: Company Name](https://exact-url.com)
+- Every fact-based statement should have a working URL citation when possible
+- Write comprehensive, analytical paragraphs that synthesize information rather than listing facts
 `;
 }
 

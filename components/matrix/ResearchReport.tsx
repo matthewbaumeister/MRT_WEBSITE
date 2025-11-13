@@ -64,9 +64,10 @@ function parseMarkdownContent(content: string): string {
   });
   
   // 2. Headers (BEFORE bold/italic to prevent breaking them)
-  html = html.replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>');
-  html = html.replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>');
-  html = html.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>');
+  // Handle headers with proper line boundaries and trim whitespace
+  html = html.replace(/^###\s+(.+?)\s*$/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>');
+  html = html.replace(/^##\s+(.+?)\s*$/gm, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>');
+  html = html.replace(/^#\s+(.+?)\s*$/gm, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>');
   
   // 3. Bold (before italic)
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
@@ -107,7 +108,7 @@ function parseMarkdownContent(content: string): string {
       // Escape quotes in URL for onclick handler
       const escapedUrl = url.replace(/'/g, "\\'");
       const linkId = `source-link-${Math.random().toString(36).substr(2, 9)}`;
-      return `<span class="source-citation">[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${url}" data-link-id="${linkId}" onclick="event.preventDefault(); navigator.clipboard.writeText('${escapedUrl}').then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open('${escapedUrl}', '_blank');">${label}</a>]</span>`;
+      return `<span class="source-citation">[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${url}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${label}</a>]</span>`;
     }
   );
   
@@ -144,8 +145,8 @@ function parseMarkdownContent(content: string): string {
       const escapedUrl = cleanUrl.replace(/'/g, "\\'");
       const linkId = `url-link-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create clickable link
-      result += `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${cleanUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); navigator.clipboard.writeText('${escapedUrl}').then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open('${escapedUrl}', '_blank');">${cleanUrl}</a>`;
+      // Create clickable link - copy and open in background
+      result += `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${cleanUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${cleanUrl}</a>`;
       
       lastIndex = matchIndex + url.length;
     }
