@@ -938,6 +938,12 @@ export default function MatrixChat({
               console.log("✅ Report metadata saved successfully!");
               console.log("Saved report with", currentSections.length, "sections");
               console.log("✅ Report marked as COMPLETE");
+              
+              // Refresh sidebar to show "Complete" status
+              if (onConversationCreated) {
+                console.log("🔄 Triggering sidebar refresh to show Complete status");
+                onConversationCreated();
+              }
             } else {
               console.error("❌ Failed to save report metadata:", res.status);
             }
