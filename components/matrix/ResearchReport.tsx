@@ -75,12 +75,26 @@ function parseMarkdownContent(content: string): string {
   html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
   
   // 5. URLs - Make clickable and copyable (specific URLs only, not generic domains)
-  // Match URLs that have paths (not just domain.com), excluding trailing punctuation
+  // Match URLs and handle markdown context properly
   html = html.replace(
-    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+~#?&/=]*)/gi,
-    (match) => {
-      // Remove ONLY trailing periods and commas from URLs (not parentheses - those might be part of URL)
-      let url = match.replace(/[.,]+$/, '');
+    /\[Source:\s*([^\]]+)\]\(?(https?:\/\/[^\s\)]+)\)?/gi,
+    (match, label, url) => {
+      // Handle [Source: Label](URL) format
+      return `[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group" onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);">${label}</a>]`;
+    }
+  );
+  
+  // Then handle standalone URLs (not in markdown format)
+  html = html.replace(
+    /(?<!\]\()(?<!href=")(https?:\/\/[^\s<>"]+?)(?=[.,;:)!?\s]|$)/gi,
+    (url) => {
+      // Skip URLs that are already in href attributes
+      if (html.indexOf(`href="${url}"`) !== -1) {
+        return url;
+      }
+      
+      // Remove trailing punctuation that's clearly not part of URL
+      url = url.replace(/[.,;:!?]+$/, '');
       
       // Skip generic URLs like "domain.com/news" - only use if they have specific paths
       if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {

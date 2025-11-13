@@ -167,22 +167,17 @@ export default function AdvancedQueryPanel({
     }
     
     try {
-      console.log("[MERGE] Starting merge with instructions:", mergeInstructions || "(using query as is)");
-      await onQuery(query, mergeInstructions || query); // Pass query if no specific instructions
+      console.log("[MERGE] Starting merge with instructions:", mergeInstructions || "(no additional instructions)");
+      // CRITICAL: Pass empty string "" (not query) to signal merge mode
+      // mergeInstructions !== undefined is the check, so we pass "" even if user didn't type anything
+      await onQuery(query, mergeInstructions || ""); // Empty string means "merge with no additional instructions"
       console.log("[MERGE] ✅ Merge complete - section should be updating now");
       
       // Show success state
       setMergeSuccess(true);
-      setMergeInstructions("");
       
-      // Clear everything after 2 seconds (gives user time to see success)
-      setTimeout(() => {
-        setShowMerge(false);
-        setQuery("");
-        setResult("");
-        setDataSources(null);
-        setMergeSuccess(false);
-      }, 2000);
+      // DON'T clear everything - keep the result visible with success state
+      // User can manually close the panel or run another query
     } catch (error) {
       console.error("[MERGE] ❌ Merge error:", error);
       setMergeSuccess(false);
