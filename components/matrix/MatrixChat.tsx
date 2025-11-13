@@ -698,6 +698,30 @@ export default function MatrixChat({
         // Use section-specific prompt
         const sectionPrompt = getSectionPrompt(section.id, topic, webSearch || research);
         
+        // Add strict validation instruction to context
+        const companyNameMatch = topic.match(/\b([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)+)\b/);
+        const companyName = companyNameMatch ? companyNameMatch[1] : null;
+        const validationInstruction = companyName 
+          ? `\n\n⚠️ CRITICAL DATA VALIDATION - ZERO TOLERANCE FOR HALLUCINATION:
+The data provided below has been filtered to only include rows that mention "${companyName}". 
+
+STRICT RULES:
+1. ONLY use data that explicitly mentions "${companyName}" in the provided context
+2. DO NOT use data about other companies or unrelated information
+3. If a data point does not mention "${companyName}", ignore it completely
+4. DO NOT make up CEO names, employee counts, revenue, or contract values
+5. DO NOT fill gaps with generic industry information
+6. If you cannot find verified data about "${companyName}", write: "No verified data available in internal databases for ${companyName} regarding [specific topic]. Additional research may be required."
+7. BETTER TO HAVE LESS INFORMATION THAN FAKE INFORMATION - be honest about missing data`
+          : `\n\n⚠️ CRITICAL DATA VALIDATION - ZERO TOLERANCE FOR HALLUCINATION:
+ONLY use data from the provided context that is directly relevant to the topic: "${topic}". 
+
+STRICT RULES:
+1. DO NOT use unrelated data or make inferences
+2. DO NOT make up information to fill gaps
+3. If you cannot find verified data, state that clearly
+4. BETTER TO HAVE LESS INFORMATION THAN FAKE INFORMATION`;
+        
         const response = await fetch("/api/matrix/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -705,8 +729,8 @@ export default function MatrixChat({
             messages: [{
               role: "user",
               content: section.id === 'conclusion' 
-                ? `${sectionPrompt}\n\nPrevious sections for context:\n${Object.entries(sectionContents).map(([id, content]) => `${id}: ${content.substring(0, 500)}...`).join('\n\n')}`
-                : sectionPrompt
+                ? `${sectionPrompt}${validationInstruction}\n\nPrevious sections for context:\n${Object.entries(sectionContents).map(([id, content]) => `${id}: ${content.substring(0, 500)}...`).join('\n\n')}`
+                : `${sectionPrompt}${validationInstruction}`
             }],
             model: maxMode ? "gpt-4o" : "gpt-4o-mini", // MAX MODE uses GPT-4o
             extendedThinking,

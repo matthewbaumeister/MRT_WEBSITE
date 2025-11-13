@@ -37,6 +37,9 @@ export async function POST(request: NextRequest) {
 
     // Add system message with capabilities based on settings
     let systemContent = `You are MATRIX, an AI assistant for Make Ready Technologies. You are helpful, professional, and knowledgeable. 
+
+CRITICAL: You must NEVER make up information. If you don't have verified data, state that clearly. Better to have less information than fake information.
+
 ${extendedThinking ? "Take your time to think through complex problems step by step." : ""}
 ${webSearch ? "You have access to current information through web search." : ""}
 ${research ? "You can conduct in-depth research on topics." : ""}
@@ -60,7 +63,7 @@ Current user: ${session.user.name} (${session.user.email})`;
 
     // Add Supabase context if provided
     if (supabaseContext) {
-      systemContent += `\n\n=== RELEVANT DATA FROM INTERNAL DATABASES ===\n${supabaseContext}\n=== END INTERNAL DATA ===\n\nUse the above data from our internal databases (xTech Army Opps, MANTECH, DOD Contract News) to provide specific, factual information. Cite specific programs, companies, dollar amounts, and dates from this data.`;
+      systemContent += `\n\n=== RELEVANT DATA FROM INTERNAL DATABASES ===\n${supabaseContext}\n=== END INTERNAL DATA ===\n\nCRITICAL: Use ONLY the data provided above. If the data does not contain information about a specific company or topic, DO NOT make it up. State clearly: "No verified data available in internal databases for [Company/Topic] regarding [specific aspect]. Additional research may be required." Better to have less information than fake information.`;
     }
 
     const systemMessage = {

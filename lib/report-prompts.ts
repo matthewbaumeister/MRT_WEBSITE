@@ -160,6 +160,19 @@ ${useWebSearch ? '- Include recent public information from web sources' : ''}
 - For company information (CEO, employees, revenue), use official company websites or verified news sources only
 - DO NOT make up or guess information - only use verified facts from provided sources
 - Write comprehensive, analytical paragraphs that synthesize information rather than listing facts
+
+CRITICAL DATA VALIDATION REQUIREMENTS - ZERO TOLERANCE FOR HALLUCINATION:
+- ONLY use data from the provided context that EXPLICITLY mentions the company/topic being researched
+- If a data point does not explicitly mention the company name or topic in the provided context, DO NOT use it
+- DO NOT infer, assume, or extrapolate information about the company from unrelated data
+- DO NOT use data about other companies and apply it to the target company
+- DO NOT fill gaps with generic industry information - if you don't have specific data, say so
+- DO NOT make up CEO names, employee counts, revenue figures, or contract values
+- DO NOT use placeholder information or generic statements
+- Every fact must be traceable to a specific row in the provided data that mentions the company
+- If the provided data does not contain information about the company, write EXACTLY: "No verified data available in internal databases for [Company Name] regarding [specific topic]. Additional research may be required."
+- BETTER TO HAVE LESS INFORMATION THAN FAKE INFORMATION - honesty is required
+- If you cannot verify a fact with the provided data, omit it entirely rather than guessing
 `;
 }
 

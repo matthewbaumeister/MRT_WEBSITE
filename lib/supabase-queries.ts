@@ -327,28 +327,48 @@ export async function searchSupabaseTables(
           continue;
         }
         
+        // Extract company name from topic if it looks like a company search
+        // "ECS Federal" or "research on ECS Federal" → "ECS Federal"
+        const companyNameMatch = topic.match(/\b([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)+)\b/);
+        const companyName = companyNameMatch ? companyNameMatch[1] : null;
+        
         // Split topic into keywords for better matching
         // "defense ai contracts" → ["defense", "ai", "contracts"]
         const keywords = topic.toLowerCase().split(/\s+/).filter(k => k.length > 2); // Filter out 1-2 char words
         
-        // Sanitize keywords to prevent Supabase errors with special characters
-        const sanitizedKeywords = keywords.map(k => k.replace(/[%_]/g, '\\$&'));
-        
-        // Build smart OR query: 
-        // (column1 ILIKE '%defense%' OR column1 ILIKE '%ai%' OR column1 ILIKE '%contracts%')
-        // OR (column2 ILIKE '%defense%' OR column2 ILIKE '%ai%' OR column2 ILIKE '%contracts%')
-        const orConditions = columnsToSearch.flatMap(col => 
-          sanitizedKeywords.map(keyword => `${col}.ilike.%${keyword}%`)
-        ).join(',');
-        
-        console.log(`  🔍 Searching ${tableName} for keywords: [${keywords.join(', ')}]`);
-        
-        // INCREASED LIMIT: Market research needs comprehensive data!
-        // For "army" searches with 290K rows, we want LOTS of results
-        let query = supabase
-          .from(tableName)
-          .select('*')
-          .or(orConditions);
+        // If we found a company name, prioritize exact matches
+        let query;
+        if (companyName) {
+          // First try exact company name match (highest priority)
+          const companyKeywords = companyName.toLowerCase().split(/\s+/);
+          const companyConditions = columnsToSearch.flatMap(col => 
+            companyKeywords.map(keyword => `${col}.ilike.%${keyword}%`)
+          ).join(',');
+          
+          console.log(`  🎯 Company search detected: "${companyName}"`);
+          console.log(`  🔍 Searching ${tableName} for company: [${companyKeywords.join(', ')}]`);
+          
+          // Require ALL company keywords to be present (AND logic)
+          // This ensures we only get rows that actually mention the company
+          query = supabase.from(tableName).select('*');
+          
+          // Build AND query: each column must contain at least one company keyword
+          // But we'll filter results post-query to ensure company name appears
+          const companyOrConditions = columnsToSearch.flatMap(col => 
+            companyKeywords.map(keyword => `${col}.ilike.%${keyword}%`)
+          ).join(',');
+          
+          query = query.or(companyOrConditions);
+        } else {
+          // Generic topic search - use OR logic for broader matching
+          const sanitizedKeywords = keywords.map(k => k.replace(/[%_]/g, '\\$&'));
+          const orConditions = columnsToSearch.flatMap(col => 
+            sanitizedKeywords.map(keyword => `${col}.ilike.%${keyword}%`)
+          ).join(',');
+          
+          console.log(`  🔍 Searching ${tableName} for keywords: [${keywords.join(', ')}]`);
+          query = supabase.from(tableName).select('*').or(orConditions);
+        }
 
         // Apply date range filter if provided
         // Check common date column names
@@ -374,13 +394,35 @@ export async function searchSupabaseTables(
         if (error) {
           console.log(`❌ Error searching ${tableName}:`, error.message);
         } else if (data && data.length > 0) {
-          results.push({
-            table: tableName,
-            count: data.length,
-            data: data,
-          });
-          sources.push(tableName);
-          console.log(`✓ Found ${data.length} results in ${tableName} (searched: ${columnsToSearch.slice(0, 3).join(', ')}...)`);
+          // Post-process: Filter results to only include rows that actually mention the company
+          let filteredData = data;
+          if (companyName) {
+            const companyLower = companyName.toLowerCase();
+            const companyWords = companyLower.split(/\s+/);
+            
+            // Filter: row must contain ALL company words (case-insensitive)
+            filteredData = data.filter((row: any) => {
+              // Convert row to string and check if all company words appear
+              const rowText = JSON.stringify(row).toLowerCase();
+              return companyWords.every(word => rowText.includes(word));
+            });
+            
+            if (filteredData.length < data.length) {
+              console.log(`  ✂️  Filtered ${data.length} → ${filteredData.length} results (removed rows not mentioning "${companyName}")`);
+            }
+          }
+          
+          if (filteredData.length > 0) {
+            results.push({
+              table: tableName,
+              count: filteredData.length,
+              data: filteredData,
+            });
+            sources.push(tableName);
+            console.log(`✓ Found ${filteredData.length} relevant results in ${tableName} (searched: ${columnsToSearch.slice(0, 3).join(', ')}...)`);
+          } else {
+            console.log(`  ⚠️  No relevant results in ${tableName} after filtering`);
+          }
         } else {
           console.log(`  No results in ${tableName}`);
         }
