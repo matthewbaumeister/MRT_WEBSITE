@@ -414,7 +414,7 @@ export default function MatrixChat({
           if (existingReport && existingReport.id) {
             console.log("⚠️ Found existing in_progress report with same topic, using it instead of creating duplicate");
             conversationId = existingReport.id;
-            setCurrentConversationId(conversationId);
+            setCurrentConversationId(existingReport.id); // Use existingReport.id directly to satisfy TypeScript
             setResearchTopic(topic);
             // Don't create a new conversation - use the existing one
           } else {
