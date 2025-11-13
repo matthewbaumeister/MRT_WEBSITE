@@ -74,49 +74,88 @@ function parseMarkdownContent(content: string): string {
   // 4. Italic
   html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
   
-  // 5. URLs - Keep as plain text citations (no hyperlinks)
+  // 5. URLs - Create clickable hyperlinks with copy functionality
   // First, clean up any existing broken HTML anchor tags in [Source: ...] citations
   // Handle broken pattern: [Source: URL" target="..." rel="..." class="...">Label]
-  // This pattern matches URLs followed by HTML attributes without proper <a> tag
   html = html.replace(
     /\[Source:\s*([^"<>]+)"\s*(?:target="[^"]*"\s*)?(?:rel="[^"]*"\s*)?(?:class="[^"]*"\s*)?>([^\]]+)\]/gi,
     (match, url, label) => {
-      // Extract the label from the link text or use the URL
+      // Extract the label and URL, create proper link
       const cleanLabel = label.trim() || url.trim();
+      const cleanUrl = url.trim();
+      if (cleanUrl.startsWith('http')) {
+        return `[Source: ${cleanLabel}](${cleanUrl})`;
+      }
       return `[Source: ${cleanLabel}]`;
     }
   );
   
-  // Handle properly formed anchor tags in [Source: ...] citations
+  // Handle properly formed anchor tags in [Source: ...] citations - extract URL
   html = html.replace(
     /\[Source:\s*([^<]*?)<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>([^\]]*?)\]/gi,
     (match, before, url, linkText, after) => {
-      // Extract the label from the link text or use the URL
-      const label = linkText.trim() || url;
-      return `[Source: ${before}${label}${after}]`;
+      const label = (before + linkText + after).trim() || url;
+      return `[Source: ${label}](${url})`;
     }
   );
   
-  // Handle [Source: Label](URL) format - convert to plain text [Source: Label]
+  // Handle [Source: Label](URL) format - convert to clickable link with copy functionality
   html = html.replace(
     /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
     (match, label, url) => {
-      // Keep as plain text citation with label
-      return `[Source: ${label}]`;
+      // Create a link with data attributes for copy functionality
+      // Escape quotes in URL for onclick handler
+      const escapedUrl = url.replace(/'/g, "\\'");
+      const linkId = `source-link-${Math.random().toString(36).substr(2, 9)}`;
+      return `<span class="source-citation">[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${url}" data-link-id="${linkId}" onclick="event.preventDefault(); navigator.clipboard.writeText('${escapedUrl}').then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open('${escapedUrl}', '_blank');">${label}</a>]</span>`;
     }
   );
   
-  // Remove any remaining anchor tags that might be in the text (standalone URLs)
-  html = html.replace(
-    /<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
-    (match, url, linkText) => {
-      // Replace with just the link text or URL
-      return linkText.trim() || url;
-    }
-  );
+  // Handle standalone URLs - make them clickable (but skip if already in an anchor tag)
+  // Process URLs that are not already inside href attributes
+  const urlPattern = /(https?:\/\/[^\s<>"\)\[\]]+)/gi;
+  let lastIndex = 0;
+  let result = '';
+  let match;
   
-  // Handle standalone URLs - keep as plain text (no hyperlinks)
-  // URLs are already in the text, so we don't need to convert them to links
+  while ((match = urlPattern.exec(html)) !== null) {
+    const url = match[0];
+    const matchIndex = match.index;
+    
+    // Check if this URL is already inside an anchor tag
+    const beforeUrl = html.substring(0, matchIndex);
+    const afterUrl = html.substring(matchIndex + url.length);
+    
+    // Check if URL is already in href or data-url attribute
+    const isInHref = beforeUrl.includes(`href="${url}"`) || beforeUrl.includes(`href='${url}'`);
+    const isInDataUrl = beforeUrl.includes(`data-url="${url}"`) || beforeUrl.includes(`data-url='${url}'`);
+    
+    // Check if we're inside an anchor tag
+    const lastOpenTag = beforeUrl.lastIndexOf('<a');
+    const lastCloseTag = beforeUrl.lastIndexOf('</a>');
+    const isInsideAnchor = lastOpenTag > lastCloseTag;
+    
+    if (!isInHref && !isInDataUrl && !isInsideAnchor) {
+      // Add text before this URL
+      result += html.substring(lastIndex, matchIndex);
+      
+      // Remove trailing punctuation
+      const cleanUrl = url.replace(/[.,;:!?]+$/, '');
+      const escapedUrl = cleanUrl.replace(/'/g, "\\'");
+      const linkId = `url-link-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create clickable link
+      result += `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${cleanUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); navigator.clipboard.writeText('${escapedUrl}').then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open('${escapedUrl}', '_blank');">${cleanUrl}</a>`;
+      
+      lastIndex = matchIndex + url.length;
+    }
+  }
+  
+  // Add remaining text
+  if (result) {
+    result += html.substring(lastIndex);
+    html = result;
+  }
   
   // 6. Line breaks
   html = html.replace(/\n\n/g, '</p><p class="mb-4">');
@@ -147,25 +186,39 @@ export default function ResearchReport({
     const style = document.createElement('style');
     style.id = 'report-link-styles';
     style.textContent = `
-      .markdown-content a.copied::after {
+      .markdown-content .source-link {
+        position: relative;
+        transition: all 0.2s ease;
+      }
+      .markdown-content .source-link.copied::after {
         content: "✓ Copied!";
         position: absolute;
-        top: -25px;
+        top: -30px;
         left: 50%;
         transform: translateX(-50%);
         background: #10b981;
         color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
         white-space: nowrap;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
         animation: fadeInOut 2s ease;
+      }
+      .markdown-content .source-link.copied {
+        color: #10b981 !important;
       }
       @keyframes fadeInOut {
         0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
-        20% { opacity: 1; transform: translateX(-50%) translateY(0); }
-        80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
         100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+      }
+      .markdown-content .source-citation {
+        display: inline;
       }
     `;
     document.head.appendChild(style);

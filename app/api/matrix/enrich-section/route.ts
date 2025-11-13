@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
             if (data.organic && data.organic.length > 0) {
               webContext += `\n${company} - ${query}:\n`;
               data.organic.slice(0, 2).forEach((result: any) => {
-                webContext += `- ${result.title}\n  ${result.link}\n  ${result.snippet || ''}\n`;
+                webContext += `- ${result.title}\n  URL: ${result.link}\n  ${result.snippet || ''}\n`;
               });
             }
           }
@@ -123,7 +123,7 @@ TASK:
 Enhance this section by adding comprehensive company intelligence where relevant:
 
 FOR EACH COMPANY MENTIONED, ADD:
-- Website URL (if found)
+- Website URL (if found) - MUST include the full working URL
 - Company size (employees, revenue)
 - Headquarters location
 - Key executives (CEO, CTO, etc.)
@@ -132,17 +132,28 @@ FOR EACH COMPANY MENTIONED, ADD:
 - Funding information (if applicable)
 - Recent news or developments
 
+CRITICAL CITATION REQUIREMENTS:
+1. ALWAYS include the EXACT, FULL URL when citing sources from the web search results above
+2. Use format: [Source: Company Name](https://exact-url-here.com) for company websites
+3. Use format: [Source: Article Title](https://exact-news-url.com) for news articles
+4. Use format: [Source: DOD Contracts](https://exact-contract-url.com) for contract information
+5. Extract URLs from the web search results provided above - look for lines starting with "URL:" and use those EXACT URLs
+6. DO NOT use generic or placeholder URLs - only use URLs that were actually found in the search results (marked with "URL:")
+7. If a URL is not available in the search results, use format: [Source: Company Name] without a link
+8. When you see "URL: https://..." in the web search results, that is the EXACT URL to use in your citation
+
 REQUIREMENTS:
 1. Seamlessly integrate the intelligence into the existing content
 2. Add specific data points (numbers, URLs, names)
 3. Maintain professional market research tone
-4. Cite sources with [Source: URL] format
+4. ALWAYS cite sources with exact URLs in [Source: Label](URL) format
 5. Focus on information relevant to "${sectionTitle}"
 6. Do NOT add generic conclusions or introductions
 7. Do NOT repeat the section title
 8. Return ONLY the enhanced content (no preamble)
+9. Extract and use the exact URLs from the web search results provided
 
-Return the enhanced section content with integrated intelligence.`;
+Return the enhanced section content with integrated intelligence and proper URL citations.`;
 
     const response = await client.chat.completions.create({
       model: modelToUse,
