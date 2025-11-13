@@ -236,10 +236,10 @@ export default function MatrixChat({
           console.log("   First incomplete:", incompleteSections.find(s => s.isGenerating)?.id);
           
           // Auto-resume incomplete reports - continue generation immediately
-          if (reportStatus === "in_progress") {
+          if (reportStatus === "in_progress" && conversation.metadata?.reportTopic) {
             console.log("🔄 Auto-resuming incomplete report...");
             setIsLoading(true);
-            generateReport(conversation.metadata.reportTopic || topic).then(() => setIsLoading(false));
+            generateReport(conversation.metadata.reportTopic).then(() => setIsLoading(false));
           }
           
         } else if (reportSections.length > 0) {
