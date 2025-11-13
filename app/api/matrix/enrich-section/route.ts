@@ -167,7 +167,39 @@ export async function POST(request: NextRequest) {
     const openai = await import('openai');
     const client = new openai.default({ apiKey: openAIApiKey });
 
-    const prompt = `You are a defense industry research analyst enriching a market research report section with public intelligence.
+    // Build citation instructions based on whether web search was performed
+    const hasWebSearch = webContext && webContext.trim().length > 0;
+    const citationInstructions = hasWebSearch ? `
+CRITICAL CITATION REQUIREMENTS - ZERO TOLERANCE FOR PLACEHOLDERS:
+1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A VERIFIED SOURCE CITATION - no exceptions
+2. YOU MUST ONLY USE URLs FROM THE "VERIFIED URL:" LINES IN THE WEB SEARCH RESULTS ABOVE
+3. DO NOT create, invent, or guess any URLs - ONLY use URLs explicitly marked as "VERIFIED URL:" in the search results
+4. Use format: [Source: Company Name](VERIFIED_URL_FROM_SEARCH_RESULTS) for company websites
+5. Use format: [Source: Article Title](VERIFIED_URL_FROM_SEARCH_RESULTS) for news articles
+6. Use format: [Source: DOD Contracts](VERIFIED_URL_FROM_SEARCH_RESULTS) for contract information
+7. Extract URLs ONLY from lines starting with "VERIFIED URL:" in the web search results above
+8. ABSOLUTELY FORBIDDEN: Using placeholder URLs like "https://exact-url.com/", "https://example.com", "https://companyname.com" (without www), or any URL not explicitly listed as "VERIFIED URL:"
+9. ABSOLUTELY FORBIDDEN: Making up URLs, guessing URLs, or using generic URLs
+10. If a fact cannot be verified with a VERIFIED URL from the search results, you MUST either:
+    a) Omit the fact entirely, OR
+    b) Use format: [Source: Unverified - needs confirmation] and clearly state the information is unverified
+11. Every URL you cite MUST appear in the "VERIFIED URL:" lines above - cross-reference before using
+12. URLs must be complete, functional, and match EXACTLY what appears after "VERIFIED URL:" in the search results
+13. For company information (CEO, employees, revenue), ONLY use information from official company websites (look for "official website" in search results) or verified news sources
+14. VERIFY ALL INFORMATION - if you cannot verify a fact with a VERIFIED URL from the search results, DO NOT include it
+15. DO NOT make up or guess information - only use verified facts from the VERIFIED URLs provided above
+16. If the search results do not contain a VERIFIED URL for a piece of information, that information should NOT be included in your response` : `
+CITATION REQUIREMENTS (Web search not available - using internal data sources):
+1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A SOURCE CITATION - no exceptions
+2. Use format: [Source: Data Source Name] for information from internal databases
+3. Use format: [Source: DOD Contracts] for contract information from internal databases
+4. Use format: [Source: SBIR Opportunities] for SBIR data from internal databases
+5. You may cite information from the CURRENT SECTION CONTENT above if it's already verified
+6. DO NOT create, invent, or guess any URLs - if you don't have a URL, use [Source: Internal Database] format
+7. Focus on enhancing the existing content with analysis and context, using the data already provided
+8. If you reference company information, cite it as [Source: Internal Database] or [Source: DOD Contracts]`;
+
+    const prompt = `You are a defense industry research analyst enriching a market research report section with intelligence from available sources.
 
 RESEARCH TOPIC: ${topic}
 
@@ -176,7 +208,7 @@ SECTION: ${sectionTitle}
 CURRENT SECTION CONTENT:
 ${sectionContent}
 
-${webContext ? `ADDITIONAL PUBLIC INTELLIGENCE:\n${webContext}` : ''}
+${webContext ? `ADDITIONAL PUBLIC INTELLIGENCE FROM WEB SEARCH:\n${webContext}` : 'NOTE: Web search is not available. Use the CURRENT SECTION CONTENT and internal database sources to enhance this section.'}
 
 CRITICAL WRITING STYLE REQUIREMENTS:
 - Write in ACADEMIC RESEARCH STYLE (PhD-level quality)
@@ -210,56 +242,42 @@ FOR EACH COMPANY MENTIONED, ADD (integrated into paragraphs):
 
 CRITICAL: For ECS Federal specifically, the CEO is John Hengan (NOT George Wilson). Verify all executive information from official company websites or verified news sources.
 
-CRITICAL CITATION REQUIREMENTS - ZERO TOLERANCE FOR PLACEHOLDERS:
-1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A VERIFIED SOURCE CITATION - no exceptions
-2. YOU MUST ONLY USE URLs FROM THE "VERIFIED URL:" LINES IN THE WEB SEARCH RESULTS ABOVE
-3. DO NOT create, invent, or guess any URLs - ONLY use URLs explicitly marked as "VERIFIED URL:" in the search results
-4. Use format: [Source: Company Name](VERIFIED_URL_FROM_SEARCH_RESULTS) for company websites
-5. Use format: [Source: Article Title](VERIFIED_URL_FROM_SEARCH_RESULTS) for news articles
-6. Use format: [Source: DOD Contracts](VERIFIED_URL_FROM_SEARCH_RESULTS) for contract information
-7. Extract URLs ONLY from lines starting with "VERIFIED URL:" in the web search results above
-8. ABSOLUTELY FORBIDDEN: Using placeholder URLs like "https://exact-url.com/", "https://example.com", "https://companyname.com" (without www), or any URL not explicitly listed as "VERIFIED URL:"
-9. ABSOLUTELY FORBIDDEN: Making up URLs, guessing URLs, or using generic URLs
-10. If a fact cannot be verified with a VERIFIED URL from the search results, you MUST either:
-    a) Omit the fact entirely, OR
-    b) Use format: [Source: Unverified - needs confirmation] and clearly state the information is unverified
-11. Every URL you cite MUST appear in the "VERIFIED URL:" lines above - cross-reference before using
-12. URLs must be complete, functional, and match EXACTLY what appears after "VERIFIED URL:" in the search results
-13. For company information (CEO, employees, revenue), ONLY use information from official company websites (look for "official website" in search results) or verified news sources
-14. VERIFY ALL INFORMATION - if you cannot verify a fact with a VERIFIED URL from the search results, DO NOT include it
-15. DO NOT make up or guess information - only use verified facts from the VERIFIED URLs provided above
-16. If the search results do not contain a VERIFIED URL for a piece of information, that information should NOT be included in your response
+${citationInstructions}
 
 REQUIREMENTS:
 1. Seamlessly integrate the intelligence into the existing content in paragraph form
-2. Add specific data points (numbers, URLs, names) integrated naturally into sentences - BUT ONLY if verified with VERIFIED URLs
+2. Add specific data points (numbers, URLs, names) integrated naturally into sentences
 3. Maintain professional, academic market research tone
-4. ALWAYS cite sources with VERIFIED URLs in [Source: Label](VERIFIED_URL) format - ONLY use URLs from "VERIFIED URL:" lines
+4. ${hasWebSearch ? 'ALWAYS cite sources with VERIFIED URLs in [Source: Label](VERIFIED_URL) format - ONLY use URLs from "VERIFIED URL:" lines' : 'ALWAYS cite sources using [Source: Data Source Name] format for internal data'}
 5. Focus on information relevant to "${sectionTitle}"
 6. Do NOT add generic conclusions or introductions
 7. Do NOT repeat the section title
 8. Return ONLY the enhanced content (no preamble)
-9. Extract and use ONLY the URLs from "VERIFIED URL:" lines in the web search results - NO OTHER URLs
+9. ${hasWebSearch ? 'Extract and use ONLY the URLs from "VERIFIED URL:" lines in the web search results - NO OTHER URLs' : 'Use internal database citations - do not invent URLs'}
 10. Convert any bullet lists into flowing paragraph form where possible
-11. If you cannot find a VERIFIED URL for information, DO NOT include that information
+11. ${hasWebSearch ? 'If you cannot find a VERIFIED URL for information, DO NOT include that information' : 'Use the data from CURRENT SECTION CONTENT and internal databases to enhance the analysis'}
 12. Quality over quantity - only include verified, cited information
-
+${hasWebSearch ? `
 VALIDATION CHECKLIST BEFORE INCLUDING ANY INFORMATION:
 - [ ] Is there a VERIFIED URL for this fact in the search results above?
 - [ ] Does the URL appear in a "VERIFIED URL:" line?
 - [ ] Is the URL complete and functional (not a placeholder)?
 - [ ] Can I cite this fact with [Source: Label](VERIFIED_URL) format?
 
-If any answer is NO, DO NOT include that information.
+If any answer is NO, DO NOT include that information.` : ''}
 
-Return the enhanced section content with integrated intelligence in academic paragraph form with proper VERIFIED URL citations.`;
+Return the enhanced section content with integrated intelligence in academic paragraph form with proper source citations.`;
+
+    const systemMessage = hasWebSearch 
+      ? 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with VERIFIED URLs ONLY. You provide specific, actionable data integrated naturally into analytical prose. You MUST verify all facts before including them and ensure every statement has a VERIFIED source citation from the search results. You are FORBIDDEN from using placeholder URLs, making up URLs, or including any information without a VERIFIED URL citation. If information cannot be verified with a VERIFIED URL from the search results, you must omit it entirely.'
+      : 'You are a defense market research analyst who enhances reports with intelligence from internal databases and existing content. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations. You provide specific, actionable data integrated naturally into analytical prose. You MUST cite all facts using [Source: Data Source Name] format for internal data. You are FORBIDDEN from making up URLs or placeholder citations. Use the existing section content and internal database sources to enhance the analysis with deeper insights and context.';
 
     const response = await client.chat.completions.create({
       model: modelToUse,
       messages: [
         {
           role: 'system',
-          content: 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with VERIFIED URLs ONLY. You provide specific, actionable data integrated naturally into analytical prose. You MUST verify all facts before including them and ensure every statement has a VERIFIED source citation from the search results. You are FORBIDDEN from using placeholder URLs, making up URLs, or including any information without a VERIFIED URL citation. If information cannot be verified with a VERIFIED URL from the search results, you must omit it entirely.',
+          content: systemMessage,
         },
         {
           role: 'user',

@@ -238,9 +238,10 @@ export default function MatrixChat({
           // Auto-resume incomplete reports - continue generation immediately
           if (reportStatus === "in_progress" && conversation.metadata?.reportTopic) {
             console.log("🔄 Auto-resuming incomplete report...");
+            console.log("   Passing", partialSections.length, "existing sections to resume");
             setIsLoading(true);
-            // Pass the conversation ID to prevent creating a new conversation
-            generateReport(conversation.metadata.reportTopic, conversationId).then(() => setIsLoading(false));
+            // Pass the conversation ID AND existing sections to prevent creating a new conversation
+            generateReport(conversation.metadata.reportTopic, conversationId, incompleteSections).then(() => setIsLoading(false));
           }
           
         } else if (reportSections.length > 0) {
@@ -382,7 +383,7 @@ export default function MatrixChat({
     }
   };
 
-  const generateReport = async (topic: string, existingConversationId?: string) => {
+  const generateReport = async (topic: string, existingConversationId?: string, existingSections?: ReportSection[]) => {
     // Create new AbortController for this generation
     const controller = new AbortController();
     setAbortController(controller);
@@ -473,10 +474,16 @@ export default function MatrixChat({
     }
 
     // Initialize report sections - preserve existing sections if resuming
-    if (existingConversationId) {
-      // When resuming, don't reset sections - they're already loaded in loadConversation
+    if (existingConversationId && existingSections) {
+      // When resuming, update state with existing sections so UI shows them
       console.log("🔄 Preserving existing sections for resume");
-      // Just ensure report mode is set
+      console.log(`   Updating state with ${existingSections.length} sections`);
+      // Update state with existing sections to ensure UI shows them
+      setReportSections(existingSections.map(s => ({
+        ...s,
+        isGenerating: false,
+        generationStatus: undefined,
+      })));
       setReportMode(true);
       setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
     } else {
@@ -498,21 +505,30 @@ export default function MatrixChat({
     // Track sources separately (state updates are async, can't rely on reportSections state)
     const sectionSources: Record<string, DataSource[]> = {};
     
-    // When resuming, load existing section contents from state
-    if (existingConversationId) {
-      reportSections.forEach(s => {
+    // When resuming, load existing section contents from passed-in data
+    if (existingConversationId && existingSections) {
+      console.log(`🔄 Loading ${existingSections.length} existing sections for resume`);
+      existingSections.forEach(s => {
         if (s.content && s.content.trim()) {
+          console.log(`   ✅ Found completed section: ${s.title} (${s.content.length} chars)`);
           sectionContents[s.id] = s.content;
           sectionSources[s.id] = s.sources || [];
         }
       });
+      console.log(`   Total completed sections loaded: ${Object.keys(sectionContents).length}`);
     }
 
     // Generate each section - run start to finish
     for (const section of REPORT_SECTIONS) {
       // When resuming, skip sections that are already complete
       if (existingConversationId && sectionContents[section.id] && sectionContents[section.id].trim()) {
-        console.log(`⏭️  Skipping completed section: ${section.title}`);
+        console.log(`⏭️  Skipping completed section: ${section.title} (${sectionContents[section.id].length} chars)`);
+        // Still update the section in state to ensure it's marked as complete
+        setReportSections(prev => prev.map(s => 
+          s.id === section.id 
+            ? { ...s, content: sectionContents[section.id], sources: sectionSources[section.id] || [], isGenerating: false, generationStatus: undefined }
+            : s
+        ));
         continue;
       }
       // Check if generation was cancelled (only for manual cancellation)
