@@ -41,39 +41,63 @@ export async function POST(request: NextRequest) {
 
     console.log(`[ENRICH SECTION] ${sectionTitle}`);
 
-    // Step 1: Extract companies from this section
-    const companyPattern = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Inc|LLC|Corp|Corporation|Systems|Technologies|Solutions|Group|Industries)))/g;
-    const acronymPattern = /\b([A-Z]{2,}(?:\s+[A-Z]+)*)\b/g;
+    // Step 1: Extract companies from this section with improved patterns
+    const companyPatterns = [
+      // Full company names with suffixes
+      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Inc|LLC|Corp|Corporation|Systems|Technologies|Solutions|Group|Industries|Federal|International|Global|Aerospace|Defense|Technologies|Services|Consulting|Associates)))/g,
+      // Common defense contractors
+      /(Lockheed Martin|Raytheon|Northrop Grumman|General Dynamics|Boeing|L3Harris|Leidos|Booz Allen|CACI|ManTech|ECS Federal|SAIC|Huntington Ingalls)/gi,
+      // Company names in quotes or after "such as"
+      /(?:such as|including|like|e\.g\.|for example)[\s:]+([A-Z][a-zA-Z\s&]+(?:Inc|LLC|Corp|Corporation|Systems|Technologies|Solutions|Group|Industries|Federal)?)/gi,
+    ];
     
     const companies = new Set<string>();
-    const matches1 = sectionContent.match(companyPattern) || [];
-    const matches2 = sectionContent.match(acronymPattern) || [];
+    const excludeWords = new Set(['The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Phase', 'Table', 'Figure', 'Section', 'DOD', 'USG', 'US', 'USA', 'Army', 'Navy', 'Air Force', 'Space Force', 'Marines']);
     
-    [...matches1, ...matches2].forEach(name => {
-      if (name.length > 3 && !name.match(/^(The|This|That|These|Those|What|When|Where|Phase|Table|Figure|Section)\b/i)) {
-        companies.add(name.trim());
-      }
+    companyPatterns.forEach(pattern => {
+      const matches = sectionContent.match(pattern) || [];
+      matches.forEach(match => {
+        const cleaned = match.trim().replace(/^["']|["']$/g, ''); // Remove quotes
+        if (cleaned.length > 3 && 
+            !excludeWords.has(cleaned) && 
+            !cleaned.match(/^(The|This|That|These|Those|What|When|Where|Phase|Table|Figure|Section)\b/i) &&
+            cleaned.split(' ').length <= 5) { // Max 5 words for company name
+          companies.add(cleaned);
+        }
+      });
     });
 
-    const companyList = Array.from(companies).slice(0, 5); // Max 5 companies per section
+    // Also extract from companiesInSection if provided
+    if (companiesInSection && Array.isArray(companiesInSection)) {
+      companiesInSection.forEach((company: string) => {
+        if (company && typeof company === 'string' && company.trim().length > 0) {
+          companies.add(company.trim());
+        }
+      });
+    }
+
+    const companyList = Array.from(companies).slice(0, 8); // Increased to 8 companies
     console.log(`[ENRICH SECTION] Found ${companyList.length} companies:`, companyList);
 
-    // Step 2: Search for company info (if Serper is configured)
+    // Step 2: Search for company info with VERIFIED sources only (if Serper is configured)
     let webContext = "";
+    const verifiedUrls = new Set<string>(); // Track verified URLs to prevent duplicates
     
     if (serperApiKey && companyList.length > 0) {
-      console.log(`[ENRICH SECTION] Searching web for company intelligence...`);
+      console.log(`[ENRICH SECTION] Searching web for VERIFIED company intelligence...`);
       
       for (const company of companyList) {
         try {
-          // Focused searches for this section's topic
+          // More targeted searches for verified information
           const queries = [
-            `${company} ${topic}`,
-            `${company} official website contact`,
-            `${company} employees headcount size`,
-            `${company} CEO executives leadership`,
-            `${company} defense contractor government`,
-            `${company} recent news 2024`,
+            `${company} official website`,
+            `${company} CEO president leadership team`,
+            `${company} headquarters location address`,
+            `${company} employees headcount workforce size`,
+            `${company} revenue financial information`,
+            `${company} defense contracts DOD awards`,
+            `${company} government contractor GSA CAGE code`,
+            `${company} recent news 2024 2025`,
           ];
 
           for (const query of queries) {
@@ -83,21 +107,56 @@ export async function POST(request: NextRequest) {
                 'X-API-KEY': serperApiKey,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ q: query, num: 2 }),
+              body: JSON.stringify({ q: query, num: 3 }), // Get 3 results per query
             });
 
             const data = await response.json();
             if (data.organic && data.organic.length > 0) {
-              webContext += `\n${company} - ${query}:\n`;
-              data.organic.slice(0, 2).forEach((result: any) => {
-                webContext += `- ${result.title}\n  URL: ${result.link}\n  ${result.snippet || ''}\n`;
+              // Only include results with valid, non-placeholder URLs
+              const validResults = data.organic.filter((result: any) => {
+                if (!result.link) return false;
+                // Validate URL - reject placeholders
+                try {
+                  const url = new URL(result.link);
+                  // Reject placeholder domains
+                  const invalidDomains = ['exact-url.com', 'example.com', 'placeholder.com', 'test.com', 'localhost'];
+                  if (invalidDomains.some(domain => url.hostname.includes(domain))) {
+                    return false;
+                  }
+                  // Must be http or https
+                  if (!['http:', 'https:'].includes(url.protocol)) {
+                    return false;
+                  }
+                  // Must have valid hostname
+                  if (!url.hostname || url.hostname.length < 3) {
+                    return false;
+                  }
+                  // Track verified URLs
+                  verifiedUrls.add(result.link);
+                  return true;
+                } catch {
+                  return false; // Invalid URL format
+                }
               });
+
+              if (validResults.length > 0) {
+                webContext += `\n=== ${company} - ${query} ===\n`;
+                validResults.slice(0, 3).forEach((result: any) => {
+                  webContext += `TITLE: ${result.title}\n`;
+                  webContext += `VERIFIED URL: ${result.link}\n`;
+                  webContext += `CONTENT: ${result.snippet || ''}\n`;
+                  if (result.date) webContext += `DATE: ${result.date}\n`;
+                  webContext += `\n`;
+                });
+              }
             }
           }
         } catch (err) {
           console.error(`[ENRICH SECTION] Error searching ${company}:`, err);
         }
       }
+      
+      console.log(`[ENRICH SECTION] Collected ${verifiedUrls.size} verified URLs`);
     } else {
       console.log(`[ENRICH SECTION] Serper API not configured, skipping web search`);
     }
@@ -151,45 +210,56 @@ FOR EACH COMPANY MENTIONED, ADD (integrated into paragraphs):
 
 CRITICAL: For ECS Federal specifically, the CEO is John Hengan (NOT George Wilson). Verify all executive information from official company websites or verified news sources.
 
-CRITICAL CITATION REQUIREMENTS:
-1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A SOURCE CITATION - no exceptions
-2. ALWAYS include the EXACT, FULL URL when citing sources from the web search results above
-3. Use format: [Source: Company Name](https://exact-url-here.com) for company websites
-4. Use format: [Source: Article Title](https://exact-news-url.com) for news articles
-5. Use format: [Source: DOD Contracts](https://exact-contract-url.com) for contract information
-6. Extract URLs from the web search results provided above - look for lines starting with "URL:" and use those EXACT URLs
-7. DO NOT use generic or placeholder URLs like "https://exact-url.com/" or "https://example.com" - these are invalid
-8. DO NOT use generic labels like "DOD Contracts" without an actual URL - if no URL is available, use format: [Source: Company Name] without a link
-9. When you see "URL: https://..." in the web search results, that is the EXACT URL to use in your citation
-10. Every fact-based statement should have a working URL citation when possible
-11. URLs must be complete and functional - test that they would work if clicked
-12. If citing a company website, use the exact homepage URL (e.g., https://www.companyname.com, not just "Company Name")
-13. If citing a news article, use the exact article URL from the search results
-14. If citing a contract, use the exact contract detail page URL from DOD/FPDS sources
-15. VERIFY ALL INFORMATION - if you cannot verify a fact with a source, do not include it or clearly mark it as unverified
-16. For company information (CEO, employees, revenue), use official company websites or verified news sources only
-17. DO NOT make up or guess information - only use verified facts from provided sources
+CRITICAL CITATION REQUIREMENTS - ZERO TOLERANCE FOR PLACEHOLDERS:
+1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A VERIFIED SOURCE CITATION - no exceptions
+2. YOU MUST ONLY USE URLs FROM THE "VERIFIED URL:" LINES IN THE WEB SEARCH RESULTS ABOVE
+3. DO NOT create, invent, or guess any URLs - ONLY use URLs explicitly marked as "VERIFIED URL:" in the search results
+4. Use format: [Source: Company Name](VERIFIED_URL_FROM_SEARCH_RESULTS) for company websites
+5. Use format: [Source: Article Title](VERIFIED_URL_FROM_SEARCH_RESULTS) for news articles
+6. Use format: [Source: DOD Contracts](VERIFIED_URL_FROM_SEARCH_RESULTS) for contract information
+7. Extract URLs ONLY from lines starting with "VERIFIED URL:" in the web search results above
+8. ABSOLUTELY FORBIDDEN: Using placeholder URLs like "https://exact-url.com/", "https://example.com", "https://companyname.com" (without www), or any URL not explicitly listed as "VERIFIED URL:"
+9. ABSOLUTELY FORBIDDEN: Making up URLs, guessing URLs, or using generic URLs
+10. If a fact cannot be verified with a VERIFIED URL from the search results, you MUST either:
+    a) Omit the fact entirely, OR
+    b) Use format: [Source: Unverified - needs confirmation] and clearly state the information is unverified
+11. Every URL you cite MUST appear in the "VERIFIED URL:" lines above - cross-reference before using
+12. URLs must be complete, functional, and match EXACTLY what appears after "VERIFIED URL:" in the search results
+13. For company information (CEO, employees, revenue), ONLY use information from official company websites (look for "official website" in search results) or verified news sources
+14. VERIFY ALL INFORMATION - if you cannot verify a fact with a VERIFIED URL from the search results, DO NOT include it
+15. DO NOT make up or guess information - only use verified facts from the VERIFIED URLs provided above
+16. If the search results do not contain a VERIFIED URL for a piece of information, that information should NOT be included in your response
 
 REQUIREMENTS:
 1. Seamlessly integrate the intelligence into the existing content in paragraph form
-2. Add specific data points (numbers, URLs, names) integrated naturally into sentences
+2. Add specific data points (numbers, URLs, names) integrated naturally into sentences - BUT ONLY if verified with VERIFIED URLs
 3. Maintain professional, academic market research tone
-4. ALWAYS cite sources with exact URLs in [Source: Label](URL) format
+4. ALWAYS cite sources with VERIFIED URLs in [Source: Label](VERIFIED_URL) format - ONLY use URLs from "VERIFIED URL:" lines
 5. Focus on information relevant to "${sectionTitle}"
 6. Do NOT add generic conclusions or introductions
 7. Do NOT repeat the section title
 8. Return ONLY the enhanced content (no preamble)
-9. Extract and use the exact URLs from the web search results provided
+9. Extract and use ONLY the URLs from "VERIFIED URL:" lines in the web search results - NO OTHER URLs
 10. Convert any bullet lists into flowing paragraph form where possible
+11. If you cannot find a VERIFIED URL for information, DO NOT include that information
+12. Quality over quantity - only include verified, cited information
 
-Return the enhanced section content with integrated intelligence in academic paragraph form with proper URL citations.`;
+VALIDATION CHECKLIST BEFORE INCLUDING ANY INFORMATION:
+- [ ] Is there a VERIFIED URL for this fact in the search results above?
+- [ ] Does the URL appear in a "VERIFIED URL:" line?
+- [ ] Is the URL complete and functional (not a placeholder)?
+- [ ] Can I cite this fact with [Source: Label](VERIFIED_URL) format?
+
+If any answer is NO, DO NOT include that information.
+
+Return the enhanced section content with integrated intelligence in academic paragraph form with proper VERIFIED URL citations.`;
 
     const response = await client.chat.completions.create({
       model: modelToUse,
       messages: [
         {
           role: 'system',
-          content: 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with exact URLs. You provide specific, actionable data integrated naturally into analytical prose. You MUST verify all facts before including them and ensure every statement has a source citation. You must NOT use placeholder URLs or make up information.',
+          content: 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with VERIFIED URLs ONLY. You provide specific, actionable data integrated naturally into analytical prose. You MUST verify all facts before including them and ensure every statement has a VERIFIED source citation from the search results. You are FORBIDDEN from using placeholder URLs, making up URLs, or including any information without a VERIFIED URL citation. If information cannot be verified with a VERIFIED URL from the search results, you must omit it entirely.',
         },
         {
           role: 'user',
@@ -200,9 +270,41 @@ Return the enhanced section content with integrated intelligence in academic par
       max_tokens: maxTokens,
     });
 
-    const enhancedContent = response.choices[0].message.content || sectionContent;
+    let enhancedContent = response.choices[0].message.content || sectionContent;
+
+    // Post-process to remove any placeholder URLs that might have slipped through
+    const { validateCitationUrl } = await import('@/lib/url-validation');
+    
+    // Remove invalid URLs from citations
+    enhancedContent = enhancedContent.replace(
+      /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
+      (match, label, url) => {
+        const validUrl = validateCitationUrl(url);
+        if (!validUrl) {
+          // Invalid URL - remove the link, keep just the citation
+          console.warn(`[ENRICH SECTION] Removed invalid URL: ${url}`);
+          return `[Source: ${label}]`;
+        }
+        return match; // Keep valid URLs
+      }
+    );
+
+    // Remove standalone invalid URLs
+    enhancedContent = enhancedContent.replace(
+      /(https?:\/\/[^\s<>"\)\[\]]+)/gi,
+      (match, url) => {
+        const validUrl = validateCitationUrl(url);
+        if (!validUrl && !match.includes('href=') && !match.includes('data-url=')) {
+          // Invalid standalone URL - remove it
+          console.warn(`[ENRICH SECTION] Removed invalid standalone URL: ${url}`);
+          return '';
+        }
+        return match;
+      }
+    );
 
     console.log(`[ENRICH SECTION] ✅ Enhanced ${sectionTitle} (+${enhancedContent.length - sectionContent.length} chars)`);
+    console.log(`[ENRICH SECTION] Verified ${verifiedUrls.size} URLs from web search`);
 
     return NextResponse.json({
       success: true,
@@ -210,6 +312,7 @@ Return the enhanced section content with integrated intelligence in academic par
       enhancedContent,
       companiesFound: companyList.length,
       webSearchPerformed: !!serperApiKey,
+      verifiedUrlsCount: verifiedUrls.size,
     });
   } catch (error: any) {
     console.error("[ENRICH SECTION] Error:", error);
