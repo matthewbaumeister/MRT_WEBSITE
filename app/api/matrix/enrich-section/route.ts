@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     
     companyPatterns.forEach(pattern => {
       const matches = sectionContent.match(pattern) || [];
-      matches.forEach(match => {
+      matches.forEach((match: string) => {
         const cleaned = match.trim().replace(/^["']|["']$/g, ''); // Remove quotes
         if (cleaned.length > 3 && 
             !excludeWords.has(cleaned) && 
