@@ -317,18 +317,57 @@ export default function MatrixChat({
     }
   };
 
+  // Convert user prompt to a title-like format
+  const formatTopicAsTitle = (topic: string): string => {
+    // Remove common prompt phrases
+    let cleaned = topic
+      .replace(/^(give me|tell me about|i need|i want|create|generate|make|write|do|show me|find|search for|research|analyze)\s+/i, '')
+      .replace(/\s+(report|research|analysis|study|info|information|data|details|summary)$/i, '')
+      .replace(/\s+(on|about|regarding|concerning|for)\s+/gi, ' ')
+      .trim();
+    
+    // If empty after cleaning, use original
+    if (!cleaned || cleaned.length < 3) {
+      cleaned = topic.trim();
+    }
+    
+    // Convert to Title Case (capitalize first letter of each word)
+    const words = cleaned.split(/\s+/);
+    const titleCase = words
+      .map(word => {
+        // Skip very short words unless they're important
+        if (word.length <= 2 && !['AI', 'IT', 'US', 'UK', 'DoD', 'DOD'].includes(word.toUpperCase())) {
+          return word.toLowerCase();
+        }
+        // Capitalize first letter, lowercase rest
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+    
+    // Limit length to 60 characters
+    if (titleCase.length > 60) {
+      return titleCase.substring(0, 57) + '...';
+    }
+    
+    return titleCase;
+  };
+
   // Create or update conversation
   const createConversation = async (topic: string): Promise<string | null> => {
     try {
       const titlePrefix = maxMode ? "MAX-Research:" : "Research:";
-      console.log(`🆕 Creating new conversation: "${titlePrefix} ${topic}"`);
+      const formattedTitle = formatTopicAsTitle(topic);
+      const fullTitle = `${titlePrefix} ${formattedTitle}`;
+      console.log(`🆕 Creating new conversation: "${fullTitle}"`);
+      console.log(`   Original topic: "${topic}"`);
+      console.log(`   Formatted title: "${formattedTitle}"`);
       console.log(`   Project: ${projectId || 'none'}`);
       
       const response = await fetch("/api/matrix/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: `${titlePrefix} ${topic}`,
+          title: fullTitle,
           project_id: projectId === "ALL" ? null : projectId, // Convert "ALL" to null
           metadata: {
             settings: { extendedThinking, webSearch, research, smallBusinessFocus, maxMode }
@@ -485,7 +524,8 @@ export default function MatrixChat({
         generationStatus: undefined,
       })));
       setReportMode(true);
-      setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
+      const formattedTitle = formatTopicAsTitle(topic);
+      setReportTitle(maxMode ? `MAX-Research: ${formattedTitle}` : `Research: ${formattedTitle}`);
     } else {
       // New report - start fresh
       const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
@@ -496,7 +536,8 @@ export default function MatrixChat({
       }));
       setReportSections(initialSections);
       setReportMode(true);
-      setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
+      const formattedTitle = formatTopicAsTitle(topic);
+      setReportTitle(maxMode ? `MAX-Research: ${formattedTitle}` : `Research: ${formattedTitle}`);
     }
 
     // Collect all section contents for the final conclusion
