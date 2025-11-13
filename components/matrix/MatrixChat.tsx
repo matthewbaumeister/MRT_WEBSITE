@@ -326,6 +326,14 @@ export default function MatrixChat({
       .replace(/\s+(on|about|regarding|concerning|for)\s+/gi, ' ')
       .trim();
     
+    // Fix common typos in company names
+    cleaned = cleaned
+      .replace(/\bresrah\b/gi, 'research')
+      .replace(/\bcontracitng\b/gi, 'contracting')
+      .replace(/\bcomapny\b/gi, 'company')
+      .replace(/\bfederal\b/gi, 'Federal') // Capitalize Federal when it's part of a company name
+      .replace(/\becs\b/gi, 'ECS'); // Capitalize ECS
+    
     // If empty after cleaning, use original
     if (!cleaned || cleaned.length < 3) {
       cleaned = topic.trim();
@@ -335,8 +343,13 @@ export default function MatrixChat({
     const words = cleaned.split(/\s+/);
     const titleCase = words
       .map(word => {
+        // Preserve common acronyms and proper nouns
+        const upperWord = word.toUpperCase();
+        if (['ECS', 'DOD', 'USG', 'AI', 'IT', 'US', 'UK', 'SBIR', 'STTR', 'GSA'].includes(upperWord)) {
+          return upperWord;
+        }
         // Skip very short words unless they're important
-        if (word.length <= 2 && !['AI', 'IT', 'US', 'UK', 'DoD', 'DOD'].includes(word.toUpperCase())) {
+        if (word.length <= 2 && !['AI', 'IT', 'US', 'UK', 'DoD', 'DOD'].includes(upperWord)) {
           return word.toLowerCase();
         }
         // Capitalize first letter, lowercase rest
