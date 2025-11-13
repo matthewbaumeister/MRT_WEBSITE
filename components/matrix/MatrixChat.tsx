@@ -934,10 +934,13 @@ export default function MatrixChat({
         ? reportSections.find(s => s.id === selectedSection)?.content || null
         : null;
 
+      console.log(`\n========== [ADVANCED QUERY] START ==========`);
       console.log(`[ADVANCED QUERY] Querying: "${query}"`);
       console.log(`[ADVANCED QUERY] Section: ${selectedSection || "whole report"}`);
       console.log(`[ADVANCED QUERY] Research topic: ${researchTopic}`);
       console.log(`[ADVANCED QUERY] Merge mode: ${!!mergeInstructions}`);
+      console.log(`[ADVANCED QUERY] mergeInstructions value:`, mergeInstructions);
+      console.log(`[ADVANCED QUERY] mergeInstructions !== undefined:`, mergeInstructions !== undefined);
 
       // Use new advanced query API that fetches fresh data
       const response = await fetch("/api/matrix/advanced-query", {
@@ -959,13 +962,20 @@ export default function MatrixChat({
         const answer = data.answer;
         
         // If this is a merge operation, update the section(s)
+        console.log(`[MERGE] Checking if merge mode: ${mergeInstructions !== undefined}`);
         if (mergeInstructions !== undefined) {
+          console.log(`[MERGE] ✅ MERGE MODE CONFIRMED - Starting merge process`);
+          console.log(`[MERGE] selectedSection:`, selectedSection);
+          console.log(`[MERGE] reportSections count:`, reportSections.length);
+          
           if (selectedSection) {
             // Single section merge
+            console.log(`[MERGE] 📍 Single section merge - Target: ${selectedSection}`);
             console.log(`[MERGE] Updating section ${selectedSection} with new data`);
             
             // Show merging animation with visual feedback
             console.log(`[MERGE] 🔵 Showing merge indicator for section: ${selectedSection}`);
+            console.log(`[MERGE] Setting isGenerating=true, generationStatus="🔄 Merging..."`);
             setReportSections(prev => prev.map(s => 
               s.id === selectedSection 
                 ? { 

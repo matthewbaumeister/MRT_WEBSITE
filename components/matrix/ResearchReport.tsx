@@ -79,11 +79,8 @@ function parseMarkdownContent(content: string): string {
   html = html.replace(
     /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+~#?&/=]*)/gi,
     (match) => {
-      // Remove trailing punctuation (. , ) ] } etc) from URLs
-      let url = match;
-      while (url.match(/[.,;:)\]}\-!?]+$/)) {
-        url = url.slice(0, -1);
-      }
+      // Remove ONLY trailing periods and commas from URLs (not parentheses - those might be part of URL)
+      let url = match.replace(/[.,]+$/, '');
       
       // Skip generic URLs like "domain.com/news" - only use if they have specific paths
       if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
