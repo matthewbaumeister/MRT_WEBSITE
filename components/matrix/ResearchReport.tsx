@@ -83,16 +83,8 @@ function parseMarkdownContent(content: string): string {
       if (url.endsWith('/news') || url.endsWith('/press') || url.endsWith('/blog')) {
         return url; // Return as plain text
       }
-      return `<a 
-        href="${url}" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group"
-        onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);"
-      >
-        ${url}
-        <span class="opacity-0 group-hover:opacity-100 transition-opacity text-xs">📋</span>
-      </a>`;
+      // Return as single line to prevent escaping issues
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline cursor-pointer inline-flex items-center gap-1 group" onclick="event.stopPropagation(); navigator.clipboard.writeText('${url}'); const el = event.currentTarget; el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 2000);">${url}<span class="opacity-0 group-hover:opacity-100 transition-opacity text-xs">📋</span></a>`;
     }
   );
   

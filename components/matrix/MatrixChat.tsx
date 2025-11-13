@@ -967,12 +967,12 @@ export default function MatrixChat({
             // Show merging animation
             setReportSections(prev => prev.map(s => 
               s.id === selectedSection 
-                ? { ...s, isGenerating: true, generationStatus: "Merging query results..." }
+                ? { ...s, isGenerating: true, generationStatus: "Merging advanced query results..." }
                 : s
             ));
             
             // Wait for visual feedback
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 800));
             
             // Update the section content with merged data
             const currentSection = reportSections.find(s => s.id === selectedSection);
@@ -998,7 +998,7 @@ export default function MatrixChat({
             setReportSections(prev => prev.map(s => ({
               ...s,
               isGenerating: true,
-              generationStatus: "Analyzing relevance..."
+              generationStatus: "Merging advanced query results..."
             })));
             
             // Wait for visual feedback
