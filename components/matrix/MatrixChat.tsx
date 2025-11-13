@@ -411,7 +411,7 @@ export default function MatrixChat({
             conv.metadata?.reportTopic?.toLowerCase() === topic.toLowerCase()
           );
           
-          if (existingReport) {
+          if (existingReport && existingReport.id) {
             console.log("⚠️ Found existing in_progress report with same topic, using it instead of creating duplicate");
             conversationId = existingReport.id;
             setCurrentConversationId(conversationId);
