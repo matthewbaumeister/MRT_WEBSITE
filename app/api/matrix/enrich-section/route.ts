@@ -278,7 +278,7 @@ Return the enhanced section content with integrated intelligence in academic par
     // Remove invalid URLs from citations
     enhancedContent = enhancedContent.replace(
       /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
-      (match, label, url) => {
+      (match: string, label: string, url: string) => {
         const validUrl = validateCitationUrl(url);
         if (!validUrl) {
           // Invalid URL - remove the link, keep just the citation
@@ -292,7 +292,7 @@ Return the enhanced section content with integrated intelligence in academic par
     // Remove standalone invalid URLs
     enhancedContent = enhancedContent.replace(
       /(https?:\/\/[^\s<>"\)\[\]]+)/gi,
-      (match, url) => {
+      (match: string, url: string) => {
         const validUrl = validateCitationUrl(url);
         if (!validUrl && !match.includes('href=') && !match.includes('data-url=')) {
           // Invalid standalone URL - remove it
