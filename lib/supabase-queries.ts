@@ -400,15 +400,47 @@ export async function searchSupabaseTables(
             const companyLower = companyName.toLowerCase();
             const companyWords = companyLower.split(/\s+/);
             
-            // Filter: row must contain ALL company words (case-insensitive)
+            // STRICT FILTERING: Require the full company name phrase to appear together
+            // This prevents matching "federal" separately from "ECS"
+            const companyPhrase = companyLower; // e.g., "ecs federal"
+            
             filteredData = data.filter((row: any) => {
-              // Convert row to string and check if all company words appear
+              // Convert row to string for searching
               const rowText = JSON.stringify(row).toLowerCase();
-              return companyWords.every(word => rowText.includes(word));
+              
+              // PRIMARY CHECK: Full company name phrase must appear
+              if (rowText.includes(companyPhrase)) {
+                return true;
+              }
+              
+              // FALLBACK: If phrase not found, check if all words appear close together
+              // (within 50 characters of each other to catch "ECS Federal" vs "Federal ECS")
+              const wordIndices = companyWords.map(word => rowText.indexOf(word));
+              const allWordsFound = wordIndices.every(idx => idx !== -1);
+              
+              if (allWordsFound) {
+                // Check if words are close together (within 50 chars)
+                const minIdx = Math.min(...wordIndices);
+                const maxIdx = Math.max(...wordIndices);
+                const lastWordLength = companyWords[companyWords.length - 1].length;
+                const distance = (maxIdx + lastWordLength) - minIdx;
+                
+                // If words are close together, it's likely the company name
+                if (distance <= 50) {
+                  return true;
+                }
+              }
+              
+              // If neither check passes, exclude this row
+              return false;
             });
             
             if (filteredData.length < data.length) {
               console.log(`  ✂️  Filtered ${data.length} → ${filteredData.length} results (removed rows not mentioning "${companyName}")`);
+            }
+            
+            if (filteredData.length === 0 && data.length > 0) {
+              console.log(`  ⚠️  WARNING: All ${data.length} results filtered out - none actually mention "${companyName}"`);
             }
           }
           
