@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isValidUrl, validateCitationUrl } from "@/lib/url-validation";
 
 interface DataSource {
   name: string;
@@ -104,11 +105,18 @@ function parseMarkdownContent(content: string): string {
   html = html.replace(
     /\[Source:\s*([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
     (match, label, url) => {
+      // Validate URL - reject placeholder or invalid URLs
+      const validUrl = validateCitationUrl(url);
+      if (!validUrl) {
+        // Invalid URL - return citation without link
+        return `<span class="source-citation">[Source: ${label}]</span>`;
+      }
+      
       // Create a link with data attributes for copy functionality
       // Escape quotes in URL for onclick handler
-      const escapedUrl = url.replace(/'/g, "\\'");
+      const escapedUrl = validUrl.replace(/'/g, "\\'");
       const linkId = `source-link-${Math.random().toString(36).substr(2, 9)}`;
-      return `<span class="source-citation">[Source: <a href="${url}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${url}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${label}</a>]</span>`;
+      return `<span class="source-citation">[Source: <a href="${validUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${validUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${label}</a>]</span>`;
     }
   );
   
@@ -137,16 +145,23 @@ function parseMarkdownContent(content: string): string {
     const isInsideAnchor = lastOpenTag > lastCloseTag;
     
     if (!isInHref && !isInDataUrl && !isInsideAnchor) {
-      // Add text before this URL
-      result += html.substring(lastIndex, matchIndex);
-      
       // Remove trailing punctuation
       const cleanUrl = url.replace(/[.,;:!?]+$/, '');
-      const escapedUrl = cleanUrl.replace(/'/g, "\\'");
-      const linkId = `url-link-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create clickable link - copy and open in background
-      result += `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${cleanUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${cleanUrl}</a>`;
+      // Validate URL - reject placeholder or invalid URLs
+      const validUrl = validateCitationUrl(cleanUrl);
+      if (validUrl) {
+        // Add text before this URL
+        result += html.substring(lastIndex, matchIndex);
+        
+        // Create clickable link - copy and open in background
+        const escapedUrl = validUrl.replace(/'/g, "\\'");
+        const linkId = `url-link-${Math.random().toString(36).substr(2, 9)}`;
+        result += `<a href="${validUrl}" target="_blank" rel="noopener noreferrer" class="source-link text-primary-400 hover:text-primary-300 underline cursor-pointer relative" data-url="${validUrl}" data-link-id="${linkId}" onclick="event.preventDefault(); event.stopPropagation(); const url='${escapedUrl}'; navigator.clipboard.writeText(url).then(() => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); }); window.open(url, '_blank'); return false;">${validUrl}</a>`;
+      } else {
+        // Invalid URL - keep as plain text
+        result += html.substring(lastIndex, matchIndex + url.length);
+      }
       
       lastIndex = matchIndex + url.length;
     }

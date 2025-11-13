@@ -36,7 +36,7 @@ async function getUserByEmail(email: string) {
       twoFactorEnabled: data.two_factor_enabled,
       twoFactorSecret: data.two_factor_secret,
       isActive: data.is_active !== undefined ? data.is_active : true, // Default to true if column doesn't exist
-      subscriptionTier: data.subscription_tier || (data.role === "client" ? "free" : "none"),
+      subscriptionTier: data.subscription_tier || (data.role === "general" ? "free" : "none"),
     };
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -164,7 +164,7 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log("[Session Callback] Input:", { hasSession: !!session, hasToken: !!token });
         if (session?.user && token) {
-          session.user.role = (token.role as string) || "client";
+          session.user.role = (token.role as string) || "general";
           session.user.id = (token.id as string) || "";
           session.user.subscriptionTier = (token.subscriptionTier as string) || "free";
           console.log("[Session Callback] Set role:", session.user.role, "tier:", session.user.subscriptionTier);

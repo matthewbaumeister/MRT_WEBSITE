@@ -143,26 +143,32 @@ FOR EACH COMPANY MENTIONED, ADD (integrated into paragraphs):
 - Website URL (if found) - MUST include the full working URL
 - Company size (employees, revenue)
 - Headquarters location
-- Key executives (CEO, CTO, etc.)
+- Key executives (CEO, CTO, etc.) - VERIFY EXACT NAMES from official sources only
 - Government contractor status (GSA, CAGE, small business certs)
 - Recent contracts or awards
 - Funding information (if applicable)
 - Recent news or developments
 
+CRITICAL: For ECS Federal specifically, the CEO is John Hengan (NOT George Wilson). Verify all executive information from official company websites or verified news sources.
+
 CRITICAL CITATION REQUIREMENTS:
-1. ALWAYS include the EXACT, FULL URL when citing sources from the web search results above
-2. Use format: [Source: Company Name](https://exact-url-here.com) for company websites
-3. Use format: [Source: Article Title](https://exact-news-url.com) for news articles
-4. Use format: [Source: DOD Contracts](https://exact-contract-url.com) for contract information
-5. Extract URLs from the web search results provided above - look for lines starting with "URL:" and use those EXACT URLs
-6. DO NOT use generic or placeholder URLs - only use URLs that were actually found in the search results (marked with "URL:")
-7. DO NOT use generic labels like "DOD Contracts" without an actual URL - if no URL is available, use format: [Source: Company Name] without a link
-8. When you see "URL: https://..." in the web search results, that is the EXACT URL to use in your citation
-9. Every fact-based statement should have a working URL citation when possible
-10. URLs must be complete and functional - test that they would work if clicked
-11. If citing a company website, use the exact homepage URL (e.g., https://www.companyname.com, not just "Company Name")
-12. If citing a news article, use the exact article URL from the search results
-13. If citing a contract, use the exact contract detail page URL from DOD/FPDS sources
+1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A SOURCE CITATION - no exceptions
+2. ALWAYS include the EXACT, FULL URL when citing sources from the web search results above
+3. Use format: [Source: Company Name](https://exact-url-here.com) for company websites
+4. Use format: [Source: Article Title](https://exact-news-url.com) for news articles
+5. Use format: [Source: DOD Contracts](https://exact-contract-url.com) for contract information
+6. Extract URLs from the web search results provided above - look for lines starting with "URL:" and use those EXACT URLs
+7. DO NOT use generic or placeholder URLs like "https://exact-url.com/" or "https://example.com" - these are invalid
+8. DO NOT use generic labels like "DOD Contracts" without an actual URL - if no URL is available, use format: [Source: Company Name] without a link
+9. When you see "URL: https://..." in the web search results, that is the EXACT URL to use in your citation
+10. Every fact-based statement should have a working URL citation when possible
+11. URLs must be complete and functional - test that they would work if clicked
+12. If citing a company website, use the exact homepage URL (e.g., https://www.companyname.com, not just "Company Name")
+13. If citing a news article, use the exact article URL from the search results
+14. If citing a contract, use the exact contract detail page URL from DOD/FPDS sources
+15. VERIFY ALL INFORMATION - if you cannot verify a fact with a source, do not include it or clearly mark it as unverified
+16. For company information (CEO, employees, revenue), use official company websites or verified news sources only
+17. DO NOT make up or guess information - only use verified facts from provided sources
 
 REQUIREMENTS:
 1. Seamlessly integrate the intelligence into the existing content in paragraph form
@@ -183,7 +189,7 @@ Return the enhanced section content with integrated intelligence in academic par
       messages: [
         {
           role: 'system',
-          content: 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with exact URLs. You provide specific, actionable data integrated naturally into analytical prose.',
+          content: 'You are a defense market research analyst who enhances reports with verified public intelligence. You write in PhD-level academic style with flowing paragraphs, minimal bullets, and proper citations with exact URLs. You provide specific, actionable data integrated naturally into analytical prose. You MUST verify all facts before including them and ensure every statement has a source citation. You must NOT use placeholder URLs or make up information.',
         },
         {
           role: 'user',

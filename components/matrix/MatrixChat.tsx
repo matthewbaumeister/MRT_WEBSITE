@@ -389,14 +389,16 @@ export default function MatrixChat({
     console.log("🎬 [GENERATION] Starting report generation (AbortController created)");
     
     // Use provided conversation ID if resuming, otherwise use current or create new
-    let conversationId = existingConversationId || currentConversationId;
+    let conversationId: string | null | undefined = existingConversationId || currentConversationId;
     
-    // If we have an existing conversation ID (from resume), use it and skip creation
-    if (existingConversationId) {
+    // If we have an existing conversation ID (from resume), use it and skip ALL creation logic
+    if (existingConversationId && existingConversationId.trim()) {
       console.log(`🔄 Resuming existing conversation: ${existingConversationId}`);
+      conversationId = existingConversationId; // Ensure we use the provided ID
       setCurrentConversationId(existingConversationId);
       setResearchTopic(topic);
       // Don't create a new conversation - we're resuming an existing one
+      // Skip all the creation logic below - conversationId is already set
     } else if (!conversationId) {
       // Check for existing in_progress report with same topic to prevent duplicates
       try {

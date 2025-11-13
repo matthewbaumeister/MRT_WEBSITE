@@ -154,7 +154,11 @@ CONTENT REQUIREMENTS:
 - No generic filler content - only data-driven analysis
 ${useWebSearch ? '- Include recent public information from web sources' : ''}
 - Cite data sources inline with exact URLs: [Source: Company Name](https://exact-url.com)
-- Every fact-based statement should have a working URL citation when possible
+- EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A SOURCE CITATION - no exceptions
+- DO NOT use placeholder URLs like "https://exact-url.com/" or "https://example.com" - these are invalid
+- If you cannot verify a fact with a source, do not include it or clearly mark it as unverified
+- For company information (CEO, employees, revenue), use official company websites or verified news sources only
+- DO NOT make up or guess information - only use verified facts from provided sources
 - Write comprehensive, analytical paragraphs that synthesize information rather than listing facts
 `;
 }

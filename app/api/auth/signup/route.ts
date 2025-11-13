@@ -96,7 +96,7 @@ Make Ready Team
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user (starts as 'client' role, inactive until email verified)
+    // Create user (starts as 'general' role, inactive until email verified)
     const { data: newUser, error: createError } = await supabase
       .from("users")
       .insert([
