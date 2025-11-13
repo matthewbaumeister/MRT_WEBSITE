@@ -329,7 +329,23 @@ export async function searchSupabaseTables(
         
         // Extract company name from topic if it looks like a company search
         // "ECS Federal" or "research on ECS Federal" → "ECS Federal"
-        const companyNameMatch = topic.match(/\b([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)+)\b/);
+        // Also handles common typos like "ecs federal contracitng comapny"
+        let companyNameMatch = topic.match(/\b([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)+)\b/);
+        
+        // If no match with capital letters, try case-insensitive for typos
+        if (!companyNameMatch) {
+          // Look for patterns like "ecs federal" or "ECS federal" (case-insensitive)
+          const lowerTopic = topic.toLowerCase();
+          if (lowerTopic.includes('ecs') && lowerTopic.includes('federal')) {
+            // Extract the phrase "ecs federal" from the topic
+            const ecsFederalMatch = lowerTopic.match(/(ecs\s+federal)/i);
+            if (ecsFederalMatch) {
+              // Normalize to "ECS Federal"
+              companyNameMatch = ['', 'ECS Federal'];
+            }
+          }
+        }
+        
         const companyName = companyNameMatch ? companyNameMatch[1] : null;
         
         // Split topic into keywords for better matching
