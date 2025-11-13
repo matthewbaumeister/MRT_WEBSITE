@@ -239,7 +239,8 @@ export default function MatrixChat({
           if (reportStatus === "in_progress" && conversation.metadata?.reportTopic) {
             console.log("🔄 Auto-resuming incomplete report...");
             setIsLoading(true);
-            generateReport(conversation.metadata.reportTopic).then(() => setIsLoading(false));
+            // Pass the conversation ID to prevent creating a new conversation
+            generateReport(conversation.metadata.reportTopic, conversationId).then(() => setIsLoading(false));
           }
           
         } else if (reportSections.length > 0) {
@@ -381,60 +382,137 @@ export default function MatrixChat({
     }
   };
 
-  const generateReport = async (topic: string) => {
+  const generateReport = async (topic: string, existingConversationId?: string) => {
     // Create new AbortController for this generation
     const controller = new AbortController();
     setAbortController(controller);
     console.log("🎬 [GENERATION] Starting report generation (AbortController created)");
     
-    // Create conversation and save initial query
-    let conversationId = currentConversationId;
-    if (!conversationId) {
-      conversationId = await createConversation(topic);
-      if (conversationId) {
-        setCurrentConversationId(conversationId);
-        setResearchTopic(topic);
-        // Save user's query
-        await saveMessage(conversationId, "user", `Research topic: ${topic}`);
-        
-        // Save initial metadata with "in_progress" flag
-        await fetch("/api/matrix/conversations", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: conversationId,
-            metadata: {
-              settings: { extendedThinking, webSearch, research, smallBusinessFocus },
-              isReport: true,
-              reportStatus: "in_progress", // Track generation status
-              reportTopic: topic,
-              completedSections: [], // Track which sections are done
-              lastUpdated: new Date().toISOString(),
+    // Use provided conversation ID if resuming, otherwise use current or create new
+    let conversationId = existingConversationId || currentConversationId;
+    
+    // If we have an existing conversation ID (from resume), use it and skip creation
+    if (existingConversationId) {
+      console.log(`🔄 Resuming existing conversation: ${existingConversationId}`);
+      setCurrentConversationId(existingConversationId);
+      setResearchTopic(topic);
+      // Don't create a new conversation - we're resuming an existing one
+    } else if (!conversationId) {
+      // Check for existing in_progress report with same topic to prevent duplicates
+      try {
+        const checkResponse = await fetch("/api/matrix/conversations");
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          const existingReport = checkData.conversations?.find((conv: any) => 
+            conv.metadata?.isReport && 
+            conv.metadata?.reportStatus === "in_progress" &&
+            conv.metadata?.reportTopic?.toLowerCase() === topic.toLowerCase()
+          );
+          
+          if (existingReport) {
+            console.log("⚠️ Found existing in_progress report with same topic, using it instead of creating duplicate");
+            conversationId = existingReport.id;
+            setCurrentConversationId(conversationId);
+            setResearchTopic(topic);
+            // Don't create a new conversation - use the existing one
+          } else {
+            // No duplicate found, create new conversation
+            conversationId = await createConversation(topic);
+            if (conversationId) {
+              setCurrentConversationId(conversationId);
+              setResearchTopic(topic);
+              // Save user's query
+              await saveMessage(conversationId, "user", `Research topic: ${topic}`);
+              
+              // Save initial metadata with "in_progress" flag
+              await fetch("/api/matrix/conversations", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: conversationId,
+                  metadata: {
+                    settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+                    isReport: true,
+                    reportStatus: "in_progress", // Track generation status
+                    reportTopic: topic,
+                    completedSections: [], // Track which sections are done
+                    lastUpdated: new Date().toISOString(),
+                  }
+                }),
+              });
             }
-          }),
-        });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for duplicate reports:", error);
+        // Fallback to creating new conversation if check fails
+        conversationId = await createConversation(topic);
+        if (conversationId) {
+          setCurrentConversationId(conversationId);
+          setResearchTopic(topic);
+          await saveMessage(conversationId, "user", `Research topic: ${topic}`);
+          await fetch("/api/matrix/conversations", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: conversationId,
+              metadata: {
+                settings: { extendedThinking, webSearch, research, smallBusinessFocus },
+                isReport: true,
+                reportStatus: "in_progress",
+                reportTopic: topic,
+                completedSections: [],
+                lastUpdated: new Date().toISOString(),
+              }
+            }),
+          });
+        }
       }
     }
 
-    // Initialize report sections - always start fresh
-    const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
-      ...s,
-      content: "",
-      sources: [],
-      expanded: true,
-    }));
-    setReportSections(initialSections);
-    setReportMode(true);
-    setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
+    // Initialize report sections - preserve existing sections if resuming
+    if (existingConversationId) {
+      // When resuming, don't reset sections - they're already loaded in loadConversation
+      console.log("🔄 Preserving existing sections for resume");
+      // Just ensure report mode is set
+      setReportMode(true);
+      setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
+    } else {
+      // New report - start fresh
+      const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
+        ...s,
+        content: "",
+        sources: [],
+        expanded: true,
+      }));
+      setReportSections(initialSections);
+      setReportMode(true);
+      setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
+    }
 
     // Collect all section contents for the final conclusion
     const sectionContents: Record<string, string> = {};
     
     // Track sources separately (state updates are async, can't rely on reportSections state)
     const sectionSources: Record<string, DataSource[]> = {};
+    
+    // When resuming, load existing section contents from state
+    if (existingConversationId) {
+      reportSections.forEach(s => {
+        if (s.content && s.content.trim()) {
+          sectionContents[s.id] = s.content;
+          sectionSources[s.id] = s.sources || [];
+        }
+      });
+    }
 
     // Generate each section - run start to finish
     for (const section of REPORT_SECTIONS) {
+      // When resuming, skip sections that are already complete
+      if (existingConversationId && sectionContents[section.id] && sectionContents[section.id].trim()) {
+        console.log(`⏭️  Skipping completed section: ${section.title}`);
+        continue;
+      }
       // Check if generation was cancelled (only for manual cancellation)
       if (controller.signal.aborted) {
         console.log("🛑 [GENERATION] Cancelled - stopping generation");
