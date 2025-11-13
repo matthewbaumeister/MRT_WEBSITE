@@ -225,7 +225,7 @@ CRITICAL CITATION REQUIREMENTS - ZERO TOLERANCE FOR PLACEHOLDERS:
 3. DO NOT create, invent, or guess any URLs - ONLY use URLs explicitly marked as "VERIFIED URL:" in the search results
 4. Use format: [Source: Company Name](VERIFIED_URL_FROM_SEARCH_RESULTS) for company websites
 5. Use format: [Source: Article Title](VERIFIED_URL_FROM_SEARCH_RESULTS) for news articles
-6. Use format: [Source: DOD Contracts](VERIFIED_URL_FROM_SEARCH_RESULTS) for contract information
+6. Use format: [Source: DOD Contract News](VERIFIED_URL_FROM_SEARCH_RESULTS) for contract information
 7. Extract URLs ONLY from lines starting with "VERIFIED URL:" in the web search results above
 8. ABSOLUTELY FORBIDDEN: Using placeholder URLs like "https://exact-url.com/", "https://example.com", "https://companyname.com" (without www), or any URL not explicitly listed as "VERIFIED URL:"
 9. ABSOLUTELY FORBIDDEN: Making up URLs, guessing URLs, or using generic URLs
@@ -241,12 +241,12 @@ CRITICAL CITATION REQUIREMENTS - ZERO TOLERANCE FOR PLACEHOLDERS:
 CITATION REQUIREMENTS (Web search not available - using internal data sources):
 1. EVERY SINGLE FACT-BASED STATEMENT MUST HAVE A SOURCE CITATION - no exceptions
 2. Use format: [Source: Data Source Name] for information from internal databases
-3. Use format: [Source: DOD Contracts] for contract information from internal databases
+3. Use format: [Source: DOD Contract News] for contract information from internal databases
 4. Use format: [Source: SBIR Opportunities] for SBIR data from internal databases
 5. You may cite information from the CURRENT SECTION CONTENT above if it's already verified
 6. DO NOT create, invent, or guess any URLs - if you don't have a URL, use [Source: Internal Database] format
 7. Focus on enhancing the existing content with analysis and context, using the data already provided
-8. If you reference company information, cite it as [Source: Internal Database] or [Source: DOD Contracts]`;
+8. If you reference company information, cite it as [Source: Internal Database] or [Source: DOD Contract News]`;
 
     const prompt = `You are a defense industry research analyst enriching a market research report section with intelligence from available sources.
 

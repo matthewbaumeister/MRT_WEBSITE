@@ -465,6 +465,38 @@ export async function getCompetitionData(topic: string): Promise<any[]> {
 }
 
 /**
+ * Map table names to user-friendly display names
+ */
+function getTableDisplayName(tableName: string): string {
+  const displayNameMap: Record<string, string> = {
+    'dod_tech_contracts': 'DOD Contract News',
+    'dod_contract_news': 'DOD Contract News',
+    'army_innovation_opportunities': 'xTech Army Opps',
+    'army_innovation_programs': 'xTech Army Opps',
+    'army_innovation_submissions': 'xTech Army Opps',
+    'army_innovation_documents': 'xTech Army Opps',
+    'army_innovation_finalists_with_details': 'xTech Army Opps',
+    'army_innovation_winners_with_details': 'xTech Army Opps',
+    'army_innovation_phase_progress': 'xTech Army Opps',
+    'army_innovation_competition_stats': 'xTech Army Opps',
+    'army_innovation_prize_summary': 'xTech Army Opps',
+    'army_innovation_upcoming_deadlines': 'xTech Army Opps',
+  };
+  
+  // Check if table name starts with army_innovation
+  if (tableName.startsWith('army_innovation')) {
+    return 'xTech Army Opps';
+  }
+  
+  // Check if table name contains dod_contract or dod_tech
+  if (tableName.includes('dod_contract') || tableName.includes('dod_tech')) {
+    return 'DOD Contract News';
+  }
+  
+  return displayNameMap[tableName] || tableName;
+}
+
+/**
  * Format Supabase results for inclusion in LLM context
  */
 export function formatSupabaseContext(results: any[]): string {
@@ -475,7 +507,8 @@ export function formatSupabaseContext(results: any[]): string {
   let context = "Relevant data from internal databases:\n\n";
 
   for (const result of results) {
-    context += `From ${result.table} (${result.count} results):\n`;
+    const displayName = getTableDisplayName(result.table);
+    context += `From ${displayName} (${result.count} results):\n`;
     
     // Format first few results as examples
     const examples = result.data.slice(0, 3);
@@ -544,10 +577,11 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
           }
         }
 
+        const displayName = getTableDisplayName(result.table);
         console.log(`[URL EXTRACTION] ✅ Found URL in ${result.table}.${foundField}: ${foundUrl.substring(0, 60)}...`);
         
         urls.push({
-          name: `${sourceName} - ${result.table}`,
+          name: `${sourceName} - ${displayName}`,
           url: foundUrl
         });
       }
@@ -561,10 +595,13 @@ export function extractSupabaseURLs(results: any[]): Array<{ name: string; url: 
     
     // Return generic references to the tables
     const uniqueTables = [...new Set(results.map(r => r.table))];
-    return uniqueTables.map(table => ({
-      name: `${table} database`,
-      url: `https://www.makereadytech.com/matrix?source=${table}`
-    }));
+    return uniqueTables.map(table => {
+      const displayName = getTableDisplayName(table);
+      return {
+        name: `${displayName} database`,
+        url: `https://www.makereadytech.com/matrix?source=${table}`
+      };
+    });
   }
 
   console.log(`[URL EXTRACTION] ✅ Successfully extracted ${urls.length} real URLs from Supabase data`);

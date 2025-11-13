@@ -46,7 +46,7 @@ SMALL BUSINESS FOCUS MODE: When answering questions, prioritize information from
 Current Data Sources:
 - DSIP (Defense SBIR/STTR Innovation Portal)
 - MANTECH (Manufacturing Technology) - Tables: mantech_projects, mantech_by_component, mantech_company_mentions, mantech_top_companies, mantech_sbir_transitions, mantech_transition_pipeline, mantech_recent_projects
-- xTech (Army Innovation) - Tables: army_innovation_opportunities, army_innovation_programs, army_innovation_submissions, army_innovation_documents, army_innovation_finalists_with_details, army_innovation_winners_with_details, army_innovation_phase_progress, army_innovation_competition_stats, army_innovation_prize_summary, army_innovation_upcoming_deadlines
+- xTech Army Opps - Tables: army_innovation_opportunities, army_innovation_programs, army_innovation_submissions, army_innovation_documents, army_innovation_finalists_with_details, army_innovation_winners_with_details, army_innovation_phase_progress, army_innovation_competition_stats, army_innovation_prize_summary, army_innovation_upcoming_deadlines
 - FUZE Innovation Platform
 
 Upcoming Data Sources (not yet available):
@@ -60,7 +60,7 @@ Current user: ${session.user.name} (${session.user.email})`;
 
     // Add Supabase context if provided
     if (supabaseContext) {
-      systemContent += `\n\n=== RELEVANT DATA FROM INTERNAL DATABASES ===\n${supabaseContext}\n=== END INTERNAL DATA ===\n\nUse the above data from our internal databases (xTech, MANTECH, DOD contracts) to provide specific, factual information. Cite specific programs, companies, dollar amounts, and dates from this data.`;
+      systemContent += `\n\n=== RELEVANT DATA FROM INTERNAL DATABASES ===\n${supabaseContext}\n=== END INTERNAL DATA ===\n\nUse the above data from our internal databases (xTech Army Opps, MANTECH, DOD Contract News) to provide specific, factual information. Cite specific programs, companies, dollar amounts, and dates from this data.`;
     }
 
     const systemMessage = {

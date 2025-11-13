@@ -1281,7 +1281,7 @@ export default function MatrixChat({
       
       if (smallBusinessFocus) {
         dataSources.push(
-          "Searching xTech (Army Innovation) historical data...",
+          "Searching xTech Army Opps historical data...",
           "Analyzing MANTECH manufacturing projects...",
           "Checking DSIP opportunities...",
           "Reviewing FUZE innovation platform..."
@@ -1795,7 +1795,7 @@ export default function MatrixChat({
                           {smallBusinessFocus && (
                             <div className="px-3 py-2 bg-gray-800 rounded-lg">
                               <p className="text-xs text-gray-400 leading-relaxed">
-                                Prioritizing small business data from: DSIP, MANTECH, xTech (Army Innovation), FUZE
+                                Prioritizing small business data from: DSIP, MANTECH, xTech Army Opps, FUZE
                               </p>
                               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                                 Coming soon: SBA Awards, FPDS Small Business data
