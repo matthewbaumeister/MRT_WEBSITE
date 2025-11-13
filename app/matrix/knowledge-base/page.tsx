@@ -29,7 +29,7 @@ const AVAILABLE_TABLES: TableInfo[] = [
   { name: "dvids_military_news", displayName: "DVIDS Military News", category: "DoD Contracts", description: "Defense Visual Information Distribution Service news" },
   
   // SBIR
-  { name: "sbir_final", displayName: "SBIR Awards", category: "SBIR", description: "Small Business Innovation Research awards" },
+  { name: "sbir_final", displayName: "SBIR Opportunities", category: "SBIR", description: "Small Business Innovation Research opportunities" },
   
   // GSA
   { name: "gsa_labor_categories", displayName: "GSA Labor Categories", category: "GSA", description: "GSA Schedule labor category rates" },
