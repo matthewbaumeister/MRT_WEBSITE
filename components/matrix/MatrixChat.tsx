@@ -392,18 +392,9 @@ export default function MatrixChat({
         const data = await response.json();
         const conversationId = data.conversation.id;
         console.log("✅ Conversation created:", conversationId);
-        console.log("📢 Triggering sidebar refresh...");
         
-        // Notify parent to refresh sidebar
-        if (onConversationCreated) {
-          onConversationCreated();
-          console.log("✅ Sidebar refresh callback executed");
-        } else {
-          console.warn("⚠️  No onConversationCreated callback!");
-        }
-        
-        // Small delay to ensure database has persisted
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Don't refresh sidebar here - wait for metadata to be saved
+        // The refresh will happen after metadata is saved in generateReport
         
         return conversationId;
       } else {
