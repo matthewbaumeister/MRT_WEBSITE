@@ -327,6 +327,20 @@ export default function MatrixSidebar({
                             />
                           )}
                           <div className="truncate flex-1">{conversation.title || "New Research"}</div>
+                          {/* Status indicator for reports */}
+                          {conversation.metadata?.isReport && (
+                            <div className="flex-shrink-0 ml-2">
+                              {conversation.metadata.reportStatus === "in_progress" ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-600 text-white">
+                                  Generating
+                                </span>
+                              ) : conversation.metadata.reportStatus === "complete" ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
+                                  Complete
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {new Date(conversation.updated_at).toLocaleDateString()}

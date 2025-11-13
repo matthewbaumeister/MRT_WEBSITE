@@ -85,8 +85,7 @@ export default function MatrixChat({
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null); // Ref for immediate access
   
-  // Resume button for incomplete reports
-  const [showResumeButton, setShowResumeButton] = useState<boolean>(false);
+  // Removed resume button - reports run start to finish
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -100,17 +99,8 @@ export default function MatrixChat({
     abortControllerRef.current = abortController;
   }, [abortController]);
   
-  // Cleanup: Cancel ongoing API calls when navigating away or unmounting
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        console.log("🛑 [CLEANUP] Cancelling ongoing API calls...");
-        abortControllerRef.current.abort();
-        setAbortController(null);
-        abortControllerRef.current = null;
-      }
-    };
-  }, []);
+  // Removed cleanup - reports continue running even if tab is closed
+  // Reports will complete in the background
   
   // Register cancel function with parent (so sidebar can cancel when deleting)
   useEffect(() => {
@@ -129,7 +119,6 @@ export default function MatrixChat({
         setIsLoading(false);
         setSearchStatus([]);
         setLiveStatus("");
-        setShowResumeButton(false);
       };
       
       console.log("📝 Registering cancel function with parent");
@@ -235,8 +224,8 @@ export default function MatrixChat({
                 number: idx + 1,
                 content: "", // Not yet generated
                 expanded: false,
-                isGenerating: isFirstIncomplete, // Mark first incomplete as "ready to generate"
-                generationStatus: isFirstIncomplete ? "⏸️ Paused - Click to continue from here" : undefined,
+                isGenerating: false,
+                generationStatus: undefined,
               };
             }
           });
@@ -246,8 +235,12 @@ export default function MatrixChat({
           console.log("   Completed:", partialSections.length, "sections");
           console.log("   First incomplete:", incompleteSections.find(s => s.isGenerating)?.id);
           
-          // Don't show separate resume button - status is on the section itself
-          setShowResumeButton(false);
+          // Auto-resume incomplete reports - continue generation immediately
+          if (reportStatus === "in_progress") {
+            console.log("🔄 Auto-resuming incomplete report...");
+            setIsLoading(true);
+            generateReport(conversation.metadata.reportTopic || topic).then(() => setIsLoading(false));
+          }
           
         } else if (reportSections.length > 0) {
           // Load complete report
@@ -388,7 +381,7 @@ export default function MatrixChat({
     }
   };
 
-  const generateReport = async (topic: string, resumeFromSection?: string) => {
+  const generateReport = async (topic: string) => {
     // Create new AbortController for this generation
     const controller = new AbortController();
     setAbortController(controller);
@@ -423,27 +416,11 @@ export default function MatrixChat({
       }
     }
 
-    // Initialize report sections (or restore from existing if resuming)
-    let shouldSkip = !!resumeFromSection; // Skip sections until we reach the resume point
-    
-    // When resuming, preserve existing content AND sources; otherwise start fresh
-    const existingContent: Record<string, string> = {};
-    const existingSources: Record<string, DataSource[]> = {};
-    if (resumeFromSection) {
-      reportSections.forEach(s => {
-        if (s.content && s.content.trim()) {
-          existingContent[s.id] = s.content;
-        }
-        if (s.sources && s.sources.length > 0) {
-          existingSources[s.id] = s.sources;
-        }
-      });
-    }
-    
+    // Initialize report sections - always start fresh
     const initialSections: ReportSection[] = REPORT_SECTIONS.map(s => ({
       ...s,
-      content: existingContent[s.id] || "", // Preserve existing content when resuming
-      sources: existingSources[s.id] || [], // Preserve existing sources when resuming
+      content: "",
+      sources: [],
       expanded: true,
     }));
     setReportSections(initialSections);
@@ -451,42 +428,16 @@ export default function MatrixChat({
     setReportTitle(maxMode ? `MAX-Research: ${topic}` : `Research: ${topic}`);
 
     // Collect all section contents for the final conclusion
-    const sectionContents: Record<string, string> = { ...existingContent };
+    const sectionContents: Record<string, string> = {};
     
     // Track sources separately (state updates are async, can't rely on reportSections state)
     const sectionSources: Record<string, DataSource[]> = {};
-    
-    // 🔧 CRITICAL: Pre-populate sources when resuming (otherwise they'll be lost on save!)
-    if (resumeFromSection) {
-      console.log(`🔄 Resuming from section: ${resumeFromSection}`);
-      console.log(`   Already completed: ${Object.keys(existingContent).length} sections`);
-      
-      // Pre-populate sectionSources from existing reportSections state
-      reportSections.forEach(s => {
-        if (s.sources && s.sources.length > 0) {
-          sectionSources[s.id] = s.sources;
-          console.log(`   📎 Restored ${s.sources.length} sources for ${s.id}`);
-        }
-      });
-    }
 
-    // Generate each section
+    // Generate each section - run start to finish
     for (const section of REPORT_SECTIONS) {
-      // Skip sections that are already complete (when resuming)
-      if (resumeFromSection && shouldSkip) {
-        if (section.id === resumeFromSection) {
-          shouldSkip = false; // Start generating from this section
-          console.log(`✅ Reached resume point: ${section.id}`);
-        } else {
-          console.log(`⏩ Skipping already-complete section: ${section.id}`);
-          continue; // Skip this section
-        }
-      }
-      
-      // Check if generation was cancelled
+      // Check if generation was cancelled (only for manual cancellation)
       if (controller.signal.aborted) {
-        console.log("🛑 [GENERATION] Aborted - stopping generation");
-        setSearchStatus(["⏸️ Report generation paused - progress saved"]);
+        console.log("🛑 [GENERATION] Cancelled - stopping generation");
         setLiveStatus("");
         setIsLoading(false);
         return; // Stop generation
@@ -1466,18 +1417,9 @@ export default function MatrixChat({
               <ResearchReport
                 sections={reportSections}
                 onSectionClick={(sectionId) => {
-                  // Check if clicking on paused section (resume)
-                  const clickedSection = reportSections.find(s => s.id === sectionId);
-                  if (clickedSection?.generationStatus?.includes("Paused")) {
-                    // Resume generation from this section
-                    console.log(`🔄 Resuming report from section: ${sectionId}`);
-                    setIsLoading(true);
-                    generateReport(researchTopic, sectionId).then(() => setIsLoading(false));
-                  } else {
-                    // Normal section click - open advanced query
-                    setSelectedSection(sectionId);
-                    setAdvancedPanelOpen(true);
-                  }
+                  // Normal section click - open advanced query
+                  setSelectedSection(sectionId);
+                  setAdvancedPanelOpen(true);
                 }}
                 onUpdateSection={(sectionId, content) => {
                   setReportSections(prev => prev.map(s => 
@@ -1494,38 +1436,6 @@ export default function MatrixChat({
                 isGenerating={isLoading}
               />
               
-              {/* Continue Report Button - INSIDE report mode */}
-              {showResumeButton && !isLoading && (
-                <div className="max-w-4xl mx-auto px-4 pb-8">
-                  <div className="bg-gray-800 text-gray-100 rounded-2xl px-6 py-4">
-                    <p className="text-sm text-gray-400 mb-3">
-                      ⏸️ Report generation was paused. {reportSections.filter(s => s.content).length}/{reportSections.length} sections complete.
-                    </p>
-                    <button
-                      onClick={async () => {
-                        setShowResumeButton(false);
-                        setIsLoading(true);
-                        
-                        // Find first incomplete section
-                        const firstIncomplete = reportSections.find(s => !s.content || s.content.trim() === "");
-                        
-                        console.log(`🔄 Resuming report from section: ${firstIncomplete?.id || 'unknown'}`);
-                        
-                        // Resume generation
-                        await generateReport(researchTopic, firstIncomplete?.id);
-                        setIsLoading(false);
-                      }}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Continue Report</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </>
           ) : messages.length === 0 ? (
           /* Welcome Screen */
